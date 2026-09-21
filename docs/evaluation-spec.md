@@ -25,7 +25,7 @@ until the dataset passes at the thresholds in §6. See roadmap Steps 4, 5 and
 ## 2. Layout
 
 ```text
-evals/
+backend/evals/
 ├── fixtures/
 │   └── intelligence_v1.json          # frozen DB snapshot (seed + eval-only adversarial records)
 ├── golden/
@@ -36,7 +36,7 @@ evals/
 │   ├── strategy.md                   # judge rubric, anchored 1–5
 │   └── execution.md
 ├── runner/
-│   ├── cli.py                        # `uv run python -m evals.runner.cli --suite strategy --repeats 3`
+│   ├── cli.py                        # `uv run --directory backend python -m evals.runner.cli --suite strategy --repeats 3`
 │   ├── loader.py                     # load fixture → throwaway DB, start MCP against it
 │   ├── checks.py                     # deterministic checks (§4)
 │   ├── judge.py                      # LLM-as-judge (§5)
@@ -192,7 +192,7 @@ examples.
 
 **Judge calibration.** Before a suite's first baseline, a human scores 15
 cases, and the judge must agree within ±1 on at least 80% of dimension
-scores. Record the calibration in `evals/rubrics/<suite>.md`.
+scores. Record the calibration in `backend/evals/rubrics/<suite>.md`.
 
 ### 5.3 Repeats and flakiness
 
@@ -221,8 +221,8 @@ Each case runs **3 times** (`--repeats 3`). The report shows:
    (or a separate review pass) check each `expect` block for over-fitting.
    Cases assert behaviour, not exact wording.
 2. **Baseline.** The first passing run is committed as
-   `evals/reports/baseline_<suite>.json`.
-3. **Regression gate.** Any PR that touches `agents/`, `skills/`,
+   `backend/evals/reports/baseline_<suite>.json`.
+3. **Regression gate.** Any PR that touches `app/agents/`, `app/skills/`,
    instruction files, the MCP tools or model env defaults must run the
    affected suite(s). The PR description pastes the report summary. No PR may
    drop a metric below threshold, or more than 3 points below baseline.

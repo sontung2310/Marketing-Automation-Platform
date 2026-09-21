@@ -1,179 +1,45 @@
 name: CI
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
-  push:
-    branches: [main]
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  PYTHON_VERSION: "3.11"
-  OPENSPEC_VERSION: "1.13.1"
-
 jobs:
-  # ------------------------------------------------------------------ backend
-  backend:
-    name: Backend · lint, types, layering, tests
+  check:
+    name: Check
     runs-on: ubuntu-latest
-    services:
-      mongo:
-        image: mongo:7
-        ports: ["27017:27017"]
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
-          --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      MONGODB_URI: mongodb://localhost:27017
-      MONGODB_DATABASE: marketing_automation_ci
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.1.0
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          node-version: 24
+          cache: npm
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          python-version: "3.11"
           enable-cache: true
-      - run: uv sync --frozen
-      - name: Format (ruff)
-        run: uv run ruff format --check .
-      - name: Lint (ruff)
-        run: uv run ruff check --output-format=github .
-      - name: Types (mypy --strict)
-        run: uv run mypy
-      - name: Layering contracts (import-linter)
-        run: uv run lint-imports
-      - name: Unit tests
-        run: uv run pytest
-      - name: Integration tests (throwaway MongoDB)
-        run: uv run pytest -m integration
+          cache-dependency-glob: backend/uv.lock
 
-  # ------------------------------------------------------------------ frontend
-  frontend:
-    name: Frontend · lint, types, tests, build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          package_json_file: frontend/package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-      - name: ESLint (incl. design-token and API-boundary rules)
-        run: pnpm lint
-      - name: Prettier
-        run: pnpm format:check
-      - name: Types (tsc)
-        run: pnpm typecheck
-      - name: Unit tests (Vitest)
-        run: pnpm test
-      - name: Production build
-        run: pnpm build
+      - name: Install dependencies
+        run: npm ci && uv sync --frozen --directory backend
 
-  # ------------------------------------------------------------------ OpenSpec
-  openspec:
-    name: OpenSpec · validation and cross-change conflicts
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - uses: astral-sh/setup-uv@v10.1.0
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: openspec validate --strict
-        run: npx -y @fission-ai/openspec@${OPENSPEC_VERSION} validate --all --strict --no-interactive
-      - name: Cross-change conflicts, stale bases, roadmap references
-        run: uv run --no-project python -m scripts.ci.check_openspec
-
-  # ------------------------------------------------------------------ repo hygiene
-  hygiene:
-    name: Repo hygiene · conflicts, contract drift, secrets
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: No merge-conflict markers
-        run: |
-          if git grep -nE '^(<{7}|>{7})( |$)' -- ':!*.lock' ':!frontend/pnpm-lock.yaml'; then
-            echo "::error::Unresolved merge-conflict markers found."
-            exit 1
-          fi
-      - name: Merges cleanly into base branch
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          git config user.name ci && git config user.email ci@users.noreply.github.com
-          git fetch origin "$BASE_REF"
-          if ! git merge --no-commit --no-ff "origin/$BASE_REF"; then
-            echo "::error::This branch conflicts with $BASE_REF. Rebase and resolve:"
-            git diff --name-only --diff-filter=U | sed 's/^/  - /'
-            exit 1
-          fi
-          git merge --abort || true
-      - uses: astral-sh/setup-uv@v10.1.0
-        if: github.event_name == 'pull_request'
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Contract docs updated with contract code
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: uv run --no-project python -m scripts.ci.check_contract_drift --base "origin/$BASE_REF" --labels "$LABELS"
-      - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ------------------------------------------------------------------ PR conventions
-  pr-conventions:
-    name: PR conventions · branch name, Conventional Commit title
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
-    steps:
-      - name: Branch name (AGENTS.md §3)
-        env:
-          HEAD_REF: ${{ github.head_ref }}
-        run: |
-          if [[ ! "$HEAD_REF" =~ ^(feature|fix|chore|docs|refactor|test)/[a-z0-9][a-z0-9.-]*$ && ! "$HEAD_REF" =~ ^dependabot/ ]]; then
-            echo "::error::Branch '$HEAD_REF' must look like feature/<step>-<slug>, e.g. feature/4.2-strategy-agent"
-            exit 1
-          fi
-      - name: PR title is a Conventional Commit
-        uses: amannn/action-semantic-pull-request@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ------------------------------------------------------------------ gate
-  ci-passed:
-    name: CI passed
-    if: always()
-    needs: [backend, frontend, openspec, hygiene, pr-conventions]
-    runs-on: ubuntu-latest
-    steps:
-      - name: All required jobs succeeded (skipped PR-only jobs are fine)
-        env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
-        run: |
-          echo "Job results: $RESULTS"
-          for r in $RESULTS; do
-            if [[ "$r" != "success" && "$r" != "skipped" ]]; then exit 1; fi
-          done
+      - name: Check code
+        run: npm run check

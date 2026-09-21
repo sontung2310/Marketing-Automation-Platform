@@ -16,7 +16,7 @@
 | Frontend | **React** 18 + TypeScript | Web-page interactivity |
 | Build and hosting | **Vite** (built output hosted on Vercel) | Fast dev server, optimized static build |
 | Styling | **Tailwind CSS v4**, themed only with design-system tokens | Consistent, accessible UI without hand-written CSS |
-| Tooling | uv, ruff, mypy, import-linter, pytest · pnpm, ESLint, Prettier, Vitest | Enforced in CI (AGENTS.md §3) |
+| Tooling | uv, ruff, mypy, import-linter, pytest · npm, ESLint, Prettier, Vitest | One entry point: `npm run check` (AGENTS.md §3) |
 
 Don't add a new library when an existing dependency or the standard library
 already covers the need. A new runtime dependency needs one sentence of
@@ -118,7 +118,7 @@ const OUTPUT_CARDS: Record<OutputKind, ComponentType<OutputCardProps>> = {
 ```
 
 **The only accepted uses of regex** are parsing a fixed, formally specified
-line grammar in tooling (e.g. OpenSpec headers in `scripts/ci/`), and lint
+line grammar in tooling (e.g. OpenSpec headers in `tools/`), and lint
 selectors. Both must be covered by tests or have a documented grammar. A
 regex that tries to interpret free text, or to match "most" cases of some
 input, is a special case and is not allowed.
@@ -130,7 +130,7 @@ will grow**.
 ## 5. Python
 
 - **Formatting and lint:** `ruff format` + `ruff check` (the rules are in
-  `pyproject.toml`), line length 100. `mypy --strict` must pass. No
+  `backend/pyproject.toml`), line length 100. `mypy --strict` must pass. No
   `# type: ignore` without a reason in the same comment.
 - **Types:** annotate every function. Pydantic models at boundaries, and
   dataclasses (frozen where possible) for internal value objects. A bare
@@ -150,7 +150,7 @@ will grow**.
 - **Naming:** `snake_case` for modules and functions, `PascalCase` for
   classes, `UPPER_SNAKE` for constants and enum members. Enum values match
   the docs verbatim.
-- **Imports:** absolute (`from marketing_automation.core.errors import …`).
+- **Imports:** absolute (`from app.core.errors import …`).
   No wildcard imports. Respect the import-linter layering contracts.
 
 ### OpenAI Agents SDK
@@ -276,7 +276,7 @@ will grow**.
 
 - **Secrets:** only in `.env` locally, or in the platform's secret stores
   (GitHub, Vercel). Never in code, logs, fixtures, test output or
-  `VITE_*` variables. gitleaks runs in CI and pre-commit.
+  `VITE_*` variables.
 - **Input validation:** every external input (HTTP, MCP arguments, LLM
   output, source documents) is parsed into a typed model with bounds (max
   lengths, `limit ≤ 50`, enum membership).
@@ -293,7 +293,7 @@ will grow**.
   - Side effects require explicit user approval.
 - **Output safety:** never render HTML from data or LLM output.
   Markdown is sanitized. External links use `rel="noopener noreferrer"`.
-- **Dependencies:** use lockfiles (`uv.lock`, `pnpm-lock.yaml`), with
+- **Dependencies:** use lockfiles (`uv.lock`, `package-lock.json`), with
   Dependabot updates reviewed like code. Don't add packages that are
   unmaintained or unknown.
 

@@ -5,8 +5,8 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel
 
-from marketing_automation.core import db
-from marketing_automation.core.config import Settings
+from app.core import db
+from app.core.config import Settings
 
 
 class HealthReport(BaseModel):

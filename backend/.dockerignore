@@ -1,13 +1,8 @@
-.git
 .venv
 **/__pycache__
 **/.mypy_cache
 **/.ruff_cache
 **/.pytest_cache
-.env
-.env.*
-frontend
-evals/reports
-docs
-openspec
+.import_linter_cache
 tests
+evals

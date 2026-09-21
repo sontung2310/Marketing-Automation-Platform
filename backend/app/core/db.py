@@ -5,8 +5,8 @@ from functools import lru_cache
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 
-from marketing_automation.core.config import get_settings
-from marketing_automation.core.errors import UpstreamUnavailableError
+from app.core.config import get_settings
+from app.core.errors import UpstreamUnavailableError
 
 Document = dict[str, object]
 

@@ -5,11 +5,11 @@ context: |
   Two independent agents (OpenAI Agents SDK): Marketing Strategy Agent ("what should we do?")
   and Marketing Execution Agent ("do this task"), sharing vendored marketing skills
   (coreyhaines31/marketingskills subset) and a read-only Marketing Intelligence MCP over MongoDB.
-  Stack: Python 3.11 + uv, FastAPI, Pydantic v2, PyMongo async, FastMCP; React 18 + Vite + TS (pnpm).
+  Stack: Python 3.11 + uv, FastAPI, Pydantic v2, PyMongo async, FastMCP; React 18 + Vite + TS + Tailwind (npm workspace). Services: backend/ (package `app`), frontend/.
   UI: ONE page, CompetitorScope Design System (Robotic Marketer brand).
   Source of truth: docs/specs.md and companions (data-contract, agents-spec, api-contract,
   ui-spec, evaluation-spec, roadmap). Conventions and layering: AGENTS.md.
-  Each change maps to one roadmap sub-step (docs/roadmap.md).
+  Each change maps to one roadmap sub-step (docs/roadmap.md). Quality gate: npm run check.
 
 rules:
   proposal:

@@ -19,27 +19,31 @@ one-page React UI. Start with [docs/specs.md](docs/specs.md).
 Update this section before adding a top-level folder or a backend module.
 
 ```text
-backend/src/marketing_automation/
-  core/           settings, Mongo client, logging, domain errors
-  intelligence/   domain models + repositories/ (the only runtime Mongo queries)
-  pipelines/      sources/ (read-only adapters) and seed/ → owned collections
-  mcp_server/     Marketing Intelligence MCP: read-only tools for the agents
-  skills/         loader for the product marketing skills in /skills
-  agents/         common/, strategy/, execution/ (OpenAI Agents SDK)
-  orchestration/  routing, runs, sessions
-  connectors/     action connectors (mock/ in the PoC)
-  api/            FastAPI routes and schemas
-frontend/src/     api/ (sole backend caller), components/ds/, features/, hooks/, lib/, styles/theme.css (sole design-token source)
-skills/           product marketing skills used by the platform's agents
-evals/            golden datasets, fixtures, runner, reports
-scripts/          seed, pipelines, fixtures; ci/ holds the CI checks
-tests/            unit/, integration/
-openspec/         specs/ (current behaviour), changes/ (proposed)
-.agents/skills/   team skills (source of truth); .claude/skills/ links to them
+backend/                 Python service: pyproject.toml, uv.lock, Dockerfile (build context)
+  app/                   the `app` package
+    core/                settings, Mongo client, logging, domain errors
+    intelligence/        domain models + repositories/ (the only runtime Mongo queries)
+    pipelines/           sources/ (read-only adapters), seed/ → owned collections
+    mcp_server/          Marketing Intelligence MCP: read-only tools for the agents
+    skills/              skill loader + library/ (vendored product marketing skills)
+    agents/              common/, strategy/, execution/ (OpenAI Agents SDK)
+    orchestration/       routing, runs, sessions
+    connectors/          action connectors (mock/ in the PoC)
+    api/                 FastAPI routes and schemas
+  tests/                 unit/, integration/
+  evals/                 golden datasets, fixtures, runner, reports
+  scripts/               seed, pipeline and fixture CLIs
+frontend/                React + Vite service (npm workspace)
+  src/                   api/ (sole backend caller), components/ds/, features/, hooks/, lib/, styles/theme.css (sole token source)
+tools/                   repo tooling in Node (OpenSpec conflict check)
+docs/  openspec/         specs and plan; specs/ (current behaviour), changes/ (proposed)
+.agents/skills/          team skills (source of truth); .claude/skills/ links to them
 ```
 
-A single uv project at the root covers the backend, tests, evals and
-scripts. The frontend is a separate pnpm project in `frontend/`.
+Each service is self-contained, with its own dependencies and build. The
+root holds only shared tooling: `package.json` (the task runner and npm
+workspace), `vercel.json`, `docker-compose.yml`, `.github/` and the shared
+`.env`.
 
 ## 2. Code rules
 
@@ -75,7 +79,7 @@ Layering is enforced by import-linter:
 | Grill | product + engineering | `grill-me` | every open decision about the outcome is answered |
 | Ticket handoff | whoever ran the grilling | `to-tickets` | GitHub issues exist with behavioural acceptance criteria, blockers and `Roadmap: X.Y`. No OpenSpec change exists yet. |
 | Specify | lead agent | `openspec-propose` | one change per issue (proposal with `Roadmap: X.Y`, delta specs, design, tasks), approved by a human |
-| Implement | implementer agent | `openspec-apply-change` | every task is checked off and `make check` is green |
+| Implement | implementer agent | `openspec-apply-change` | every task is checked off and `npm run check` is green |
 | Review and close | reviewer + human | `openspec-archive-change` | every review finding is answered, the change is archived in the same PR, and a human merges |
 
 - **Behaviour vs. engineering:** nontechnical teammates own behaviour
@@ -92,13 +96,13 @@ Layering is enforced by import-linter:
   Conventional Commits. Squash-merge, one PR per issue.
 - **Contract docs:** update `api-contract`, `data-contract` and
   `agents-spec` in the same PR as the code they describe.
-- **Before pushing:** run `make check`. CI must report **CI passed**. It
-  also fails on:
-  - OpenSpec conflicts or a proposal without `Roadmap: X.Y`;
-  - conflict markers;
-  - contract drift;
-  - secrets;
-  - a malformed branch name or PR title.
+- **One check everywhere:** `npm run check` runs type checks, tests, lint,
+  format and OpenSpec checks for both Python and the frontend. CI's single
+  **Check** job runs the same command. The pre-commit hook (husky +
+  lint-staged) fixes and formats staged files only.
+- **Deploys:** the Vercel Git integration handles them (a preview per PR,
+  production from `main`, configured in `vercel.json`). There is no deploy
+  workflow.
 
 ### Skills
 

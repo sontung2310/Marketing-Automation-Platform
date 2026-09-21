@@ -8,10 +8,10 @@ OpenSpec change: `openspec/changes/<name>`
 
 ## Definition of done (AGENTS.md §5)
 
-- [ ] CI is green (lint, types, layering, tests, OpenSpec, hygiene)
+- [ ] CI **Check** is green (`npm run check`)
 - [ ] The success-criteria scenarios for this sub-step pass against a running environment. Evidence:
 - [ ] If agents, skills, instructions, MCP tools or model defaults changed: eval report summary pasted below, thresholds hold (evaluation-spec §6)
-- [ ] Contract docs updated (api-contract / data-contract / agents-spec), or the `no-contract-change` label is applied
+- [ ] Contract docs updated (api-contract / data-contract / agents-spec), or not affected
 - [ ] UI PRs: ui-spec §8 anti-slop checklist ticked by a reviewer
 - [ ] `docs/roadmap.md` checkbox ticked
 

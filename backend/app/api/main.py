@@ -1,13 +1,13 @@
-"""FastAPI application factory. Run: uv run uvicorn marketing_automation.api.main:app --reload"""
+"""FastAPI application factory. Run: uv run uvicorn app.api.main:app --reload"""
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from marketing_automation.api.routes import health
-from marketing_automation.core.config import get_settings
-from marketing_automation.core.errors import DomainError
-from marketing_automation.core.logging import configure_logging
+from app.api.routes import health
+from app.core.config import get_settings
+from app.core.errors import DomainError
+from app.core.logging import configure_logging
 
 
 def create_app() -> FastAPI:

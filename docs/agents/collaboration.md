@@ -47,7 +47,7 @@
    `herdr agent read implementer --source recent-unwrapped --lines 200`. If
    it's cut off, the lead asks for it as `.handoffs/<change>/report-<n>.md`.
 4. **Verify.** The report is a claim. The lead reads `git diff`, runs
-   `make check` and the success-criteria scenarios, and compares the result
+   `npm run check` and the success-criteria scenarios, and compares the result
    with `tasks.md` and the delta specs.
 5. **Follow up.** Each follow-up names the file and line, the failing output
    and the expected behaviour. Allow at most **3 rounds per task group**;

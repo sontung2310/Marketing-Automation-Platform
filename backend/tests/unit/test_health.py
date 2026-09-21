@@ -1,9 +1,9 @@
 from fastapi.testclient import TestClient
 
-from marketing_automation.api.deps import get_health_checker
-from marketing_automation.api.main import create_app
-from marketing_automation.core.config import Settings
-from marketing_automation.core.health import HealthChecker
+from app.api.deps import get_health_checker
+from app.api.main import create_app
+from app.core.config import Settings
+from app.core.health import HealthChecker
 
 
 class StubChecker(HealthChecker):
