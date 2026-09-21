@@ -1,6 +1,6 @@
-## Roadmap sub-step
+## Roadmap sub-step(s)
 
-<!-- e.g. 4.2 Strategy agent. The branch is feature/<step>-<slug>. -->
+<!-- The sub-step(s) this PR completes, e.g. `Roadmap: 2.3` or `Roadmap: 2.3, 2.4`. Branch: feature/<step-number>-<slug>. -->
 Roadmap:
 OpenSpec change: `openspec/changes/<name>`
 

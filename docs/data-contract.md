@@ -245,7 +245,7 @@ Content rules for the seed:
 ## 6. Eval fixture snapshot
 
 `backend/scripts/snapshot_fixture.py` exports the owned collections into
-`backend/evals/fixtures/intelligence_v{N}.json`, together with the eval-only
+`evaluation/fixtures/intelligence_v{N}.json`, together with the eval-only
 adversarial records. The eval harness loads the snapshot into a throwaway
 database (`marketing_automation_eval_<run>`), either on a local `mongo:7`
 container (the default, and the one CI uses) or on the dev cluster. Golden cases reference evidence IDs from a specific fixture version.

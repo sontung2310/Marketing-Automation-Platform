@@ -31,10 +31,11 @@ backend/                 Python service: pyproject.toml, uv.lock, Dockerfile (bu
     connectors/          action connectors (mock/ in the PoC)
     api/                 FastAPI routes and schemas
   tests/                 unit/, integration/
-  evals/                 golden datasets, fixtures, runner, reports
+  evals/                 evaluation harness code (reads /evaluation)
   scripts/               seed, pipeline and fixture CLIs
 frontend/                React + Vite service (npm workspace)
   src/                   api/ (sole backend caller), components/ds/, features/, hooks/, lib/, styles/theme.css (sole token source)
+evaluation/              agent evaluation data: golden/, fixtures/, rubrics/, reports/
 tools/                   repo tooling in Node (OpenSpec conflict check)
 docs/  openspec/         specs and plan; specs/ (current behaviour), changes/ (proposed)
 .agents/skills/          team skills (source of truth); .claude/skills/ links to them
@@ -88,12 +89,20 @@ Layering is enforced by import-linter:
 - **Behaviour changes during implementation:** update the delta spec and
   get it re-reviewed before the code relies on it.
 - **Scope:** one issue per change. A new problem becomes a new issue.
+- **Evaluation data** (golden datasets, fixtures, rubrics, reports) lives
+  only in `evaluation/`. The harness code lives in `backend/evals/`.
 - **Issue commands:** [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
 
 ### Git and CI
 
-- **Branches and commits:** branch `feature/<step>-<slug>` off `main`. Use
-  Conventional Commits. Squash-merge, one PR per issue.
+- **`main` is protected.** No direct commits: every change reaches `main`
+  through a PR that passes **Check**.
+- **Branches:** one branch per roadmap sub-step, or per tightly related group
+  of sub-steps, named `feature/<step-number>-<slug>` (e.g.
+  `feature/2.3-competitor-endpoints`).
+- **PRs:** one PR per branch. The PR description references the roadmap
+  sub-step(s) it completes (`Roadmap: 2.3`, or `Roadmap: 2.3, 2.4`).
+- **Commits:** use Conventional Commits, and squash-merge.
 - **Contract docs:** update `api-contract`, `data-contract` and
   `agents-spec` in the same PR as the code they describe.
 - **One check everywhere:** `npm run check` runs type checks, tests, lint,
@@ -124,7 +133,9 @@ Specify → review runs as a supervised loop in one Herdr session:
   briefed tasks and reports back. Commits and opens the PR when told.
 - **Reviewer:** a fresh Claude subagent. Reviews blind, against the spec
   and the standards.
-- **Human:** approves the change, answers escalations and merges.
+- **Human:** approves the change, answers escalations and merges. In
+  autopilot (a whole-roadmap run), the lead merges, and the human audits
+  through the human queue.
 
 ## 5. Definition of done
 
