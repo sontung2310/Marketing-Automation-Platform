@@ -5,10 +5,10 @@
 
 | Role | Agent | Owns |
 |---|---|---|
-| **Lead** | Claude Code, Opus 5 at the highest effort | The issue end to end: writes the OpenSpec change, briefs the implementer, verifies every result itself, decides when the work is done, spawns the reviewer. Leaves implementation files alone while the implementer works. |
-| **Implementer** | Codex, `gpt-5.6-terra` at `xhigh` (`~/.codex/config.toml`) | Exactly the briefed tasks, via `openspec-apply-change`: implements, checks, reports. Commits and opens the PR when the lead says so. |
+| **Lead** | Claude Code, Opus 5 at the highest effort | The issue end to end, without editing tracked repository files or committing or pushing: plans, briefs, reviews the proposed OpenSpec change and implementer reports, verifies every result, decides when work is done and spawns the reviewer. Owns GitHub bookkeeping (issues, labels and human queue), autopilot merging and the `.handoffs/` checkpoint. |
+| **Implementer** | Codex, `gpt-5.6-terra` at `xhigh` (`~/.codex/config.toml`) | Writes the OpenSpec change from the lead's prompt, then does exactly the briefed tasks via `openspec-apply-change`: implements, checks and reports. Commits, pushes and opens the PR when the lead says so. |
 | **Reviewer** | A fresh Claude subagent, spawned by the lead | An independent verdict on the PR (see "Fair review") |
-| **Human** | The engineer on duty | Approving the OpenSpec change, answering escalations, merging. In **autopilot**, the lead self-approves and merges, and the human audits asynchronously through the human queue (see "Autopilot"). |
+| **Human** | The engineer on duty | Approves the OpenSpec change, answers escalations and merges outside autopilot. In **autopilot**, the lead merges only after a green **Check** and a clean fair review; the human audits asynchronously through the human queue (see "Autopilot"). |
 
 ## Setup
 
@@ -77,8 +77,8 @@
      sub-step(s) and `Closes #<issue>` in the body.
 7. **Review.** The lead spawns the reviewer. Every finding is either fixed
    through another loop round, or answered on the PR with a written reason.
-8. **Merge.** The human merges when CI is green and every finding has an
-   answer.
+8. **Merge.** Outside autopilot, the human merges when CI is green and the
+   fair review is clean. Autopilot follows its merge rule below.
 
 **Blocked or stalled implementer.** On `blocked` (an approval or question
 UI), the lead reads the pane and puts the question to the human. On
@@ -122,11 +122,21 @@ Autopilot runs the loop above sub-step after sub-step through
 These say when to skip a step, when to decide alone, and when to actually
 stop.
 
-**An OpenSpec change is only required when system behaviour changes.** A
-sub-step that is pure investigation or documentation — inspecting source
-collections, rewriting a contract doc — still goes through everything else:
-a GitHub issue, a `feature/<step-number>-<slug>` branch, a PR naming its
-roadmap sub-step(s), the fair review, and a green **Check**. It just has no
+**The lead directs and verifies; the implementer changes the repository.**
+The lead never edits tracked repository files or commits or pushes. It plans,
+writes prompts, reads implementer responses, verifies diffs, checks and
+success-criteria scenarios, spot-checks through its MCPs, writes follow-ups
+and spawns the reviewer. GitHub bookkeeping — issues, labels, the human queue
+and merging — plus the `.handoffs/` checkpoint stay with the lead. For a
+system-behaviour change, the implementer runs `openspec-propose` from the
+lead's prompt, and the lead reviews it with follow-ups before implementation
+begins.
+
+**An OpenSpec change is only required when system behaviour changes.** The
+implementer still does a sub-step that is pure investigation or documentation
+— inspecting source collections, rewriting a contract doc — through everything
+else: a GitHub issue, a `feature/<step-number>-<slug>` branch, a PR naming its
+roadmap sub-step(s), the fair review and a green **Check**. It just has no
 `openspec/changes/<name>/`, and the PR says so instead of naming one. Don't
 invent a change to satisfy the workflow table.
 
@@ -194,10 +204,12 @@ every phase, never only at the end.
    (create any missing label once with `gh label create`).
    The issue carries the sub-steps' Given/When/Then success criteria from
    the roadmap as its acceptance criteria. Done when the issue exists.
-3. **Specify.** The lead runs `openspec-propose` for the issue
-   (`Roadmap: X.Y`), validates it with `npm run openspec:check`, and
-   self-approves. The human reviews the delta specs in the PR instead. Done
-   when validation passes.
+3. **Specify.** The implementer runs `openspec-propose` from the lead's
+   prompt for the issue (`Roadmap: X.Y`). The lead validates it with
+   `npm run openspec:check` and reviews it with follow-ups before
+   implementation begins. The human reviews the delta specs in the PR
+   instead. Done when validation passes and the lead has no unresolved
+   follow-up.
    - **Discovery or doc-only sub-steps** (e.g. 0.3–0.4, verifying the data
      contract against the live cluster) change no system behaviour, so they
      get **no OpenSpec change** — skip straight to step 4. They are still
@@ -210,16 +222,22 @@ every phase, never only at the end.
    verification is green: `npm run check`, plus every success-criteria
    scenario of the group run against a real environment.
 5. **PR.** Codex commits, pushes and opens the PR with `Roadmap: …`,
-   `Closes #<issue>` and the `autopilot` label. If its sandbox blocks the
-   push, the lead runs the same git and `gh` commands. Done when the
-   **Check** job is green on the PR.
+   `Closes #<issue>` and the `autopilot` label. If it cannot commit, push or
+   open the PR, record the failure on the
+   [human-queue issue #4](https://github.com/sontung2310/Marketing-Automation-Platform/issues/4)
+   and stop; the lead does not take over. Done when the **Check** job is green
+   on the PR.
 6. **Review.** Spawn the fair reviewer. Fix each finding through another
    loop round, or answer it on the PR. Done when every finding has a fix or
    an answer, and no high-severity finding is merely answered.
-7. **Merge.** In autopilot the lead squash-merges the PR, then syncs `main`
-   locally. The human audits merged work asynchronously, and can revert it.
-   Done when `main` contains the ticked roadmap boxes and CI on `main` is
-   green.
+7. **Merge.** In autopilot the lead squash-merges only when the **Check** job
+   is green and the fair review is clean: every finding is fixed or answered
+   with a written reason, and no high-severity finding is merely answered.
+   Otherwise, leave the PR open, record it on the
+   [human-queue issue #4](https://github.com/sontung2310/Marketing-Automation-Platform/issues/4)
+   and stop. After merging, sync `main` locally. The human audits merged work
+   asynchronously and can revert it. Done when `main` contains the ticked
+   roadmap boxes and CI on `main` is green.
 
 ### Human queue
 
@@ -247,10 +265,13 @@ a comment on the human-queue issue when any of these happens:
    the implementation.
 2. **Lead usage limit.** Claude is stopped by its own limit. There's
    nothing to do then; the per-phase checkpoint makes resuming safe.
-3. **Blocked.** The next group can't proceed without the human, a
+3. **Commit, push or PR failure.** The implementer cannot commit, push or
+   open the PR. Record it on the human-queue issue; the lead does not take
+   over.
+4. **Blocked.** The next group can't proceed without the human, a
    follow-up round limit was hit (step 5 of the loop), or a PR can't be
    merged.
-4. **Done.** Every roadmap box is ticked.
+5. **Done.** Every roadmap box is ticked.
 
 **To resume after a limit resets,** start the lead again and paste the
 kickoff prompt. The run continues from the checkpoint.

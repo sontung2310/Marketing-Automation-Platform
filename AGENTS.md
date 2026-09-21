@@ -79,9 +79,9 @@ Layering is enforced by import-linter:
 | Ground | anyone | — | the relevant `openspec/specs/` and `docs/` have been read, before the idea is discussed |
 | Grill | product + engineering | `grill-me` | every open decision about the outcome is answered |
 | Ticket handoff | whoever ran the grilling | `to-tickets` | GitHub issues exist with behavioural acceptance criteria, blockers and `Roadmap: X.Y`. No OpenSpec change exists yet. |
-| Specify | lead agent | `openspec-propose` | one change per issue (proposal with `Roadmap: X.Y`, delta specs, design, tasks), approved by a human |
+| Specify | implementer agent, reviewed by the lead | `openspec-propose` | one change per issue (proposal with `Roadmap: X.Y`, delta specs, design, tasks), reviewed by the lead and, outside autopilot, approved by a human |
 | Implement | implementer agent | `openspec-apply-change` | every task is checked off and `npm run check` is green |
-| Review and close | reviewer + human | `openspec-archive-change` | every review finding is answered, the change is archived in the same PR, and a human merges |
+| Review and close | reviewer + human, or the lead in autopilot | `openspec-archive-change` | every review finding is resolved, the change is archived in the same PR, and the PR is merged under the review bar in §4 |
 
 - **Behaviour vs. engineering:** nontechnical teammates own behaviour
   (grilling, tickets, delta-spec review). Engineering owns the design and
@@ -127,15 +127,20 @@ Layering is enforced by import-linter:
 
 Specify → review runs as a supervised loop in one Herdr session:
 
-- **Lead:** Claude Code (Opus 5, highest effort). Specifies, briefs,
-  verifies every result itself, and spawns the reviewer.
-- **Implementer:** Codex (`gpt-5.6-terra`, `xhigh`). Implements exactly the
-  briefed tasks and reports back. Commits and opens the PR when told.
+- **Lead:** Claude Code (Opus 5, highest effort). Never edits tracked
+  repository files or commits or pushes. Plans, briefs, reviews the proposed
+  OpenSpec change, verifies every result itself, and spawns the reviewer.
+  Owns GitHub bookkeeping (issues, labels and human queue) and the
+  `.handoffs/` checkpoint; in autopilot it squash-merges only after **Check**
+  is green and the fair review is clean.
+- **Implementer:** Codex (`gpt-5.6-terra`, `xhigh`). Writes the OpenSpec
+  change from the lead's prompt, implements exactly the briefed tasks and
+  reports back. Commits, pushes and opens the PR when told.
 - **Reviewer:** a fresh Claude subagent. Reviews blind, against the spec
   and the standards.
-- **Human:** approves the change, answers escalations and merges. In
-  autopilot (a whole-roadmap run), the lead merges, and the human audits
-  through the human queue.
+- **Human:** approves the change, answers escalations and merges outside
+  autopilot. In autopilot, the lead merges only after a green **Check** and a
+  clean fair review; the human audits afterwards through the human queue.
 
 ## 5. Definition of done
 
