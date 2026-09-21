@@ -4,8 +4,8 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from marketing_automation.core.config import Settings, get_settings
-from marketing_automation.core.health import HealthChecker
+from app.core.config import Settings, get_settings
+from app.core.health import HealthChecker
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 

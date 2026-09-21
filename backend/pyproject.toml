@@ -1,8 +1,7 @@
 [project]
-name = "marketing-automation"
+name = "marketing-automation-backend"
 version = "0.1.0"
 description = "Marketing Automation Platform PoC: Strategy and Execution agents over a Marketing Intelligence MCP."
-readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
     "fastapi>=0.115",
@@ -24,7 +23,6 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "import-linter>=2.1",
-    "pre-commit>=4.0",
 ]
 
 [build-system]
@@ -32,30 +30,25 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["backend/src/marketing_automation"]
+packages = ["app"]
 
 # ---------------------------------------------------------------- ruff
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["backend/src", "tests", "evals", "scripts"]
-extend-exclude = ["docs", "openspec", "frontend"]
+src = ["app", "tests", "evals"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "ASYNC", "T20"]
 
-[tool.ruff.lint.per-file-ignores]
-"scripts/**" = ["T20"]
-
 [tool.ruff.lint.isort]
-known-first-party = ["marketing_automation"]
+known-first-party = ["app", "evals"]
 
 # ---------------------------------------------------------------- mypy
 [tool.mypy]
 python_version = "3.11"
 strict = true
-mypy_path = "backend/src"
-packages = ["marketing_automation"]
+packages = ["app"]
 plugins = ["pydantic.mypy"]
 
 # ---------------------------------------------------------------- pytest
@@ -72,28 +65,28 @@ addopts = "-m 'not integration' --strict-markers"
 # ---------------------------------------------------------------- import-linter
 # Enforces the layering rules in AGENTS.md §2.
 [tool.importlinter]
-root_package = "marketing_automation"
+root_package = "app"
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "Request flow is layered: api -> orchestration -> agents"
 type = "layers"
 layers = [
-    "marketing_automation.api",
-    "marketing_automation.orchestration",
-    "marketing_automation.agents",
+    "app.api",
+    "app.orchestration",
+    "app.agents",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Only repositories, pipeline sources and core.db touch MongoDB"
 type = "forbidden"
 source_modules = [
-    "marketing_automation.api",
-    "marketing_automation.orchestration",
-    "marketing_automation.agents",
-    "marketing_automation.mcp_server",
-    "marketing_automation.skills",
-    "marketing_automation.connectors",
+    "app.api",
+    "app.orchestration",
+    "app.agents",
+    "app.mcp_server",
+    "app.skills",
+    "app.connectors",
 ]
 forbidden_modules = ["pymongo", "bson"]
 allow_indirect_imports = true
@@ -101,30 +94,30 @@ allow_indirect_imports = true
 [[tool.importlinter.contracts]]
 name = "Agents get data only through the Intelligence MCP and never execute side effects"
 type = "forbidden"
-source_modules = ["marketing_automation.agents"]
+source_modules = ["app.agents"]
 forbidden_modules = [
-    "marketing_automation.intelligence.repositories",
-    "marketing_automation.pipelines",
-    "marketing_automation.connectors",
-    "marketing_automation.api",
+    "app.intelligence.repositories",
+    "app.pipelines",
+    "app.connectors",
+    "app.api",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Strategy and Execution agents are independent"
 type = "independence"
 modules = [
-    "marketing_automation.agents.strategy",
-    "marketing_automation.agents.execution",
+    "app.agents.strategy",
+    "app.agents.execution",
 ]
 
 [[tool.importlinter.contracts]]
 name = "The Intelligence MCP server is read-only infrastructure"
 type = "forbidden"
-source_modules = ["marketing_automation.mcp_server"]
+source_modules = ["app.mcp_server"]
 forbidden_modules = [
-    "marketing_automation.agents",
-    "marketing_automation.orchestration",
-    "marketing_automation.pipelines",
-    "marketing_automation.connectors",
-    "marketing_automation.api",
+    "app.agents",
+    "app.orchestration",
+    "app.pipelines",
+    "app.connectors",
+    "app.api",
 ]

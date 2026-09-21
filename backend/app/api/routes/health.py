@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter
 
-from marketing_automation.api.deps import HealthCheckerDep
-from marketing_automation.core.health import HealthReport
+from app.api.deps import HealthCheckerDep
+from app.core.health import HealthReport
 
 router = APIRouter(tags=["meta"])
 

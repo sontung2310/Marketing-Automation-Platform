@@ -9,49 +9,44 @@ layering rules are in [AGENTS.md](AGENTS.md).
 
 ## Prerequisites
 
+- Node 22+ and npm
 - Python 3.11 and [uv](https://docs.astral.sh/uv/)
-- Node 22 and pnpm 9 (`corepack enable`)
-- Docker (for the local stack and integration tests)
 - A MongoDB URI and an OpenAI API key
 
 ## Setup
 
 ```bash
-cp .env.example .env              # fill in MONGODB_URI, OPENAI_API_KEY, model names
-uv sync                           # Python env (backend, tests, evals, scripts)
-(cd frontend && pnpm install)    # frontend deps
-uv run pre-commit install         # git hooks
+cp .env.example .env   # fill in MONGODB_URI, OPENAI_API_KEY and the model names
+npm ci                 # frontend and tooling deps; also installs the husky pre-commit hook
+uv sync --directory backend   # Python env for the backend service
 ```
 
-## Run locally
+## Scripts
 
-```bash
-make api          # FastAPI on :8000   (GET /api/health)
-make web          # Vite on :5173
-# or everything in containers:
-docker compose up --build
-```
-
-## Quality checks
-
-`make check` runs the same gates as CI.
-
-| Command | What it runs |
+| Command | What it does |
 |---|---|
-| `make backend-check` | ruff format check, ruff lint, mypy (strict), import-linter layering contracts, pytest unit tests |
-| `make frontend-check` | ESLint (design tokens only, no Tailwind arbitrary values), Prettier, `tsc`, Vitest, production build |
-| `make openspec-check` | `openspec validate --all --strict`, plus the cross-change conflict and roadmap-reference check |
-| `make integration` | pytest `-m integration` against `MONGODB_URI` |
+| `npm run dev:api` / `npm run dev:web` | FastAPI on :8000 / Vite on :5173 |
+| `npm run check` | Everything CI checks: `typecheck`, `test`, `lint`, `format:check`, `openspec:check` |
+| `npm run typecheck` | mypy (strict) + `tsc` |
+| `npm run test` | pytest unit tests + Vitest |
+| `npm run test:integration` | pytest `-m integration` against `MONGODB_URI` |
+| `npm run lint` / `lint:fix` | ruff + import-linter layering contracts + ESLint |
+| `npm run format` / `format:check` | ruff format + Prettier |
+| `npm run openspec:check` | `openspec validate --all --strict` + the cross-change conflict check |
+| `npm run build` | Frontend production build |
+
+On commit, husky runs lint-staged, which fixes and formats **staged files
+only** (ruff for Python; ESLint and Prettier for the frontend).
 
 ## CI/CD
 
-| Workflow | Trigger | Jobs |
-|---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | PRs and pushes to `main` | backend · frontend · openspec · repo hygiene (conflict markers, mergeability with base, contract-doc drift, secret scan) · PR conventions (branch name, Conventional Commit title) |
-| [`cd.yml`](.github/workflows/cd.yml) | CI succeeded | Frontend → Vercel (a preview per PR, production from `main`) · backend image → GHCR (from `main`) |
-
-Required repository secrets for CD: `VERCEL_TOKEN`, `VERCEL_ORG_ID` and
-`VERCEL_PROJECT_ID`. Until they are set, the Vercel jobs skip with a notice.
+- **CI** ([`ci.yml`](.github/workflows/ci.yml)): one **Check** job on pull
+  requests to `main`, pushes to `main`, and manual runs. It installs the
+  dependencies (`npm ci && uv sync --frozen`) and runs `npm run check`.
+- **CD:** the Vercel Git integration, configured in
+  [`vercel.json`](vercel.json). Every PR gets a preview deployment, and
+  `main` deploys to production. Connect the repo once in the Vercel
+  dashboard; no deploy workflow or GitHub secrets are needed.
 
 ## Repository layout
 

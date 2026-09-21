@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=22"
   },
@@ -15,8 +14,7 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
+    "test": "vitest run"
   },
   "dependencies": {
     "clsx": "^2.1.1",

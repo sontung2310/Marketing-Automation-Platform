@@ -134,8 +134,8 @@ specs.
 | Intelligence MCP | Official `mcp` Python SDK (FastMCP) over streamable HTTP. Agents connect with `MCPServerStreamableHttp`. |
 | Database | Existing MongoDB cluster (URI in `.env`), accessed with the PyMongo async API |
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS v4. The Tailwind theme (`src/styles/theme.css`) holds the CompetitorScope Design System tokens, and its components are rebuilt as Tailwind components. |
-| Testing | pytest (backend), Vitest (frontend units), Playwright (one E2E demo script), eval harness (`evals/`) |
-| Quality | ruff (lint + format), mypy (strict on `src`), ESLint + Prettier, pre-commit |
+| Testing | pytest (backend), Vitest (frontend units), Playwright (one E2E demo script), eval harness (`backend/evals/`) |
+| Quality | ruff (lint + format), mypy (strict on `src`), import-linter, ESLint + Prettier; `npm run check` in CI and husky + lint-staged on commit |
 | Deployment (PoC) | `docker-compose`: api, mcp, frontend and pipelines on one host (see architecture §06) |
 
 ## 5. Capability overview

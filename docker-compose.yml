@@ -1,21 +1,19 @@
 # Local PoC stack (docs/specs.md §4). The Intelligence MCP service is added in roadmap Step 2.3.
 services:
   api:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    build: ./backend
     env_file: .env
     ports: ["8000:8000"]
 
   web:
-    image: node:22-alpine
-    working_dir: /app/frontend
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm dev --host 0.0.0.0"
+    image: node:24-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev:web -- --host 0.0.0.0"
     environment:
       VITE_API_PROXY: http://api:8000
     volumes:
-      - ./frontend:/app/frontend
-      - web-node-modules:/app/frontend/node_modules
+      - .:/app
+      - web-node-modules:/app/node_modules
     ports: ["5173:5173"]
     depends_on: [api]
 

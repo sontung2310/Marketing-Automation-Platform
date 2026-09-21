@@ -1,13 +1,20 @@
 """Application settings. The only module that reads environment variables."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# The repo-root .env is shared by the backend and dev tooling (e.g. the MongoDB MCP).
+# In containers it is absent and the environment is injected instead.
+REPO_ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=REPO_ROOT_ENV_FILE, env_file_encoding="utf-8", extra="ignore"
+    )
 
     app_env: str = "local"
     log_level: str = "INFO"

@@ -1,6 +1,6 @@
 import pytest
 
-from marketing_automation.core import db
+from app.core import db
 
 pytestmark = pytest.mark.integration
 

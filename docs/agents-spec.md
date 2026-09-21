@@ -95,8 +95,8 @@ Rules:
 ### 4.1 Vendored subset
 
 The source is `github.com/coreyhaines31/marketingskills`, pinned by commit in
-`skills/skills.lock.json` (with a hash per skill). Each skill is copied as-is
-into `skills/<name>/`, together with its `references/` folder. Its `evals/`
+`backend/app/skills/library/skills.lock.json` (with a hash per skill). Each skill
+is copied as-is into `backend/app/skills/library/<name>/`, together with its `references/` folder. Its `evals/`
 folder is kept for mining golden cases.
 
 | Skill | Why it's in the PoC | Strategy | Execution |
@@ -119,7 +119,7 @@ allowlist, defined in `agents/<agent>/config.py`, not in the skill files.
 
 ### 4.2 Loader and tools
 
-`skills/loader.py` parses the YAML frontmatter (`name`, `description`) and
+`app/skills/loader.py` parses the YAML frontmatter (`name`, `description`) and
 body. It exposes two function tools to each agent:
 
 - `list_skills()` returns the allowlisted `[{name, description}]`. The same

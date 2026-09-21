@@ -1,0 +1,33 @@
+{
+  "name": "marketing-automation",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:api": "uv run --directory backend uvicorn app.api.main:app --reload --port 8000",
+    "dev:web": "npm run dev -w frontend",
+    "typecheck": "uv run --directory backend mypy && npm run typecheck -w frontend",
+    "test": "uv run --directory backend pytest && npm run test -w frontend && node --test \"tools/*.test.mjs\"",
+    "test:integration": "uv run --directory backend pytest -m integration",
+    "lint": "uv run --directory backend ruff check . && uv run --directory backend lint-imports && npm run lint -w frontend",
+    "lint:fix": "uv run --directory backend ruff check --fix . && npm run lint -w frontend -- --fix",
+    "format": "uv run --directory backend ruff format . && npm run format -w frontend",
+    "format:check": "uv run --directory backend ruff format --check . && npm run format:check -w frontend",
+    "build": "npm run build -w frontend",
+    "openspec": "openspec",
+    "openspec:check": "openspec validate --all --strict --no-interactive && node tools/openspec-conflicts.mjs",
+    "check": "npm run typecheck && npm run test && npm run lint && npm run format:check && npm run openspec:check",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "1.13.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1"
+  }
+}

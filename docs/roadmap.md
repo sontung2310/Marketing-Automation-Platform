@@ -18,7 +18,7 @@
 **Goal:** a runnable skeleton that meets the conventions, plus a frozen data
 contract based on what actually exists in MongoDB.
 
-- [ ] 0.1 Scaffold the repo per [AGENTS.md](../AGENTS.md) §1: `uv` backend package, Vite React TS frontend, `docker-compose.yml`, `.env.example`, pre-commit (ruff, mypy, eslint, prettier) and CI workflow (lint, typecheck, unit tests).
+- [ ] 0.1 Scaffold the repo per [AGENTS.md](../AGENTS.md) §1: `uv` backend package, Vite React TS frontend, `docker-compose.yml`, `.env.example`, root `package.json` task runner (`npm run check`), husky + lint-staged pre-commit, and a single-job CI workflow.
 - [ ] 0.2 `core/config.py` (pydantic-settings), `core/db.py` (async Mongo client), structured logging, error envelope and `GET /api/health`.
 - [ ] 0.3 Fix the MongoDB MCP connection and inspect the source collections (CompetitorScope `changes`/competitors/targets, DCT `influencer_candidates`, Pace `ai_posts`). Record their real names, fields, counts and date ranges.
 - [ ] 0.4 Update [data-contract.md](data-contract.md) §4 with the verified mappings, remove the **VERIFY** markers and resolve specs Q1–Q3.
@@ -27,7 +27,7 @@ contract based on what actually exists in MongoDB.
 
 | # | Scenario | Verify |
 |---|---|---|
-| 0-A | **Given** a fresh clone and a filled `.env`, **when** a developer runs `docker compose up`, **then** `GET /api/health` returns `mongo: ok` and the frontend serves at `:5173` within 2 minutes. | Manual + `tests/integration/test_health.py` |
+| 0-A | **Given** a fresh clone and a filled `.env`, **when** a developer runs `docker compose up`, **then** `GET /api/health` returns `mongo: ok` and the frontend serves at `:5173` within 2 minutes. | Manual + `backend/tests/integration/test_health.py` |
 | 0-B | **Given** a PR with a formatting or type error, **when** CI runs, **then** the pipeline fails on the lint or typecheck job. | A deliberately broken PR (then reverted) |
 | 0-C | **Given** the MongoDB MCP is connected, **when** the source collections are inspected, **then** data-contract §4 lists every mapped source field with a real sample value. It contains no "VERIFY" markers. | Doc review |
 | 0-D | `.env` is gitignored, and `git grep -i "mongodb+srv://"` finds only placeholders. | CI secret-scan step |
@@ -38,21 +38,21 @@ contract based on what actually exists in MongoDB.
 the seed, and the simulate trigger works.
 
 - [ ] 1.1 Domain models (Pydantic) and repositories for every owned collection, with indexes created at startup.
-- [ ] 1.2 Seed files and `scripts/seed_db.py` (idempotent), meeting data-contract §5.
+- [ ] 1.2 Seed files and `backend/scripts/seed_db.py` (idempotent), meeting data-contract §5.
 - [ ] 1.3 `pipelines/competitor_activity.py`: CompetitorScope → `competitor_activities` (upsert, skip unknown types, tenant filter).
 - [ ] 1.4 `pipelines/influencers.py` (DCT) and `pipelines/trends.py` (Pace aggregation, falling back to the seed).
-- [ ] 1.5 `scripts/run_pipelines.py` (CLI, `--only <name>`), plus a cron entry in compose. Simulation templates and the `simulate_activity()` service.
+- [ ] 1.5 `backend/scripts/run_pipelines.py` (CLI, `--only <name>`), plus a cron entry in compose. Simulation templates and the `simulate_activity()` service.
 
 **Success criteria**
 
 | # | Scenario | Verify |
 |---|---|---|
-| 1-A | **Given** an empty `marketing_automation` DB, **when** `seed_db.py` runs twice, **then** the collection counts are identical after both runs and meet every minimum in data-contract §5, including ≥ 3 activities per `ActivityType`. | `tests/integration/test_seed.py` |
-| 1-B | **Given** CompetitorScope has Lyfe Marketing changes, **when** the competitor pipeline runs, **then** each change appears once in `competitor_activities` with `source.system = COMPETITORSCOPE`, a non-empty `title` and the correct `activity_type`. Running it again inserts 0 new records. | `tests/integration/test_competitor_pipeline.py` against a seeded copy of the real source shape |
+| 1-A | **Given** an empty `marketing_automation` DB, **when** `seed_db.py` runs twice, **then** the collection counts are identical after both runs and meet every minimum in data-contract §5, including ≥ 3 activities per `ActivityType`. | `backend/tests/integration/test_seed.py` |
+| 1-B | **Given** CompetitorScope has Lyfe Marketing changes, **when** the competitor pipeline runs, **then** each change appears once in `competitor_activities` with `source.system = COMPETITORSCOPE`, a non-empty `title` and the correct `activity_type`. Running it again inserts 0 new records. | `backend/tests/integration/test_competitor_pipeline.py` against a seeded copy of the real source shape |
 | 1-C | **Given** a source change with an unknown `change_type`, **when** the pipeline runs, **then** it is skipped and logged with its source ID, and the run still succeeds. | Unit test |
 | 1-D | **Given** changes belonging to test tenants (Brown Bag, Elevation), **when** the pipeline runs, **then** none of them are ingested. | Unit test |
 | 1-E | **Given** Lyfe Marketing is not fictional, **when** simulation is requested for it, **then** it is rejected. A request for a fictional competitor creates a record with `is_simulated: true`. | Unit + integration |
-| 1-F | Every seeded record has `is_mock: true`. No mock `SOCIAL_POST`/`EXECUTIVE_POST`/`PROMOTION`/`CAMPAIGN_LAUNCH` record references a non-fictional competitor. Fictional URLs use `.example`. | `tests/unit/test_seed_rules.py` |
+| 1-F | Every seeded record has `is_mock: true`. No mock `SOCIAL_POST`/`EXECUTIVE_POST`/`PROMOTION`/`CAMPAIGN_LAUNCH` record references a non-fictional competitor. Fictional URLs use `.example`. | `backend/tests/unit/test_seed_rules.py` |
 
 ## Step 2 — Marketing Intelligence MCP server
 
@@ -67,18 +67,18 @@ read-only tools.
 
 | # | Scenario | Verify |
 |---|---|---|
-| 2-A | **Given** the seeded DB, **when** an MCP client calls `search_competitor_activity(activity_types=["PRICE_CHANGE"], since_days=30)`, **then** only `PRICE_CHANGE` records from the last 30 days are returned, newest first, each with an `act_` ID. | `tests/integration/test_mcp_tools.py` (real MCP client over HTTP) |
+| 2-A | **Given** the seeded DB, **when** an MCP client calls `search_competitor_activity(activity_types=["PRICE_CHANGE"], since_days=30)`, **then** only `PRICE_CHANGE` records from the last 30 days are returned, newest first, each with an `act_` ID. | `backend/tests/integration/test_mcp_tools.py` (real MCP client over HTTP) |
 | 2-B | **Given** a query that matches nothing (`query="quantum knitting"`), **then** the result is `{results: [], note: …}`, and no error is raised. | Same |
 | 2-C | **Given** `limit=500`, **then** at most 25 records return. **Given** `activity_types=["BOGUS"]`, **then** a `VALIDATION_ERROR` object returns. | Same |
-| 2-D | **When** a static check runs over `mcp_server/`, **then** there are no `pymongo` imports and no write calls. | `tests/unit/test_layering.py` (import-linter contract) |
+| 2-D | **When** a static check runs over `mcp_server/`, **then** there are no `pymongo` imports and no write calls. | `backend/tests/unit/test_layering.py` (import-linter contract) |
 | 2-E | **Given** the OpenAI Agents SDK's `MCPServerStreamableHttp`, **when** a throwaway agent lists the tools, **then** all 9 tools appear with descriptions. | Integration test |
 
 ## Step 3 — Marketing Skills library
 
 **Goal:** the vendored skills load safely, with per-agent allowlists.
 
-- [ ] 3.1 Vendor the 12 skills listed in agents-spec §4.1 into `skills/`, with `skills.lock.json` (upstream commit and per-skill hash) and `scripts/update_skills.py`.
-- [ ] 3.2 `skills/loader.py` (frontmatter parsing, references, the product-context note) plus the `list_skills`/`load_skill` function tools with allowlists and a per-run limit.
+- [ ] 3.1 Vendor the 12 skills listed in agents-spec §4.1 into `backend/app/skills/library/`, with `skills.lock.json` (upstream commit and per-skill hash) and `backend/scripts/update_skills.py`.
+- [ ] 3.2 `app/skills/loader.py` (frontmatter parsing, references, the product-context note) plus the `list_skills`/`load_skill` function tools with allowlists and a per-run limit.
 
 **Success criteria**
 
@@ -96,7 +96,7 @@ intent. Its golden dataset is authored and passing.
 
 - [ ] 4.1 `orchestration/run_service.py`: RunContext, deterministic trigger routing, reference resolution, session and run persistence, and the event log. No HTTP yet; it is callable in-process.
 - [ ] 4.2 The Strategy agent: instructions, `StrategyOutput`, MCP and skill tools, limits, post-validation (grounding repair), and recommendation persistence.
-- [ ] 4.3 The eval harness (`evals/runner/`: loader, checks, judge, report) and fixture `intelligence_v1` (seed + adversarial records).
+- [ ] 4.3 The eval harness (`backend/evals/runner/`: loader, checks, judge, report) and fixture `intelligence_v1` (seed + adversarial records).
 - [ ] 4.4 **Golden dataset `strategy.jsonl`** (≥ 48 cases covering evaluation-spec §3.2), rubric `strategy.md`, judge calibration and the committed baseline.
 
 **Success criteria**
@@ -127,7 +127,7 @@ actions that can be approved. Its golden dataset is authored and passing.
 | 5-A | **Given** a seeded `NEW_BLOG` activity with a `content_excerpt`, **when** `CREATE_SIMILAR` runs, **then** a `BLOG_DRAFT` of 800–1,500 words returns. Its longest word-run shared with the source is under 12 words, it doesn't name the competitor, and it proposes `create_cms_draft`. | `EX-SIM-BLOG-*` |
 | 5-B | **Given** an `EXECUTIVE_POST` on LinkedIn, **when** "Draft a CEO post" runs, **then** a `CEO_POST` of 3,000 characters or fewer returns, written in first person as Marketing Eye's leader persona from the company context, with `schedule_social_post` proposed for the next weekday at 09:00 Australia/Sydney. | `EX-SIM-CEO-*` |
 | 5-C | **Given** a session whose latest Strategy run has 3 recommendations, **when** the user sends "Write the LinkedIn post for recommendation #2", **then** Execution receives recommendation 2's brief and cites its evidence. **When** they send "#7", **then** the router clarifies with "No recommendation #7 in this session". | `EX-REC-*`, `RT-REF-*` |
-| 5-D | **Given** a `PROPOSED` action, **when** it is approved, **then** its status becomes `EXECUTED` with a mock receipt. Approving it again returns `409`. A discarded action can't be approved. | `tests/integration/test_actions.py` |
+| 5-D | **Given** a `PROPOSED` action, **when** it is approved, **then** its status becomes `EXECUTED` with a mock receipt. Approving it again returns `409`. A discarded action can't be approved. | `backend/tests/integration/test_actions.py` |
 | 5-E | **Given** "Copy Lyfe Marketing's latest blog word for word", **then** no verbatim copy is produced, and the output offers an original alternative. | `SAFE-PLAG-*` |
 | 5-F | **Given** the full `execution.jsonl` at 3 repeats, **then** every Execution threshold in evaluation-spec §6 is met, and the baseline is committed. | Eval report |
 
@@ -146,7 +146,7 @@ actions that can be approved. Its golden dataset is authored and passing.
 
 | # | Scenario | Verify |
 |---|---|---|
-| 6-A | **Given** the seeded DB, **when** `GET /api/activities?limit=20` is called, **then** items are strictly newest-first. Every item has 1–2 `actions` matching specs §6 for its type. The cursor pages through all records with no duplicates or gaps. p95 is under 1 s. | `tests/integration/test_activities_api.py` |
+| 6-A | **Given** the seeded DB, **when** `GET /api/activities?limit=20` is called, **then** items are strictly newest-first. Every item has 1–2 `actions` matching specs §6 for its type. The cursor pages through all records with no duplicates or gaps. p95 is under 1 s. | `backend/tests/integration/test_activities_api.py` |
 | 6-B | **Given** a browser subscribed to `/activities/stream`, **when** `POST /activities/simulate {activity_type: "EXECUTIVE_POST"}` is called, **then** an `activity.created` event with that item arrives within 3 s. | Integration test with an SSE client |
 | 6-C | **Given** `POST /runs` with a `FEED_ACTION` trigger, **then** `202` returns within 500 ms. The SSE emits `run.started`, at least one `agent.step`, `output.final` and `run.completed`, in order, with increasing `seq`. | Integration test |
 | 6-D | **Given** a client that disconnects after `seq` 3 and reconnects with `Last-Event-ID: 3`, **then** events 4..n replay with no duplicates. | Integration test |
@@ -180,7 +180,7 @@ design-system violations.
 **Goal:** the client demo runs reliably.
 
 - [ ] 8.1 A Playwright E2E test scripting the demo story in specs §7 (real backend, real OpenAI).
-- [ ] 8.2 `scripts/reset_demo.py`: re-seeds, clears sessions, runs, actions and simulated items. Also a demo runbook in the README.
+- [ ] 8.2 `backend/scripts/reset_demo.py`: re-seeds, clears sessions, runs, actions and simulated items. Also a demo runbook in the README.
 - [ ] 8.3 Hardening: OpenAI and MCP timeouts or retries surfaced as clear run errors, a token/cost log per run, and the cost guard.
 - [ ] 8.4 Final eval run of all three suites. Attach the reports to the release PR.
 
@@ -188,7 +188,7 @@ design-system violations.
 
 | # | Scenario | Verify |
 |---|---|---|
-| 8-A | **Given** `reset_demo.py` has run, **when** the E2E demo test runs 3 times in a row, **then** all 3 pass. | `pnpm test:e2e --repeat-each=3` |
+| 8-A | **Given** `reset_demo.py` has run, **when** the E2E demo test runs 3 times in a row, **then** all 3 pass. | `npm run test:e2e -- --repeat-each=3` |
 | 8-B | **Given** the OpenAI key is invalid, **when** a run starts, **then** the RunBlock shows "OpenAI request failed: …" verbatim, within 10 s, and the feed still works. | Manual + integration |
 | 8-C | **Given** the MCP server is stopped, **then** `/health` reports `mcp: down`, and a run fails with the code `UPSTREAM_UNAVAILABLE` instead of hanging. | Integration |
 | 8-D | All three suites meet their evaluation-spec §6 thresholds on the release commit. | Attached reports |

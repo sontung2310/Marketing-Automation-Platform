@@ -219,8 +219,8 @@ skips the aggregation and uses the seed.
 
 ## 5. Mock seed requirements
 
-Seed files live in `backend/src/marketing_automation/pipelines/seed/*.json`.
-They are loaded by `scripts/seed_db.py`, and every seeded record is
+Seed files live in `backend/app/pipelines/seed/*.json`.
+They are loaded by `backend/scripts/seed_db.py`, and every seeded record is
 `is_mock: true`.
 
 | Dataset | Minimum content |
@@ -244,8 +244,8 @@ Content rules for the seed:
 
 ## 6. Eval fixture snapshot
 
-`scripts/snapshot_fixture.py` exports the owned collections into
-`evals/fixtures/intelligence_v{N}.json`, together with the eval-only
+`backend/scripts/snapshot_fixture.py` exports the owned collections into
+`backend/evals/fixtures/intelligence_v{N}.json`, together with the eval-only
 adversarial records. The eval harness loads the snapshot into a throwaway
 database (`marketing_automation_eval_<run>`), either on a local `mongo:7`
 container (the default, and the one CI uses) or on the dev cluster. Golden cases reference evidence IDs from a specific fixture version.
