@@ -1,8 +1,8 @@
 # Data Contract — Intelligence DB
 
 > Parent: [specs.md](specs.md) · Status: Draft v1. Roadmap Step 0 verified the
-> source mappings in §4 against the live cluster through the read-only MongoDB
-> MCP on 2026-09-22.
+> source mappings in §4 against the reachable test cluster, not production,
+> through the read-only MongoDB MCP on 2026-09-22.
 
 ---
 
@@ -77,7 +77,7 @@ The tenant's own context. The agents read it through `get_company_context`.
 
 ```jsonc
 {
-  "_id": "cpt_lyfe_marketing",
+  "_id": "cpt_<source ObjectId>",
   "company_id": "cmp_marketing_eye",
   "name": "Lyfe Marketing",
   "website": "https://www.lyfemarketing.com",
@@ -95,7 +95,7 @@ The tenant's own context. The agents read it through `get_company_context`.
 {
   "_id": "act_01J…",                       // ULID-based, time-sortable
   "company_id": "cmp_marketing_eye",
-  "competitor_id": "cpt_lyfe_marketing",
+  "competitor_id": "cpt_<source ObjectId>",
   "competitor_name": "Lyfe Marketing",       // denormalized for feed speed
   "activity_type": "NEW_BLOG",
   "channel": "WEBSITE",
@@ -189,7 +189,7 @@ copied, so the contract does not become a second source of customer data.
 |---|---|---|---|---|
 | CompetitorScope changes | `competitors_monitoring_test.changes` | 118 documents; `detected_at` range 2026-09-08T09:58:03.907Z–2026-09-09T06:15:14.219Z | `competitor_activities` | `pipelines/competitor_activity.py` |
 | CompetitorScope competitors | `competitors_monitoring_test.competitors` | 22 documents; `updated_at` range 2026-09-04T04:48:17.178Z–2026-09-20T14:47:17.615Z | `competitors` | same |
-| CompetitorScope monitoring targets | `competitors_monitoring_test.monitoring_targets` | 610 documents; `last_checked_at` range 2026-09-05T10:32:14.086Z–2026-09-09T06:24:25.595Z | the change-to-competitor join | same |
+| CompetitorScope monitoring targets | `competitors_monitoring_test.monitoring_targets` | 610 documents; `last_checked_at` is a date on 5 (range 2026-09-05T10:32:14.086Z–2026-09-09T06:24:25.595Z) and `null` on 605 | the change-to-competitor join | same |
 | DCT influencer candidates | `influencer_discovery.influencer_candidates` | 296 documents; `updated_at` range 2026-08-26T05:26:01.542Z–2026-09-03T06:32:53.218Z. The Marketing Eye source subset is 252 documents. | `influencers` | `pipelines/influencers.py` |
 | DCT candidate evidence | No `influencer_candidate_evidence` collection exists in `influencer_discovery` | The database lists only `influencer_candidates` and `marketing_eye_candidates`; candidate evidence is embedded in `platform_data.recent_posts`. | `influencers.evidence` | same |
 | Pace AI-enriched posts | `pace_database.ai_posts` | 37 documents; `created_at` range 2026-08-07T03:45:01.824Z–2026-08-07T05:43:30.933Z; 0 documents in the 14 days ending 2026-09-22. | `trends` (aggregation, currently skipped) | `pipelines/trends.py` |
@@ -198,7 +198,7 @@ copied, so the contract does not become a second source of customer data.
 
 - The cluster reachable from this repository exposes only `admin`,
   `competitors_monitoring_test`, `influencer_discovery`, `local` and
-  `pace_database`; it has no “RM Mongo” database. §4 is frozen against
+  `pace_database`; it has no "RM Mongo" database. §4 is frozen against
   `competitors_monitoring_test`, a test database, not a production source.
   If production CompetitorScope data is on another cluster, re-verify field
   names, join paths, counts and date ranges there before trusting the Step 1
@@ -236,8 +236,9 @@ changes.monitoring_target_id
 `changes` nor `monitoring_targets` carries a direct tenant ID. Resolve
 Marketing Eye's source `companies._id`, then use it as the sole allowlist for
 `competitors.company_id`. The inspection found seven active competitors and
-31 targets under that allowlist. Only one of those competitors, Lyfe
-Marketing, has produced changes so far: 13, all `NEW_BLOG`.
+31 targets under that allowlist; only 3 of those targets are `active: true`.
+Only one of those competitors, Lyfe Marketing, has produced changes so far:
+13, all `NEW_BLOG`.
 
 Brown Bag Marketing and Elevation Marketing are `competitors` rows, not
 `companies` rows. In the inspected documents both have a missing
@@ -262,6 +263,26 @@ The pipeline maps only enum values in §2. An unexpected future value is
 skipped and logged with its source `_id`; an enum having no current record
 does not make it invalid.
 
+`narrative_summary` is a string on 13 of 118 changes, `null` on 38 and
+missing on 67. The 13 string values are exactly the 13 Marketing Eye changes,
+so the required title fallback below is untested by the demo tenant.
+
+The required `title` is constructed without parsing free prose or splitting
+sentences:
+
+1. If `narrative_summary` is a non-empty string, use it as the title
+   candidate.
+2. Otherwise, use `"<change_type> detected at <url>"`, where `<url>` is the
+   selected non-empty `detected_url` or `monitoring_targets.url` value.
+3. If both URL fields are absent, `null` or empty, use
+   `"<change_type> detected"`. Unknown or missing `change_type` is skipped by
+   the rule above, so this final candidate is always non-empty.
+4. If a candidate exceeds 120 Unicode code points, keep its first 117 code
+   points and append `...`; otherwise preserve it unchanged.
+
+`summary` is never used to construct `title`: its verified shape is an
+incremental-diff statistic rather than a page headline.
+
 | Source field | Verified sample value | Target | Rule |
 |---|---|---|---|
 | `_id` | `ObjectId` (24 hexadecimal characters) | `source.ref_id` | Stringify the ObjectId; set `source.system = COMPETITORSCOPE`. |
@@ -271,40 +292,54 @@ does not make it invalid.
 | `detected_url` | `https://www.lyfemarketing.com/blog` | `url` | Use this field when non-empty; otherwise use `monitoring_targets.url`. |
 | `monitoring_targets.url` | `https://www.lyfemarketing.com/blog` | `url` fallback | Use only when `detected_url` is empty. |
 | `detected_at` | `2026-09-09T06:13:46.962Z` | `detected_at`, `occurred_at` | `occurred_at` is the best available estimate; the source does not expose a separate occurrence time. |
-| `is_simulated` | `true` | `is_simulated` | Preserve the Boolean; use `false` only for an older source record where the field is absent. |
+| `is_simulated` | `true` | `is_simulated` | Preserve the Boolean. Marketing Eye has 12 `true` values and 1 missing field across its 13 changes; globally the source has 23 `true` and 95 missing fields. Missing means `false`. This source behavior differs from the §3.3 `false` example and the §5 `SIMULATED` source-system example; retain the source system as `COMPETITORSCOPE`. |
 | `monitoring_target_id` | `ObjectId` (24 hexadecimal characters) | join input | Join to `monitoring_targets._id`; it is required to resolve the competitor and tenant. |
 | `monitoring_targets.competitor_id` | `ObjectId` (24 hexadecimal characters) | join input | Join to `competitors._id`. |
 | `competitors.name` | `Lyfe Marketing` | `competitor_name` | Preserve as the feed's denormalized name. |
-| `competitors._id` | `ObjectId` (24 hexadecimal characters) | `competitor_id` | Use the Step 1 owned competitor ID corresponding to this source record. |
+| `competitors._id` | `ObjectId` (24 hexadecimal characters) | `competitor_id` | First upsert the owned competitor by `source = { system: COMPETITORSCOPE, ref_id: str(competitors._id) }`. On its first insertion, set `_id` to `cpt_` plus the 24-character lowercase hexadecimal source ObjectId. On every re-run, resolve by `source` and reuse that stored `cpt_` ID. |
 | `competitors.website_url` | `https://www.lyfemarketing.com/` | owned competitor `website` | Use when creating or updating the owned competitor record. |
 | `competitors.company_id` | `ObjectId` (24 hexadecimal characters) on a Marketing Eye competitor | tenant filter | This is the source-side tenant discriminator when present. Require membership in the Marketing Eye allowlist; a missing value fails the filter. |
 | `companies.name` | `Marketing Eye` | tenant lookup only | Resolve the Marketing Eye source company ID for the allowlist. Do not use a name-based exclusion or copy source company documents into the owned database. |
-| — | The sampled `NEW_BLOG` summary is an incremental-diff description, not a title | `title` | Do not use the prior `New post: “…”` parser: that pattern is not the observed source shape. Use the first bounded sentence of `narrative_summary`; if it is null, use the first bounded sentence of `summary`. |
+| `changes` collection | Website-change records; the sampled change has an HTTPS page URL | `channel` | Set `WEBSITE` for every CompetitorScope `changes` record. This pipeline consumes website deltas only; it does not use either source-vocabulary channel registry below. |
+| `narrative_summary`, `change_type`, `detected_url`, `monitoring_targets.url` | All 13 Marketing Eye changes have a non-empty `narrative_summary`; the fallback is therefore untested by this tenant | `title` | Use the deterministic 120-code-point construction above. The prior `New post: "..."` parser is not used. |
 
 ### 4.2 DCT `influencer_candidates` → `influencers`
 
-The pipeline reads only `influencer_discovery.influencer_candidates` filtered
-to `company_id = "marketingeye.com.au"`. The observed Marketing Eye subset
-has 252 X candidates, `updated_at` from 2026-08-26T05:26:01.542Z through
-2026-08-28T05:41:01.640Z, and `evaluation.latest_final_score` from 30 through
-70. A sampled candidate has five embedded recent posts, 12,300 followers,
-an `eligible` evaluation status, topic-relevance component 6, engagement
-component 11 and final score 50. Its public account and profile identifiers
-are intentionally not reproduced here.
+The DCT pipeline runs even though DCT has no topic labels. It reads only
+`influencer_discovery.influencer_candidates` filtered to
+`company_id = "marketingeye.com.au"`, `evaluation.status = "eligible"` and a
+numeric `evaluation.latest_final_score`. The observed Marketing Eye subset has
+252 eligible X candidates, all with that score, `updated_at` from
+2026-08-26T05:26:01.542Z through 2026-08-28T05:41:01.640Z, and scores from 30
+through 70. Order candidates by final score descending, then source `_id`
+ascending, and ingest at most the named `DCT_CANDIDATE_LIMIT = 25`. Candidates
+that fail the filter are skipped and logged with their source `_id`.
+
+The 25 selected records are useful in an unfiltered influencer list, but have
+`topics: []`; topic-filtered queries exclude empty-topic DCT records and use
+the explicitly topical seed. A sampled candidate has five embedded recent
+posts and a five-figure follower count. Its public account and profile
+identifiers, timestamps and exact engagement metrics are intentionally not
+reproduced here.
+
+`DCT_PLATFORM_CHANNELS` and `PACE_SOURCE_CHANNELS` are separate typed
+registries because DCT `platform` and Pace `source` use different vocabularies.
+Tests must assert that every documented key has an entry in its own registry.
 
 | Source field | Verified sample value | Target | Rule |
 |---|---|---|---|
 | `_id` | `ObjectId` (24 hexadecimal characters) | `source.ref_id` | Stringify the ObjectId; set `source.system = DCT`. |
 | `company_id` | `marketingeye.com.au` | source filter | Read only this value for the demo tenant; write the owned `company_id` `cmp_marketing_eye`. |
-| `platform` | `x` | `channel` | Map through the channel registry: `x` → `X`. No other platform value was observed in this subset. |
-| `profile.display_name` | Non-empty public display name (8 characters in the sample) | `name` | Copy only from the source candidate selected by the pipeline. |
-| `account.handle` | Non-empty public handle (7 characters in the sample) | `handle` | Copy as the handle, adding `@` only if the source value lacks it. |
+| `platform` | `x` on all 252 eligible Marketing Eye candidates | `channel` | `DCT_PLATFORM_CHANNELS` maps `x` → `X`. An unknown platform skips and logs the candidate; it must not receive a guessed channel. |
+| `profile.display_name` | Non-empty public display name | `name` | Copy only from a candidate selected by the bounded rule above. |
+| `account.handle` | Non-empty public handle | `handle` | Copy as the handle, adding `@` only if the source value lacks it. |
 | `account.profile_url` | Non-empty public X profile URL | `profile_url` | Copy as-is. |
-| `profile.followers` | `12300` | `followers` | Copy as a number. |
-| `platform_data.recent_posts[]` | 5 items; one item has `created_at` `2026-08-28T04:30:36.000Z`, 20 likes, 7 replies, 2 reposts, 513 views, 42 characters of text and a 48-character HTTPS URL | `engagement_rate`, `evidence[]` | There is no direct engagement-rate field. Compute the mean of `(likes + replies + reposts) / profile.followers` for posts with a positive follower count. Use each post's `text` and `url` to form at most three evidence entries. |
+| `profile.followers` | Five-figure numeric follower count | `followers` | Copy as a number. |
+| `platform_data.recent_posts[]` | 5 recent posts; source views are in the hundreds and source text and HTTPS URLs are present | `engagement_rate`, `evidence[]` | There is no direct engagement-rate field. When candidate-level `profile.followers` is numeric and greater than 0, calculate the mean of `(likes + replies + reposts) / profile.followers` across posts with all three numeric metrics. If there are no qualifying posts, or followers is missing, non-numeric or 0, set `engagement_rate` to `0.0`. Use each post's `text` and `url` to form at most three evidence entries. |
 | `evaluation.latest_final_score` | `50` (observed range 30–70) | `relevance_score` | `clamp(latest_final_score / 100, 0, 1)`; sample becomes `0.50`. |
 | `evaluation.score_breakdown.topic_relevance` | `6` (observed range 0–20) | ranking audit only | This is a numeric component, not a topic label. Retain it in pipeline diagnostics; do not present it as `topics`. |
 | — | No source field contains topic labels | `topics` | Use an empty list for a DCT-derived record. Topic-filtered influencer results fall back to the explicitly topical seed until a separately specified topic-classification source exists. |
+| — | `audience_region` is missing on all 296 source candidates | `audience_region` | Set the literal `UNKNOWN`; do not infer geography from profile text, handle or URL. |
 
 There is no DCT evidence ledger to join. `platform_data.recent_posts` is the
 only verified evidence source; its text is untrusted source content and must
@@ -319,18 +354,36 @@ within the 14 days ending 2026-09-22. Its observed created-at range is
 skips the aggregation and uses the fully seeded trend set (`is_mock: true`).
 
 When Pace has at least 50 posts inside the 14-day window, aggregate by the
-enriched `topics` array, not by `keywords`:
+enriched `topics` array and the mapped Pace channel, not by `keywords`:
 
 ```text
 $match created_at in the 14-day window
+→ map source through PACE_SOURCE_CHANNELS
 → $unwind "$topics"
-→ $group by "$topics"
+→ $group by "$topics" and mapped channel
 ```
 
 The observed topic values are `Marketing` (11), `News` (11), `Technology`
 (7), `Business` (6) and `Other` (2). Compute `mention_count` over the latest
 seven days and `momentum_pct` against the preceding seven; retain up to three
 sample posts for each topic.
+
+The complete observed `PACE_SOURCE_CHANNELS` registry is:
+
+| `source` | Count | `Channel` |
+|---|---:|---|
+| `bbc_rss` | 1 | `NEWS` |
+| `duckduckgo_web` | 3 | `WEBSITE` |
+| `guardian_api` | 1 | `NEWS` |
+| `news_rss` | 6 | `NEWS` |
+| `newsapi` | 6 | `NEWS` |
+| `reddit_playwright` | 6 | `REDDIT` |
+| `techcrunch_rss` | 2 | `NEWS` |
+| `x_playwright` | 6 | `X` |
+| `youtube_search` | 6 | `YOUTUBE` |
+
+An unrecognized Pace `source` skips and logs that post with its source `_id`;
+it must not be assigned a guessed channel or included in the aggregation.
 
 | Source field | Verified sample value | Target | Rule |
 |---|---|---|---|
@@ -339,10 +392,10 @@ sample posts for each topic.
 | `topics[]` | `["Business"]` | `topic`, grouping key | Unwind and group by each topic value. |
 | `topic_confidence` | `0.72` | aggregation quality input | Keep only as a pipeline diagnostic until a threshold is specified. |
 | `keywords[]` | one term `marketing` with score `0.55` | supplementary metadata | Do not group trends by this field; its terms are not the verified topic taxonomy. |
-| `source` | `x_playwright` | `sample_posts[].channel` input | Map through the channel registry: `x_playwright` → `X`. |
+| `source` | 9 observed values listed in `PACE_SOURCE_CHANNELS` | `channel`, `sample_posts[].channel` | Map through `PACE_SOURCE_CHANNELS`; the unknown-value rule above applies. |
 | `content_type` | `post` | sample-post metadata | Preserve only as diagnostic metadata. |
 | `title`, `url` | 120-character source title and 53-character HTTPS source URL | `sample_posts[]` | Copy into the top-three sample posts only when the aggregation runs. |
-| `sentiment.label`, `sentiment.score` | `positive`, `0.8` | `sentiment` | Map through a signed-sentiment registry: `positive` → `+score`, `negative` → `-score`, `neutral` → `0`; the sample becomes `0.8`. |
+| `sentiment.label`, `sentiment.score` | `positive`, `0.8` | `sentiment` | `PACE_SENTIMENT_LABELS` is complete: `positive` → `+clamp(score, 0, 1)`, `negative` → `-clamp(score, 0, 1)`, `neutral` → `0`. A missing sentiment document, missing/non-numeric score or unknown label logs a diagnostic and produces `0.0`. |
 
 ## 5. Mock seed requirements
 

@@ -266,9 +266,9 @@ in [roadmap.md](roadmap.md).
 
 ## 10. Open questions
 
-| # | Question | Default if unanswered |
+| # | Question | Resolved / default |
 |---|---|---|
-| Q1 | **Resolved (2026-09-22):** the cluster reachable from this repository exposes only `admin`, `competitors_monitoring_test`, `influencer_discovery`, `local` and `pace_database`; no “RM Mongo” database is present. The available CompetitorScope source is therefore the test database `competitors_monitoring_test.changes`, joined through `monitoring_targets` and `competitors`, not production data. | Use the verified §4.1 mapping as the durable starting point. If production is on another cluster, re-verify its field names, join path, counts and date ranges before Step 1 pipelines are trusted there. |
-| Q2 | **Resolved:** yes. The PoC may create and own `MONGODB_DATABASE` (default `marketing_automation`) on the existing cluster for normalized intelligence and app state. | Source collections remain read-only for the life of the PoC. |
-| Q3 | **Resolved (2026-09-22):** `pace_database.ai_posts` exists with 37 documents, but 0 are in the preceding 14 days (and the collection is below the 50-post threshold). | Trends are fully seeded (`is_mock: true`) until Pace meets the aggregation threshold. |
+| Q1 | Which database or cluster holds CompetitorScope `changes` now that production writes to "RM Mongo"? | **Open:** the cluster reachable from this repository exposes only `admin`, `competitors_monitoring_test`, `influencer_discovery`, `local` and `pace_database`; no "RM Mongo" database is present. §4 is therefore verified against `competitors_monitoring_test.changes`, not production. Re-verify the source shape on the production cluster before Step 1 is trusted there. |
+| Q2 | May the PoC create its own database (`marketing_automation`) on the existing cluster, for normalized and app data? | **Resolved:** yes. Source collections remain read-only for the life of the PoC. |
+| Q3 | Does the Pace `ai_posts` collection exist with enough recent volume to derive trends? | **Resolved (2026-09-22):** it exists with 37 documents, but 0 are in the preceding 14 days and the collection is below the 50-post threshold. Trends are fully seeded (`is_mock: true`) until that changes. |
 | Q4 | Brand-voice source for Marketing Eye | Seeded `companies` document written from the public website; the client can edit it later |
