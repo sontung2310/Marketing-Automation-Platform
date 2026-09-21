@@ -35,7 +35,7 @@ jobs:
       MONGODB_DATABASE: marketing_automation_ci
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
@@ -91,7 +91,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: openspec validate --strict
@@ -126,7 +126,7 @@ jobs:
             exit 1
           fi
           git merge --abort || true
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.1.0
         if: github.event_name == 'pull_request'
         with:
           python-version: ${{ env.PYTHON_VERSION }}
