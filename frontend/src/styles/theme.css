@@ -1,0 +1,95 @@
+/*
+ * Design tokens: the ONLY source of colors, type, spacing, radii, shadows and motion.
+ * Values come from the CompetitorScope Design System (tokens/*.css, readme.md).
+ * Tailwind defaults are reset so only design-system utilities exist (docs/coding-conventions.md §6).
+ */
+@import "tailwindcss";
+
+@theme {
+  /* Color: brand, neutrals, status. Nothing else. */
+  --color-*: initial;
+  --color-white: #fff;
+  --color-primary: #e4362a;
+  --color-primary-hover: #c42e22;
+  --color-primary-light: #fde8e5;
+  --color-secondary: #2fbf8f;
+  --color-secondary-light: #e3f7ef;
+  --color-bg: #fff;
+  --color-bg-subtle: #f7f7f8;
+  --color-text: #1a1a1a;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+
+  /* Semantic aliases: prefer these in components. */
+  --color-surface-page: var(--color-bg-subtle);
+  --color-surface-card: var(--color-bg);
+  --color-surface-selected: var(--color-primary-light);
+  --color-favorable: var(--color-secondary);
+  --color-unfavorable: var(--color-error);
+  --color-attention: var(--color-warning);
+
+  /* Type: Inter at exactly five sizes. */
+  --font-*: initial;
+  --font-sans: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text-*: initial;
+  --text-h1: 32px;
+  --text-h1--line-height: 1.2;
+  --text-h1--font-weight: 700;
+  --text-h2: 24px;
+  --text-h2--line-height: 1.2;
+  --text-h2--font-weight: 700;
+  --text-h3: 18px;
+  --text-h3--line-height: 1.2;
+  --text-h3--font-weight: 600;
+  --text-body: 15px;
+  --text-body--line-height: 1.5;
+  --text-small: 13px;
+  --text-small--line-height: 1.5;
+  --tracking-label: 0.06em;
+
+  /* Spacing: one 8px unit. p-1 = 8px, p-2 = 16px, p-3 = 24px ... */
+  --spacing: 8px;
+
+  /* Shape and elevation */
+  --radius-*: initial;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-*: initial;
+  --shadow-hover: 0 4px 16px rgb(26 26 26 / 8%);
+  --shadow-overlay: 0 12px 32px rgb(26 26 26 / 14%);
+
+  /* Breakpoints (ui-spec §2): single column ≤ 900px, two columns ≤ 1280px, three above. */
+  --breakpoint-*: initial;
+  --breakpoint-tablet: 901px;
+  --breakpoint-desktop: 1281px;
+
+  /* Motion: color crossfades only. */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Named layouts. Arbitrary values are banned in class names, so layouts live here. */
+@utility layout-workspace {
+  grid-template-columns: 1fr;
+
+  @variant tablet {
+    grid-template-columns: 360px 1fr;
+  }
+
+  @variant desktop {
+    grid-template-columns: 360px minmax(560px, 1fr) 320px;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-surface-page font-sans text-body text-text tabular-nums;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+}

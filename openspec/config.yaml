@@ -1,0 +1,52 @@
+schema: spec-driven
+
+context: |
+  Marketing Automation Platform PoC for a marketing agency (demo tenant: Marketing Eye).
+  Two independent agents (OpenAI Agents SDK): Marketing Strategy Agent ("what should we do?")
+  and Marketing Execution Agent ("do this task"), sharing vendored marketing skills
+  (coreyhaines31/marketingskills subset) and a read-only Marketing Intelligence MCP over MongoDB.
+  Stack: Python 3.11 + uv, FastAPI, Pydantic v2, PyMongo async, FastMCP; React 18 + Vite + TS (pnpm).
+  UI: ONE page, CompetitorScope Design System (Robotic Marketer brand).
+  Source of truth: docs/specs.md and companions (data-contract, agents-spec, api-contract,
+  ui-spec, evaluation-spec, roadmap). Conventions and layering: AGENTS.md.
+  Each change maps to one roadmap sub-step (docs/roadmap.md).
+
+rules:
+  proposal:
+    - Reference the roadmap sub-step ID (e.g. 4.2) and the CAP-* capability IDs from docs/specs.md §5
+  specs:
+    - Write scenarios as Given/When/Then against a real running environment, reusing the roadmap success criteria
+  tasks:
+    - Include a task to run the affected eval suite when agents, skills, instructions or MCP tools change
+    - Include a task to update docs/roadmap.md and any changed contract doc
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

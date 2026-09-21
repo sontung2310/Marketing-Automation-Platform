@@ -1,0 +1,50 @@
+import js from "@eslint/js";
+import jsxA11y from "eslint-plugin-jsx-a11y";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+
+const ARBITRARY_VALUE_MESSAGE =
+  "Arbitrary Tailwind values are not allowed. Add a token or @utility in src/styles/theme.css.";
+
+export default tseslint.config(
+  { ignores: ["dist", "coverage"] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.strict, jsxA11y.flatConfigs.recommended],
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: { ecmaVersion: 2022, globals: globals.browser },
+    plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "@typescript-eslint/no-explicit-any": "error",
+      // Only src/api/ may call the backend (AGENTS.md §2).
+      "no-restricted-globals": [
+        "error",
+        { name: "fetch", message: "Call the backend through src/api/." },
+      ],
+      // Design tokens only: no Tailwind arbitrary values such as p-[13px] or bg-[#f00]
+      // (docs/coding-conventions.md §6). Add a token or @utility in src/styles/theme.css instead.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXAttribute[name.name='className'] Literal[value=/\\[/]",
+          message: ARBITRARY_VALUE_MESSAGE,
+        },
+        {
+          selector: "JSXAttribute[name.name='className'] TemplateElement[value.raw=/\\[/]",
+          message: ARBITRARY_VALUE_MESSAGE,
+        },
+        {
+          selector: "CallExpression[callee.name='cn'] Literal[value=/\\[/]",
+          message: ARBITRARY_VALUE_MESSAGE,
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/api/**/*.ts"],
+    rules: { "no-restricted-globals": "off" },
+  },
+);
