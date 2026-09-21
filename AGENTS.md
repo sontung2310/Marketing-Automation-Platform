@@ -81,7 +81,7 @@ Layering is enforced by import-linter:
 | Ticket handoff | whoever ran the grilling | `to-tickets` | GitHub issues exist with behavioural acceptance criteria, blockers and `Roadmap: X.Y`. No OpenSpec change exists yet. |
 | Specify | implementer agent, reviewed by the lead | `openspec-propose` | one change per issue (proposal with `Roadmap: X.Y`, delta specs, design, tasks), reviewed by the lead and, outside autopilot, approved by a human |
 | Implement | implementer agent | `openspec-apply-change` | every task is checked off and `npm run check` is green |
-| Review and close | reviewer + human, or the lead in autopilot | `openspec-archive-change` | every review finding is resolved, the change is archived in the same PR, and the PR is merged under the review bar in §4 |
+| Review and close | implementer (archive) + reviewer (review) + human (merge); the lead merges only in autopilot | `openspec-archive-change` | the fair review meets the §4 merge bar, any OpenSpec change is archived in the same PR, and the PR is merged under that bar |
 
 - **Behaviour vs. engineering:** nontechnical teammates own behaviour
   (grilling, tickets, delta-spec review). Engineering owns the design and
@@ -125,22 +125,30 @@ Layering is enforced by import-linter:
 
 ## 4. Agent roles (Herdr)
 
-Specify → review runs as a supervised loop in one Herdr session:
+Specify → review runs as a lead/implementer loop in one Herdr session.
+Autopilot runs it without a human in the chat.
 
 - **Lead:** Claude Code (Opus 5, highest effort). Never edits tracked
   repository files or commits or pushes. Plans, briefs, reviews the proposed
   OpenSpec change, verifies every result itself, and spawns the reviewer.
   Owns GitHub bookkeeping (issues, labels and human queue) and the
-  `.handoffs/` checkpoint; in autopilot it squash-merges only after **Check**
-  is green and the fair review is clean.
+  `.handoffs/` checkpoint; in autopilot it merges only under the merge bar.
 - **Implementer:** Codex (`gpt-5.6-terra`, `xhigh`). Writes the OpenSpec
   change from the lead's prompt, implements exactly the briefed tasks and
   reports back. Commits, pushes and opens the PR when told.
 - **Reviewer:** a fresh Claude subagent. Reviews blind, against the spec
   and the standards.
 - **Human:** approves the change, answers escalations and merges outside
-  autopilot. In autopilot, the lead merges only after a green **Check** and a
-  clean fair review; the human audits afterwards through the human queue.
+  autopilot under the merge bar. In autopilot, the human audits afterwards
+  through the human queue.
+
+### Merge bar
+
+A human outside autopilot, or the lead in autopilot through
+`gh pr merge --squash`, may merge only when **Check** is green, every
+requirement in §5 is met, every fair-review finding is fixed or answered with
+a written reason, no high-severity finding is merely answered, and every
+review thread is resolved.
 
 ## 5. Definition of done
 
@@ -149,8 +157,8 @@ Specify → review runs as a supervised loop in one Herdr session:
    environment, with evidence in the PR.
 3. For changes to agents, skills, instructions, MCP tools or model defaults,
    the eval report is in the PR and the evaluation-spec §6 thresholds hold.
-4. For UI changes, someone other than the author ticks the ui-spec §8
-   checklist.
+4. For UI changes, the fair reviewer, who is not the author, verifies and
+   ticks the ui-spec §8 checklist in the PR.
 5. The diff contains no secrets.
 
 ## 6. Session rules
@@ -164,5 +172,7 @@ Specify → review runs as a supervised loop in one Herdr session:
    - your role;
    - the layers the work touches.
 3. Work within the roadmap order and your role.
-4. When the spec is silent or contradictory, stop and ask. Record the answer
-   in the delta spec or the relevant doc.
+4. Outside autopilot, when the spec is silent or contradictory, stop and ask.
+   In autopilot, follow [the Autopilot rules](docs/agents/collaboration.md#autopilot):
+   decide reversible questions and record them in the human queue; stop only
+   for the listed architectural or irreversible decisions.
