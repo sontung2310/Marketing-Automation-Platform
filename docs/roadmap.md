@@ -2,13 +2,14 @@
 
 > Parent: [specs.md](specs.md). Work eligible sub-steps in order, grouping
 > only tightly related sub-steps within a Step on one
-> `feature/<step-number>-<slug>` branch. System-behaviour work has one
-> OpenSpec change per issue; discovery and doc-only work has none. Check off a
-> sub-step only after it merges with its success-criteria evidence in the PR.
+> `feature/<step-number>-<slug>` branch. Follow AGENTS.md §3 for OpenSpec
+> scope. Check off a sub-step only after it merges with its success-criteria
+> evidence in the PR.
 >
-> **Evidence-hold marker:** `<!-- EVIDENCE-HOLD: #<issue> -->` means the
-> implementation has merged but its success-criteria evidence is outstanding
-> in that issue. Do not select or tick a marked sub-step as new work.
+> **Evidence-hold marker:** append `<!-- EVIDENCE-HOLD: #<issue> -->` to the
+> end of a sub-step line when its implementation has merged but its
+> success-criteria evidence is outstanding in that issue. Do not select or
+> tick a marked sub-step as new work.
 >
 > **Success criteria are real test scenarios.** Each scenario is written as
 > Given / When / Then against a real running environment: seeded MongoDB, a
@@ -24,8 +25,8 @@
 **Goal:** a runnable skeleton that meets the conventions, plus a frozen data
 contract based on what actually exists in MongoDB.
 
-- [ ] <!-- EVIDENCE-HOLD: #9 --> 0.1 Scaffold the repo per [AGENTS.md](../AGENTS.md) §1: `uv` backend package, Vite React TS frontend, `docker-compose.yml`, `.env.example`, root `package.json` task runner (`npm run check`), husky + lint-staged pre-commit, and a single-job CI workflow. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_
-- [ ] <!-- EVIDENCE-HOLD: #9 --> 0.2 `core/config.py` (pydantic-settings), `core/db.py` (async Mongo client), structured logging, error envelope and `GET /api/health`. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_
+- [ ] 0.1 Scaffold the repo per [AGENTS.md](../AGENTS.md) §1: `uv` backend package, Vite React TS frontend, `docker-compose.yml`, `.env.example`, root `package.json` task runner (`npm run check`), husky + lint-staged pre-commit, and a single-job CI workflow. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_ <!-- EVIDENCE-HOLD: #9 -->
+- [ ] 0.2 `core/config.py` (pydantic-settings), `core/db.py` (async Mongo client), structured logging, error envelope and `GET /api/health`. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_ <!-- EVIDENCE-HOLD: #9 -->
 - [ ] 0.3 Fix the MongoDB MCP connection and inspect the source collections (CompetitorScope `changes`/competitors/targets, DCT `influencer_candidates`, Pace `ai_posts`). Record their real names, fields, counts and date ranges.
 - [ ] 0.4 Update [data-contract.md](data-contract.md) §4 with the verified mappings, remove the **VERIFY** markers and resolve specs Q1–Q3.
 

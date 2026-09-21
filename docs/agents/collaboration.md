@@ -42,8 +42,8 @@
    (gitignored), then runs
    `herdr agent prompt implementer "Read .handoffs/<change>/brief-<n>.md and do it." --wait --timeout 1800000`.
    Every brief has five parts:
-   - **Context:** the issue, the OpenSpec change path and `Roadmap: X.Y`.
-   - **Scope:** exact task IDs from `tasks.md`.
+   - **Context:** the issue, the OpenSpec change path if any and `Roadmap: X.Y`.
+   - **Scope:** exact task IDs from `tasks.md`, if there is a change.
    - **Constraints:** AGENTS.md, `docs/coding-conventions.md`, and files to
      leave untouched.
    - **Done when:** checks to run, success-criteria scenarios to prove.
@@ -70,8 +70,8 @@
    outside autopilot, escalate to the human with a summary.
 6. **Finish.** When verification is green, the lead tells the implementer to
    do the following:
-   - tick the roadmap box only after its success-criteria scenarios pass and
-     the evidence is in the PR;
+   - tick the roadmap box only after its scoped success-criteria scenarios
+     pass and the evidence is in the PR;
    - commit with a Conventional Commit message;
    - push `feature/<step-number>-<slug>`;
    - open the PR from `.github/pull_request_template.md`, with the roadmap
@@ -98,13 +98,11 @@ judge it against the lead's intentions or the implementer's self-assessment.
 - **Fresh, minimal context.** The lead spawns the reviewer with the Agent
   tool and passes only the prompt below. It never includes its own
   conversation, the implementer's reports, or an opinion of the work.
-- **Same prompt every time.** Only the four placeholders change. Use exactly
-  one `OpenSpec change` line:
+- **Same prompt every time.** Only the four placeholders change:
 
   ```text
   Review PR #<n> (branch <branch>) against origin/main. Linked issue: #<issue>.
-  OpenSpec change: openspec/changes/<change>/.
-  OpenSpec change: none (discovery or doc-only work).
+  OpenSpec change: `openspec/changes/<change>/` or `none` (discovery or doc-only work).
   Run independent passes in separate sub-agents:
   1. Spec: does the diff implement the issue's acceptance criteria and the delta
      specs, no more and no less?
@@ -114,7 +112,8 @@ judge it against the lead's intentions or the implementer's self-assessment.
      matching PR checklist only after it passes.
   Report each finding as: file:line · severity (high/medium/low) · concrete failure
   scenario. Verify every finding by tracing or reproducing it before reporting.
-  Report "no findings" for a pass with none. Post the result as a PR review.
+  Report "no findings" for a pass with none. Post the result with
+  `gh pr review <n> --comment --body-file <report>`.
   ```
 
 - **Visible outcome.** The review lives on the PR, so the human sees each
@@ -136,13 +135,12 @@ For a system-behaviour change, the implementer runs `openspec-propose` from
 the lead's prompt, and the lead reviews it with follow-ups before
 implementation begins.
 
-**An OpenSpec change is only required when system behaviour changes.** The
-implementer still does a sub-step that is pure investigation or documentation
-— inspecting source collections, rewriting a contract doc — through everything
-else: a GitHub issue, a `feature/<step-number>-<slug>` branch, a PR naming its
-roadmap sub-step(s), the fair review and a green **Check**. It just has no
-`openspec/changes/<name>/`, and the PR says so instead of naming one. Don't
-invent a change to satisfy the workflow table.
+**OpenSpec scope.** Follow AGENTS.md §3. A sub-step that is pure investigation
+or documentation — inspecting source collections, rewriting a contract doc —
+still goes through everything else: a GitHub issue, a
+`feature/<step-number>-<slug>` branch, a PR naming its roadmap sub-step(s),
+the fair review and a green **Check**. Its PR says `OpenSpec change: none`;
+don't invent a change to satisfy the workflow table.
 
 **Ticketing is just-in-time, one group at a time.** Tickets for a later step
 are not cut in advance, because what an earlier step discovers changes what
@@ -168,10 +166,10 @@ or is publicly visible.
 
 **Verify the implementer's environment before delegating to it.** The
 implementer runs its own tools, not the lead's. Before briefing Codex on work
-that touches a data source, confirm its MongoDB MCP runs with `--readOnly`
-(`~/.codex/config.toml` → `[mcp_servers.mongodb]`) and that it points at the
-same cluster as this repo's `.env`. If either is wrong, record it on the
-human queue and stop.
+that touches a data source, confirm the configured MongoDB command, following
+any wrapper script it points at, runs with `--readOnly` and targets the same
+cluster as this repo's `.env`. If either is wrong, record it on the human
+queue and stop.
 
 **Labels.** `ready-for-agent` — specified, engineering can pick it up.
 `autopilot` — being worked by the loop without per-step human approval.
@@ -184,8 +182,8 @@ every phase, never only at the end.
 
 - **Ground truth:** the checkboxes and `EVIDENCE-HOLD` markers in
   `docs/roadmap.md` on `main`, using the marker semantics in its header.
-  Open GitHub issues and PRs with the `autopilot` label identify work in
-  flight.
+  Open GitHub issues and PRs with the `autopilot` label, except the standing
+  human-queue issue #4, identify work in flight.
 - **Checkpoint:** `.handoffs/autopilot.md` (gitignored). Rewrite it after
   every phase change. It records:
   - the current group of sub-steps, with its issue, branch and PR;
@@ -200,17 +198,20 @@ every phase, never only at the end.
 
 ### Per group of sub-steps
 
-1. **Pick.** Take the next unchecked sub-steps without an `EVIDENCE-HOLD`
-   marker in roadmap order, grouped only when they're tightly related
-   (usually 1–3; never across Steps). An `EVIDENCE-HOLD` sub-step belongs to
-   its linked evidence issue, not the next work group. Done when the group
-   and its slug are in the checkpoint.
+1. **Pick.** First take an open work-in-flight issue other than the standing
+   human-queue issue #4. An `EVIDENCE-HOLD` sub-step's linked issue is
+   ordinary queued evidence work: select it by issue rather than roadmap
+   position, then remove its marker and tick its box when its evidence meets
+   AGENTS.md §5. Otherwise, take the next unchecked sub-steps without an
+   `EVIDENCE-HOLD` marker in roadmap order, grouped only when they're tightly
+   related (usually 1–3; never across Steps). Done when the group and its
+   slug are in the checkpoint.
 2. **Issue.** Create one GitHub issue using
    [issue-tracker.md](issue-tracker.md) and the `to-tickets` issue template,
    without the interactive quiz. Labels: `ready-for-agent` and `autopilot`
    (create any missing label once with `gh label create`).
-   The issue carries the sub-steps' Given/When/Then success criteria from
-   the roadmap as its acceptance criteria. Done when the issue exists.
+   The issue names the applicable Given/When/Then scenarios from its roadmap
+   Step as its acceptance criteria. Done when the issue exists.
 3. **Specify.** The implementer runs `openspec-propose` from the lead's
    prompt for the issue (`Roadmap: X.Y`). The lead validates it with
    `npm run openspec:check` and reviews it with follow-ups before
@@ -218,16 +219,17 @@ every phase, never only at the end.
    instead. Done when validation passes and the lead has no unresolved
    follow-up.
    - **Discovery or doc-only sub-steps** (e.g. 0.3–0.4, verifying the data
-     contract against the live cluster) change no system behaviour, so they
-     get **no OpenSpec change** — skip straight to step 4. They are still
-     briefed to the implementer like any other work: Codex has its own
-     MongoDB MCP, and the lead verifies the result by spot-checking the
-     source itself rather than by doing the inspection for it.
+     contract against the live cluster) follow AGENTS.md §3 — skip straight
+     to step 4. They are still briefed to the implementer like any other
+     work: Codex has its own MongoDB MCP, and the lead verifies the result by
+     spot-checking the source itself rather than by doing the inspection for
+     it.
 4. **Brief → implement → report → verify → follow up.** Run the loop above
    on branch `feature/<step-number>-<slug>`, starting a fresh implementer
    conversation for each group (Codex's `/new`). Done when the lead's own
-   verification is green: `npm run check`, plus every success-criteria
-   scenario of the group run against a real environment.
+   verification meets AGENTS.md §5: `npm run check`, plus every applicable
+   success-criteria scenario scoped to the group run against a real
+   environment.
 5. **PR.** Codex commits, pushes and opens the PR with `Roadmap: …`,
    `Closes #<issue>` and the `autopilot` label. If it cannot commit, push or
    open the PR, record the failure on the
@@ -237,15 +239,21 @@ every phase, never only at the end.
 6. **Review.** Spawn the fair reviewer. Fix each finding through another
    loop round, or answer it on the PR. Done when every finding has a fix or
    an answer, and no high-severity finding is merely answered.
-7. **Merge.** Before merging, satisfy the AGENTS.md §4 merge bar. Resolve
-   every review thread after its finding is fixed or its written reason is
-   posted; an unresolved thread returns to step 6 rather than stopping the
-   run. The lead then runs `gh pr merge --squash`. If a substantive merge-bar
-   requirement cannot be met, leave the PR open, record it on the
+7. **Merge.** Before merging, satisfy the AGENTS.md §4 merge bar. After a
+   finding is fixed or its written reason is posted, resolve its review thread
+   with GitHub's `resolveReviewThread` GraphQL mutation, for example:
+
+   ```bash
+   gh api graphql -f query='mutation($threadId:ID!) { resolveReviewThread(input:{threadId:$threadId}) { thread { isResolved } } }' -F threadId=<thread-id>
+   ```
+
+   Thread resolution is GitHub bookkeeping, not another review round. The lead
+   then runs `gh pr merge --squash`. If any merge-bar requirement cannot be
+   met, leave the PR open, record it on the
    [human-queue issue #4](https://github.com/sontung2310/Marketing-Automation-Platform/issues/4)
    and stop. After merging, sync `main` locally. The human audits merged work
-   asynchronously and can revert it. Done when `main` records every roadmap
-   sub-step as ticked or `EVIDENCE-HOLD`, and CI on `main` is green.
+   asynchronously and can revert it. Done when this group's PR is merged,
+   its roadmap state is updated, and CI on `main` is green.
 
 ### Human queue
 
