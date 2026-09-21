@@ -27,8 +27,8 @@ contract based on what actually exists in MongoDB.
 
 - [ ] 0.1 Scaffold the repo per [AGENTS.md](../AGENTS.md) §1: `uv` backend package, Vite React TS frontend, `docker-compose.yml`, `.env.example`, root `package.json` task runner (`npm run check`), husky + lint-staged pre-commit, and a single-job CI workflow. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_ <!-- EVIDENCE-HOLD: #9 -->
 - [ ] 0.2 `core/config.py` (pydantic-settings), `core/db.py` (async Mongo client), structured logging, error envelope and `GET /api/health`. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_ <!-- EVIDENCE-HOLD: #9 -->
-- [ ] 0.3 Fix the MongoDB MCP connection and inspect the source collections (CompetitorScope `changes`/competitors/targets, DCT `influencer_candidates`, Pace `ai_posts`). Record their real names, fields, counts and date ranges.
-- [ ] 0.4 Update [data-contract.md](data-contract.md) §4 with the verified mappings, remove the **VERIFY** markers and resolve specs Q1–Q3.
+- [x] 0.3 Fix the MongoDB MCP connection and inspect the source collections (CompetitorScope `changes`/competitors/targets, DCT `influencer_candidates`, Pace `ai_posts`). Record their real names, fields, counts and date ranges.
+- [x] 0.4 Update [data-contract.md](data-contract.md) §4 with the verified mappings, remove the **VERIFY** markers and resolve specs Q1–Q3.
 
 **Success criteria**
 
