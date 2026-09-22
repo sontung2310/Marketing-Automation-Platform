@@ -24,6 +24,10 @@ from app.intelligence.models import (
 
 ResultT = TypeVar("ResultT", bound=ModelBase)
 ArgumentsT = TypeVar("ArgumentsT", bound=ModelBase)
+DEFAULT_LOOKBACK_DAYS = 30
+DEFAULT_TOOL_LIMIT = 10
+MAX_TOOL_LIMIT = 25
+NO_RECORDS_MATCHED_NOTE = "No records matched the request."
 
 
 class ToolError(ModelBase):
@@ -64,27 +68,27 @@ class ActivitySearchArguments(ModelBase):
     competitor_ids: list[str] | None = None
     activity_types: list[ActivityType] | None = None
     channels: list[Channel] | None = None
-    since_days: int = 30
-    limit: int = 10
+    since_days: int = Field(default=DEFAULT_LOOKBACK_DAYS, ge=1)
+    limit: int = Field(default=DEFAULT_TOOL_LIMIT, ge=1)
 
 
 class ActivitySummaryArguments(ModelBase):
-    since_days: int = 30
+    since_days: int = Field(default=DEFAULT_LOOKBACK_DAYS, ge=1)
 
 
 class TrendSearchArguments(ModelBase):
     query: str | None = None
     channels: list[Channel] | None = None
     direction: TrendDirection | None = None
-    limit: int = 10
+    limit: int = Field(default=DEFAULT_TOOL_LIMIT, ge=1)
 
 
 class InfluencerSearchArguments(ModelBase):
     topic: str | None = None
     channels: list[Channel] | None = None
     region: str | None = None
-    min_followers: int | None = None
-    limit: int = 10
+    min_followers: int | None = Field(default=None, ge=0)
+    limit: int = Field(default=DEFAULT_TOOL_LIMIT, ge=1)
 
 
 class ActivityIdArguments(ModelBase):
@@ -126,6 +130,12 @@ def record_response(record: ResultT) -> RecordResponse[ResultT]:
     """Keep typed records inside the boundary while serializing public field names."""
 
     return RecordResponse[ResultT](record=record)
+
+
+def capped_limit(limit: int) -> int:
+    """Apply the one documented upper bound after typed lower-bound validation."""
+
+    return min(limit, MAX_TOOL_LIMIT)
 
 
 def _validation_message(error: ValidationError) -> str:

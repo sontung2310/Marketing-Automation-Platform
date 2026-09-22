@@ -48,6 +48,7 @@ from app.intelligence.repositories.influencers import InfluencersRepository
 from app.intelligence.repositories.recommendations import RecommendationsRepository
 from app.intelligence.repositories.sessions import SessionsRepository
 from app.intelligence.repositories.trends import TrendsRepository
+from app.mcp_server.contracts import NO_RECORDS_MATCHED_NOTE
 from app.mcp_server.server import McpRepositories, build_mcp_app
 
 pytestmark = pytest.mark.integration
@@ -194,6 +195,62 @@ async def test_invalid_enum_uses_a_non_error_validation_envelope(mcp_service: Mc
     assert _tool_json(result)["error"]["code"] == "VALIDATION_ERROR"
 
 
+async def test_unknown_activity_id_uses_a_non_error_not_found_envelope(
+    mcp_service: McpService,
+) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("get_competitor_activity", {"activity_id": "act_missing"})
+
+    assert result.is_error is False
+    assert _tool_json(result)["error"]["code"] == "NOT_FOUND"
+
+
+async def test_empty_search_returns_an_explanatory_note_without_fallback(
+    mcp_service: McpService,
+) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("search_competitor_activity", {"query": "quantum knitting"})
+
+    assert _tool_json(result) == {"results": [], "note": NO_RECORDS_MATCHED_NOTE}
+
+
+async def test_limited_search_defaults_to_ten_results(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("search_competitor_activity", {})
+
+    assert len(_tool_json(result)["results"]) == 10
+
+
+async def test_limited_search_caps_results_at_twenty_five(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("search_competitor_activity", {"limit": 500})
+
+    assert len(_tool_json(result)["results"]) == 25
+
+
+@pytest.mark.parametrize("arguments", [{"limit": 0}, {"since_days": 0}])
+async def test_invalid_activity_search_lower_bound_uses_validation_envelope(
+    mcp_service: McpService,
+    arguments: dict[str, int],
+) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("search_competitor_activity", arguments)
+
+    assert result.is_error is False
+    assert _tool_json(result)["error"]["code"] == "VALIDATION_ERROR"
+
+
+async def test_empty_activity_summary_remains_a_noted_summary(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("summarize_competitor_activity", {"since_days": 1})
+
+    assert _tool_json(result) == {
+        "counts": [],
+        "recent_items": [],
+        "note": NO_RECORDS_MATCHED_NOTE,
+    }
+
+
 async def test_all_tools_leave_owned_collections_unchanged(mcp_service: McpService) -> None:
     before = await _collection_snapshot(mcp_service.database)
 
@@ -318,7 +375,7 @@ def _price_activity(
     company_id: str = COMPANY_ID,
     competitor_id: str = PRIMARY_COMPETITOR_ID,
 ) -> CompetitorActivity:
-    detected_at = now - timedelta(hours=index)
+    detected_at = now - timedelta(days=2, hours=index)
     return CompetitorActivity(
         _id=f"act_price_{index:03d}",
         company_id=company_id,

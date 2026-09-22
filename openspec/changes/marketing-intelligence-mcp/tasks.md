@@ -49,17 +49,17 @@
 
 ## 2.2 — Validation and errors
 
-- [ ] 2.1 Verify the shared raw-argument parser returns the existing
+- [x] 2.1 Verify the shared raw-argument parser returns the existing
   `VALIDATION_ERROR` and `NOT_FOUND` codes in `{error: {code, message}}`
   objects; verify invalid `activity_types=["BOGUS"]` over the real HTTP client
   is not an SDK `is_error` result and unknown get-by-ID arguments separately.
-- [ ] 2.2 Return `{results: [], note: "No records matched …"}` for valid empty
+- [x] 2.2 Return `{results: [], note: "No records matched …"}` for valid empty
   list/search results without a fallback; verify 2-B with
   `query="quantum knitting"`.
-- [ ] 2.3 Apply `limit=10` defaults and a `25` cap to every limited list/search
+- [x] 2.3 Apply `limit=10` defaults and a `25` cap to every limited list/search
   tool; reject `limit < 1` and `since_days < 1` with `VALIDATION_ERROR`, and
   verify 2-C's `limit=500` returns at most 25 records.
-- [ ] 2.4 Return an empty `summarize_competitor_activity` window as its normal
+- [x] 2.4 Return an empty `summarize_competitor_activity` window as its normal
   JSON summary with empty `counts` and `recent_items` arrays plus the no-match
   note; verify that response has neither an error nor a fabricated activity.
 

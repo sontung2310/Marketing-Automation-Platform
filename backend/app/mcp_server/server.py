@@ -19,6 +19,9 @@ from app.intelligence.repositories.influencers import InfluencersRepository
 from app.intelligence.repositories.recommendations import RecommendationsRepository
 from app.intelligence.repositories.trends import TrendsRepository
 from app.mcp_server.contracts import (
+    DEFAULT_LOOKBACK_DAYS,
+    DEFAULT_TOOL_LIMIT,
+    NO_RECORDS_MATCHED_NOTE,
     ActivityIdArguments,
     ActivityResult,
     ActivityResults,
@@ -37,6 +40,7 @@ from app.mcp_server.contracts import (
     ToolErrorEnvelope,
     TrendResults,
     TrendSearchArguments,
+    capped_limit,
     not_found,
     parse_tool_arguments,
     record_response,
@@ -118,8 +122,8 @@ def build_mcp_server(
         competitor_ids: list[str] | None = None,
         activity_types: list[ActivityTypeValue] | None = None,
         channels: list[ChannelValue] | None = None,
-        since_days: int | None = None,
-        limit: int | None = None,
+        since_days: int | None = DEFAULT_LOOKBACK_DAYS,
+        limit: int | None = DEFAULT_TOOL_LIMIT,
     ) -> ActivityResults:
         parsed = parse_tool_arguments(
             ActivitySearchArguments,
@@ -137,7 +141,7 @@ def build_mcp_server(
         activities = await repositories.activities.search_for_company(
             company_id,
             detected_since=current_time() - timedelta(days=parsed.since_days),
-            limit=parsed.limit,
+            limit=capped_limit(parsed.limit),
             query=parsed.query,
             competitor_ids=parsed.competitor_ids,
             activity_types=parsed.activity_types,
@@ -165,7 +169,7 @@ def build_mcp_server(
         structured_output=False,
     )
     async def summarize_competitor_activity(
-        since_days: int | None = None,
+        since_days: int | None = DEFAULT_LOOKBACK_DAYS,
     ) -> ActivitySummaryResult:
         parsed = parse_tool_arguments(ActivitySummaryArguments, {"since_days": since_days})
         if isinstance(parsed, ToolErrorEnvelope):
@@ -174,6 +178,8 @@ def build_mcp_server(
             company_id,
             detected_since=current_time() - timedelta(days=parsed.since_days),
         )
+        if not summary.counts and not summary.recent_items:
+            summary = summary.model_copy(update={"note": NO_RECORDS_MATCHED_NOTE})
         return record_response(summary)
 
     @server.tool(
@@ -184,7 +190,7 @@ def build_mcp_server(
         query: str | None = None,
         channels: list[ChannelValue] | None = None,
         direction: TrendDirectionValue | None = None,
-        limit: int | None = None,
+        limit: int | None = DEFAULT_TOOL_LIMIT,
     ) -> TrendResults:
         parsed = parse_tool_arguments(
             TrendSearchArguments,
@@ -194,7 +200,7 @@ def build_mcp_server(
             return parsed
         trends = await repositories.trends.search_for_company(
             company_id,
-            limit=parsed.limit,
+            limit=capped_limit(parsed.limit),
             query=parsed.query,
             channels=parsed.channels,
             direction=parsed.direction,
@@ -210,7 +216,7 @@ def build_mcp_server(
         channels: list[ChannelValue] | None = None,
         region: str | None = None,
         min_followers: int | None = None,
-        limit: int | None = None,
+        limit: int | None = DEFAULT_TOOL_LIMIT,
     ) -> InfluencerResults:
         parsed = parse_tool_arguments(
             InfluencerSearchArguments,
@@ -226,7 +232,7 @@ def build_mcp_server(
             return parsed
         influencers = await repositories.influencers.search_for_company(
             company_id,
-            limit=parsed.limit,
+            limit=capped_limit(parsed.limit),
             topic=parsed.topic,
             channels=parsed.channels,
             region=parsed.region,
@@ -294,7 +300,7 @@ def build_mcp_app(
 def _results_or_note(items: list[ResponseItemT]) -> ResultsResponse[ResponseItemT]:
     if items:
         return ResultsResponse[ResponseItemT](results=items)
-    return ResultsResponse[ResponseItemT](results=[], note="No records matched the request.")
+    return ResultsResponse[ResponseItemT](results=[], note=NO_RECORDS_MATCHED_NOTE)
 
 
 def _utc_now() -> datetime:
