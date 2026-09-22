@@ -1,1 +1,1 @@
-"""Intelligence domain models (docs/data-contract.md §3)."""
+"""Intelligence domain models and repositories."""
