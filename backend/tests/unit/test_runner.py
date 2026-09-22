@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
@@ -65,3 +66,105 @@ def test_cli_parses_valid_selection() -> None:
     from scripts.run_pipelines import parse_args
 
     assert parse_args(["--only", "influencers"]).only == "influencers"
+
+
+class _FakeClientGetter:
+    def __init__(self) -> None:
+        self.closed = False
+        self.cleared = False
+        self.client = object()
+
+    def __call__(self) -> object:
+        return self.client
+
+    def cache_info(self) -> SimpleNamespace:
+        return SimpleNamespace(currsize=1)
+
+    def cache_clear(self) -> None:
+        self.cleared = True
+
+
+class _FakeClient:
+    def __init__(self) -> None:
+        self.closed = False
+
+    def __getitem__(self, _name: str) -> object:
+        return object()
+
+    async def close(self) -> None:
+        self.closed = True
+
+
+@pytest.mark.asyncio
+async def test_cli_run_writes_success_json_and_closes_client(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from scripts import run_pipelines as cli
+
+    fake_client = _FakeClient()
+    getter = _FakeClientGetter()
+    getter.client = fake_client
+    monkeypatch.setattr(cli.db, "get_client", getter)
+    monkeypatch.setattr(
+        cli,
+        "get_settings",
+        lambda: SimpleNamespace(
+            mongodb_database="owned",
+            competitorscope_database="competitors",
+            dct_database="dct",
+            pace_database="pace",
+        ),
+    )
+
+    async def fake_run_pipelines(**kwargs: object) -> dict[str, object]:
+        assert kwargs["only"] == "trends"
+        return {"trends": {"inserted": 1}}
+
+    monkeypatch.setattr(cli, "run_pipelines", fake_run_pipelines)
+
+    result = await cli.run(["--only", "trends"])
+
+    assert result == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "pipelines": {"trends": {"inserted": 1}},
+        "status": "ok",
+    }
+    assert fake_client.closed is True
+    assert getter.cleared is True
+
+
+@pytest.mark.asyncio
+async def test_cli_run_writes_upstream_error_json_and_nonzero_exit(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from scripts import run_pipelines as cli
+
+    fake_client = _FakeClient()
+    getter = _FakeClientGetter()
+    getter.client = fake_client
+    monkeypatch.setattr(cli.db, "get_client", getter)
+    monkeypatch.setattr(
+        cli,
+        "get_settings",
+        lambda: SimpleNamespace(
+            mongodb_database="owned",
+            competitorscope_database="competitors",
+            dct_database="dct",
+            pace_database="pace",
+        ),
+    )
+
+    async def fail_run_pipelines(**_kwargs: object) -> dict[str, object]:
+        raise RuntimeError("source unavailable")
+
+    monkeypatch.setattr(cli, "run_pipelines", fail_run_pipelines)
+
+    result = await cli.run([])
+
+    assert result == 1
+    assert json.loads(capsys.readouterr().err) == {
+        "error": {"code": "UPSTREAM_UNAVAILABLE", "message": "source unavailable"},
+        "status": "error",
+    }
+    assert fake_client.closed is True
+    assert getter.cleared is True
