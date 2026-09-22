@@ -445,6 +445,8 @@ it must not be assigned a guessed channel or included in the aggregation.
 Seed files live in `backend/app/pipelines/seed/*.json`.
 They are loaded by `backend/scripts/seed_db.py`, and every seeded record is
 `is_mock: true`.
+At seed time, their timestamps are rebased from the fixed authored anchor to
+the load time, preserving relative spacing.
 
 | Dataset | Minimum content |
 |---|---|
@@ -459,9 +461,11 @@ Content rules for the seed:
 
 - Seed text is realistic, specific and dated. No lorem ipsum, and no "Example
   Corp".
-- URLs for fictional competitors use the reserved `.example` TLD, for
-  example `https://brightlane.example/blog/…`, so they can never resolve to a
-  real site.
+- The validator requires the reserved `.example` TLD for every fictional
+  competitor website, social profile and activity URL; simulation template;
+  trend sample post; and influencer profile and evidence-post URL. For
+  example, `https://brightlane.example/blog/…` can never resolve to a real
+  site.
 - Adversarial records (prompt-injection text, defamatory bait) exist **only**
   in the eval fixtures. They are never in the demo seed.
 

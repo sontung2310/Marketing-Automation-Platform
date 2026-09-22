@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 
 import pytest
 from pymongo.asynchronous.database import AsyncDatabase
@@ -30,14 +31,13 @@ async def seed_test_database() -> AsyncIterator[AsyncDatabase[Document]]:
 async def test_seed_is_idempotent_and_meets_minimums(
     seed_test_database: AsyncDatabase[Document],
 ) -> None:
-    bundle = load_seed_bundle()
-
-    first = await seed_database(seed_test_database, bundle)
+    now = datetime.now(UTC)
+    first = await seed_database(seed_test_database, load_seed_bundle(now=now))
     first_counts = {
         name: await seed_test_database[name].count_documents({})
         for name in ("companies", "competitors", "competitor_activities", "trends", "influencers")
     }
-    second = await seed_database(seed_test_database, bundle)
+    second = await seed_database(seed_test_database, load_seed_bundle(now=now))
     second_counts = {
         name: await seed_test_database[name].count_documents({}) for name in first_counts
     }

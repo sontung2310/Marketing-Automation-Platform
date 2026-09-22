@@ -16,5 +16,6 @@ Use the `gh` CLI; it infers the repo from `git remote -v`.
 - **Label:** new tickets from `to-tickets` get `ready-for-agent`. Create it once if it's missing: `gh label create ready-for-agent --description "Specified and ready for engineering"`.
 - **Blocking edges:** use GitHub's native issue dependencies:
   `gh api --method POST repos/<owner>/<repo>/issues/<blocked>/dependencies/blocked_by -F issue_id=<blocker-db-id>`, where `<blocker-db-id>` comes from `gh api repos/<owner>/<repo>/issues/<n> --jq .id`. If that fails, put `Blocked by: #<n>` at the top of the body.
-- **Roadmap link:** every ticket body names its roadmap sub-step (`Roadmap: X.Y`), which the OpenSpec change later repeats.
+- **Roadmap link:** every Step ticket body lists its roadmap sub-steps
+  (`Roadmap: 2.1, 2.2, 2.3`), which its optional OpenSpec change later repeats.
 - **PRs** close their issue with `Closes #<n>` in the PR body.
