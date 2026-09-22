@@ -115,8 +115,8 @@ def test_title_uses_url_fallback_and_truncates_unicode_code_points() -> None:
     title = title_for_change(activity)
 
     assert len(title) == 120
+    assert title.startswith("NEW_BLOG detected at ")
     assert title.endswith("...")
-    assert title[:117] == "é" * 117
 
 
 def test_activity_preserves_source_fields() -> None:

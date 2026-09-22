@@ -66,16 +66,20 @@ class CompetitorPipelineSummary:
 
 def title_for_change(activity: CompetitorScopeActivity) -> str:
     change = activity.change
-    candidates = (
-        change.narrative_summary,
-        change.detected_url,
-        activity.target.url,
-    )
-    title = next(
-        (candidate.strip() for candidate in candidates if candidate and candidate.strip()), ""
-    )
-    if not title:
-        title = f"{change.change_type or 'CHANGE'} detected"
+    narrative = change.narrative_summary.strip() if change.narrative_summary else ""
+    if narrative:
+        title = narrative
+    else:
+        url = next(
+            (
+                candidate.strip()
+                for candidate in (change.detected_url, activity.target.url)
+                if candidate and candidate.strip()
+            ),
+            "",
+        )
+        change_type = change.change_type or "CHANGE"
+        title = f"{change_type} detected at {url}" if url else f"{change_type} detected"
     return title if len(title) <= 120 else f"{title[:117]}..."
 
 
