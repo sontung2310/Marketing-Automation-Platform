@@ -49,7 +49,9 @@ jobs:
             exit 1
           fi
 
-          matches="$(git grep -n -i 'mongodb+srv://' -- . || true)"
+          uri_marker="mongodb+srv:"
+          uri_marker="${uri_marker}//"
+          matches="$(git grep -n -i "$uri_marker" -- . || true)"
           unexpected="$(printf '%s\n' "$matches" | grep -v -F '.env.example:' || true)"
           if [ -n "$unexpected" ]; then
             echo "::error::A non-placeholder MongoDB URI is tracked"
