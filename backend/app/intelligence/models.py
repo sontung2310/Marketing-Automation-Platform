@@ -268,7 +268,7 @@ class SamplePost(ModelBase):
 class Trend(TenantModel):
     id_prefix: ClassVar[str] = "trd_"
     topic: str = Field(min_length=1)
-    keywords: list[str] = Field(min_length=1)
+    keywords: list[str] = Field(default_factory=list)
     channel: Channel
     window_days: int = Field(gt=0)
     mention_count: int = Field(ge=0)
@@ -299,10 +299,10 @@ class Influencer(TenantModel):
     profile_url: str = Field(min_length=1)
     followers: int = Field(ge=0)
     engagement_rate: float = Field(ge=0, le=1)
-    topics: list[str] = Field(min_length=1)
+    topics: list[str] = Field(default_factory=list)
     audience_region: str = Field(min_length=1)
     relevance_score: float = Field(ge=0, le=1)
-    evidence: list[EvidenceLink] = Field(min_length=1)
+    evidence: list[EvidenceLink] = Field(default_factory=list)
     source: Provenance
     is_mock: bool
 
