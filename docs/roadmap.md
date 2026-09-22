@@ -25,8 +25,8 @@
 **Goal:** a runnable skeleton that meets the conventions, plus a frozen data
 contract based on what actually exists in MongoDB.
 
-- [ ] 0.1 Scaffold the repo per [AGENTS.md](../AGENTS.md) §1: `uv` backend package, Vite React TS frontend, `docker-compose.yml`, `.env.example`, root `package.json` task runner (`npm run check`), husky + lint-staged pre-commit, and a single-job CI workflow. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_ <!-- EVIDENCE-HOLD: #9 -->
-- [ ] 0.2 `core/config.py` (pydantic-settings), `core/db.py` (async Mongo client), structured logging, error envelope and `GET /api/health`. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_ <!-- EVIDENCE-HOLD: #9 -->
+- [x] 0.1 Scaffold the repo per [AGENTS.md](../AGENTS.md) §1: `uv` backend package, Vite React TS frontend, `docker-compose.yml`, `.env.example`, root `package.json` task runner (`npm run check`), husky + lint-staged pre-commit, and a single-job CI workflow. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence completed in [#10](https://github.com/sontung2310/Marketing-Automation-Platform/pull/10).)_
+- [x] 0.2 `core/config.py` (pydantic-settings), `core/db.py` (async Mongo client), structured logging, error envelope and `GET /api/health`. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence completed in [#10](https://github.com/sontung2310/Marketing-Automation-Platform/pull/10).)_
 - [x] 0.3 Fix the MongoDB MCP connection and inspect the source collections (CompetitorScope `changes`/competitors/targets, DCT `influencer_candidates`, Pace `ai_posts`). Record their real names, fields, counts and date ranges.
 - [x] 0.4 Update [data-contract.md](data-contract.md) §4 with the verified mappings, remove the **VERIFY** markers and resolve specs Q1–Q3.
 
@@ -37,7 +37,7 @@ contract based on what actually exists in MongoDB.
 | 0-A | **Given** a fresh clone and a filled `.env`, **when** a developer runs `docker compose up`, **then** `GET /api/health` returns `mongo: ok` and the frontend serves at `:5173` within 2 minutes. | Manual + `backend/tests/integration/test_health.py` |
 | 0-B | **Given** a PR with a formatting or type error, **when** CI runs, **then** the pipeline fails on the lint or typecheck job. | A deliberately broken PR (then reverted) |
 | 0-C | **Given** the MongoDB MCP is connected, **when** the source collections are inspected, **then** data-contract §4 lists every mapped source field with a real sample value. It contains no "VERIFY" markers. | Doc review |
-| 0-D | `.env` is gitignored, and `git grep -i "mongodb+srv://"` finds only placeholders. | CI secret-scan step |
+| 0-D | `.env` is gitignored, and a repository-wide MongoDB URI scan finds only the `.env.example` placeholder. | CI secret-scan step |
 
 ## Step 1 — Intelligence DB and pipelines
 

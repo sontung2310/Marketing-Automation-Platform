@@ -41,5 +41,38 @@ jobs:
       - name: Install dependencies
         run: npm ci && uv sync --frozen --directory backend
 
+      - name: Check committed secrets
+        shell: bash
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env must not be tracked"
+            exit 1
+          fi
+
+          uri_marker="mongodb+srv:"
+          uri_marker="${uri_marker}//"
+          matches="$(git grep -n -i "$uri_marker" -- . ':(exclude).env.example' || true)"
+          if [ -n "$matches" ]; then
+            echo "::error::A non-placeholder MongoDB URI is tracked"
+            printf '%s\n' "$matches"
+            exit 1
+          fi
+
+          placeholder="MONGODB_URI='${uri_marker}<username>:<password>@<cluster>/?retryWrites=true&w=majority'"
+          example_matches="$(git grep -n -i "$uri_marker" -- .env.example || true)"
+          if [ "$(printf '%s\n' "$example_matches" | wc -l | tr -d ' ')" -ne 1 ]; then
+            echo "::error::.env.example must contain exactly the documented MongoDB placeholder"
+            printf '%s\n' "$example_matches"
+            exit 1
+          fi
+          case "$example_matches" in
+            *":$placeholder") ;;
+            *)
+              echo "::error::.env.example must contain exactly the documented MongoDB placeholder"
+              printf '%s\n' "$example_matches"
+              exit 1
+              ;;
+          esac
+
       - name: Check code
         run: npm run check
