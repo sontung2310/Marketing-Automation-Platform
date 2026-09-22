@@ -60,6 +60,7 @@ OTHER_COMPETITOR_ID = "cpt_other_company"
 PRIMARY_INFLUENCER_ID = "inf_tech_voices"
 PRIMARY_RECOMMENDATION_ID = "rec_price_response"
 OTHER_RECOMMENDATION_ID = "rec_other_company"
+MCP_ALLOWED_HOSTS = ("localhost:*", "127.0.0.1:*", "[::1]:*", "mcp:8001")
 
 
 @dataclass(frozen=True)
@@ -88,7 +89,13 @@ async def mcp_service() -> AsyncIterator[McpService]:
     listener.bind(("127.0.0.1", 0))
     listener.listen()
     port = listener.getsockname()[1]
-    app = build_mcp_app(repositories, company_id=COMPANY_ID, now=lambda: now)
+    app = build_mcp_app(
+        repositories,
+        company_id=COMPANY_ID,
+        now=lambda: now,
+        host="0.0.0.0",
+        allowed_hosts=MCP_ALLOWED_HOSTS,
+    )
     server = uvicorn.Server(
         uvicorn.Config(app, host="127.0.0.1", port=port, access_log=False, log_level="warning")
     )
@@ -136,6 +143,18 @@ async def test_raw_enum_values_are_advertised_on_array_items(mcp_service: McpSer
     assert activity_items["enum"] == [item.value for item in ActivityType]
     assert channel_items["enum"] == [item.value for item in Channel]
     assert direction["enum"] == [item.value for item in TrendDirection]
+
+
+async def test_transport_security_allows_loopback_and_compose_service_hosts(
+    mcp_service: McpService,
+) -> None:
+    async with _client(mcp_service) as loopback_client:
+        loopback_tools = await loopback_client.list_tools()
+    async with _client(mcp_service, headers={"Host": "mcp:8001"}) as compose_client:
+        compose_tools = await compose_client.list_tools()
+
+    assert len(loopback_tools) == 9
+    assert len(compose_tools) == 9
 
 
 async def test_activity_search_is_tenant_scoped_filtered_and_newest_first(
@@ -272,8 +291,13 @@ async def test_all_tools_leave_owned_collections_unchanged(mcp_service: McpServi
     assert await _collection_snapshot(mcp_service.database) == before
 
 
-def _client(mcp_service: McpService) -> MCPServerStreamableHttp:
-    return MCPServerStreamableHttp({"url": mcp_service.endpoint}, use_structured_content=False)
+def _client(
+    mcp_service: McpService, *, headers: dict[str, str] | None = None
+) -> MCPServerStreamableHttp:
+    params: dict[str, object] = {"url": mcp_service.endpoint}
+    if headers is not None:
+        params["headers"] = headers
+    return MCPServerStreamableHttp(params, use_structured_content=False)
 
 
 def _tool_json(result: CallToolResult) -> dict[str, object]:

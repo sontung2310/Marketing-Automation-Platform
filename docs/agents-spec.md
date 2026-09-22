@@ -70,21 +70,25 @@ its prefixed `id`, which the agents cite as evidence.
 | Tool | Arguments | Returns |
 |---|---|---|
 | `get_company_context` | — | The `companies` document: summary, ICP, positioning, services, brand voice, pillars, channels |
-| `list_competitors` | — | `[{id, name, website, is_fictional, channels}]` |
-| `search_competitor_activity` | `query?: str`, `competitor_ids?: [str]`, `activity_types?: [ActivityType]`, `channels?: [Channel]`, `since_days?: int = 30`, `limit?: int = 10 (max 25)` | Activities, newest first. `query` uses the Mongo text index. Records include `id, competitor_name, activity_type, channel, title, summary, url, detected_at, is_mock, is_simulated`. |
+| `list_competitors` | — | `{results: [{id, name, website, is_fictional, channels}]}` |
+| `search_competitor_activity` | `query?: str`, `competitor_ids?: [str]`, `activity_types?: [ActivityType]`, `channels?: [Channel]`, `since_days?: int = 30`, `limit?: int = 10 (max 25)` | `{results: [activities]}`, newest first. `query` uses the Mongo text index. Records include `id, competitor_name, activity_type, channel, title, summary, url, detected_at, `is_mock`, `is_simulated`. |
 | `get_competitor_activity` | `activity_id: str` | Full record, including `content_excerpt`, `price`, `author` and `engagement` |
 | `summarize_competitor_activity` | `since_days?: int = 30` | Counts by competitor × type, plus the 3 most recent items per competitor (cheap overview) |
-| `search_trends` | `query?: str`, `channels?: [Channel]`, `direction?: TrendDirection`, `limit?: int = 10` | Trends sorted by `momentum_pct` desc |
-| `search_influencers` | `topic?: str`, `channels?: [Channel]`, `region?: str`, `min_followers?: int`, `limit?: int = 10` | Influencers sorted by `relevance_score` desc |
+| `search_trends` | `query?: str`, `channels?: [Channel]`, `direction?: TrendDirection`, `limit?: int = 10 (max 25)` | `{results: [trends]}`, sorted by `momentum_pct` desc |
+| `search_influencers` | `topic?: str`, `channels?: [Channel]`, `region?: str`, `min_followers?: int`, `limit?: int = 10 (max 25)` | `{results: [influencers]}`, sorted by `relevance_score` desc |
 | `get_influencer` | `influencer_id: str` | Full record |
 | `get_recommendation` | `recommendation_id: str` | A persisted recommendation (lets Execution re-read it if needed) |
 
 Rules:
 
 - Validation errors return `{error: {code, message}}` rather than raising, so
-  the agent can recover.
+  the agent can recover. Unknown get-by-ID values return `NOT_FOUND` in the
+  same envelope; `limit < 1` and `since_days < 1` return `VALIDATION_ERROR`.
+- Every list/search response is `{results: [...]}`. `limit` defaults to 10 and
+  is capped at 25; an empty search also includes the no-match note below.
 - An empty result returns `{results: [], note: "No records matched …"}`. It
-  is never a fabricated fallback.
+  is never a fabricated fallback. An empty activity summary retains its
+  `counts` and `recent_items` arrays and adds the same note.
 - The MCP server reads through `intelligence/repositories`. It has no
   business logic of its own.
 - **Future search:** Atlas Vector Search may replace the text index behind the

@@ -26,7 +26,12 @@ def create_app() -> Starlette:
         influencers=InfluencersRepository(database),
         recommendations=RecommendationsRepository(database),
     )
-    return build_mcp_app(repositories, company_id=settings.default_company_id)
+    return build_mcp_app(
+        repositories,
+        company_id=settings.default_company_id,
+        host=settings.mcp_host,
+        allowed_hosts=settings.mcp_allowed_hosts,
+    )
 
 
 app = create_app()

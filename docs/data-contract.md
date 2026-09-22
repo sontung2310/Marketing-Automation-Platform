@@ -33,6 +33,10 @@ Two different "MongoDB MCP"s appear in this project. Don't confuse them.
 | **MongoDB MCP** (`.mcp.json` → `mongodb`) | Read-only inspection tool for developers and coding agents | Humans and Claude/Codex while building. **Never in the runtime path.** |
 | **Marketing Intelligence MCP** (`backend/.../mcp_server`) | The platform's own semantic tools over the normalized collections | The Strategy and Execution agents at runtime |
 
+Step 2 adds only this read-only runtime boundary. It introduces no collection,
+stored field, migration or data-contract schema change; it reads the existing
+typed repository models and serializes their public `id` fields for agents.
+
 ## 2. Enums
 
 ```text

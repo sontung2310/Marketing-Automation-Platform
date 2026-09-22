@@ -129,6 +129,15 @@ responses where available; for `get_recommendation`, where Step 1 seed data has
 no persisted recommendation, it calls a synthetic prefixed ID and accepts the
 documented `NOT_FOUND` envelope as the expected read-only result.
 
+### Evaluation evidence is not applicable until the agent steps
+
+The evaluation-spec §6 thresholds are for the Router, Strategy and Execution
+agents. Step 2 changes no agent prompt, model, skill, agent behavior or eval
+harness; those components arrive in Steps 4–6. Its MCP-specific deterministic
+evidence is the real-HTTP integration suite and running-service smoke CLI.
+Therefore an agent evaluation report is not applicable for this Step; the Step
+PR records that rationale alongside the 2-A–2-E command output.
+
 ## Risks / Trade-offs
 
 - [A repository query omits tenant scope] → require `company_id` in every

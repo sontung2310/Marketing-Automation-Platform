@@ -75,11 +75,11 @@ read-only tools.
 
 | # | Scenario | Verify |
 |---|---|---|
-| 2-A | **Given** the seeded DB, **when** an MCP client calls `search_competitor_activity(activity_types=["PRICE_CHANGE"], since_days=30)`, **then** only `PRICE_CHANGE` records from the last 30 days are returned, newest first, each with an `act_` ID. | `backend/tests/integration/test_mcp_tools.py` (real MCP client over HTTP) |
+| 2-A | **Given** the seeded DB, **when** an MCP client calls `search_competitor_activity(activity_types=["PRICE_CHANGE"], since_days=30)`, **then** only `PRICE_CHANGE` records from the last 30 days are returned, newest first, each with an `act_` ID. | `backend/tests/integration/test_mcp_server.py` (real MCP client over HTTP) |
 | 2-B | **Given** a query that matches nothing (`query="quantum knitting"`), **then** the result is `{results: [], note: …}`, and no error is raised. | Same |
 | 2-C | **Given** `limit=500`, **then** at most 25 records return. **Given** `activity_types=["BOGUS"]`, **then** a `VALIDATION_ERROR` object returns. | Same |
-| 2-D | **When** a static check runs over `mcp_server/`, **then** there are no `pymongo` imports and no write calls. | `backend/tests/unit/test_layering.py` (import-linter contract) |
-| 2-E | **Given** the OpenAI Agents SDK's `MCPServerStreamableHttp`, **when** a throwaway agent lists the tools, **then** all 9 tools appear with descriptions. | Integration test |
+| 2-D | **When** a static check runs over `mcp_server/`, **then** there are no `pymongo` imports and no write calls. | `backend/tests/unit/test_mcp_layering.py` + import-linter |
+| 2-E | **Given** the OpenAI Agents SDK's `MCPServerStreamableHttp`, **when** a real client lists the tools, **then** all 9 tools appear with descriptions. | `backend/tests/integration/test_mcp_server.py` + `backend/scripts/mcp_smoke.py` |
 
 ## Step 3 — Marketing Skills library
 

@@ -65,25 +65,25 @@
 
 ## 2.3 — Compose and smoke
 
-- [ ] 3.1 Add the MCP service to `docker-compose.yml`, serving on `0.0.0.0:8001`
+- [x] 3.1 Add the MCP service to `docker-compose.yml`, serving on `0.0.0.0:8001`
   with settings-supplied transport-security allowed hosts for localhost and
   `mcp:8001`; override the API service's `MCP_URL` to `http://mcp:8001/mcp`
   while leaving host-tool `.env` defaults unchanged; verify a streamable-HTTP
   client accepts both approved host-header paths.
-- [ ] 3.2 Add `backend/scripts/` smoke CLI that lists all nine tools and calls
+- [x] 3.2 Add `backend/scripts/` smoke CLI that lists all nine tools and calls
   each against a running server, obtaining IDs from result lists and accepting
   the expected `NOT_FOUND` recommendation lookup; verify unexpected failures
   exit non-zero and successful 2-E smoke exits zero.
-- [ ] 3.3 Verify from inside the running API Compose container that its
+- [x] 3.3 Verify from inside the running API Compose container that its
   effective `MCP_URL` lists all nine tools through `http://mcp:8001/mcp`; prove
   the container does not use its own loopback endpoint.
-- [ ] 3.4 Confirm `docs/agents-spec.md`, `docs/api-contract.md`,
+- [x] 3.4 Confirm `docs/agents-spec.md`, `docs/api-contract.md`,
   `docs/data-contract.md`, and `docs/roadmap.md` match the implemented MCP
   contract; update only affected docs and record why the data-contract schema
   remains unchanged.
-- [ ] 3.5 Run the applicable MCP/agent evaluation evidence or record a justified
+- [x] 3.5 Run the applicable MCP/agent evaluation evidence or record a justified
   not-applicable result under evaluation-spec §6; verify the PR meets the
   AGENTS.md §5 requirement for changed MCP tools.
-- [ ] 3.6 Run `npm run test:integration`, the running-service smoke CLI, and
+- [x] 3.6 Run `npm run test:integration`, the running-service smoke CLI, and
   `npm run check` (including `openspec:check`); attach the 2-A–2-E evidence to
   the Step PR before review.

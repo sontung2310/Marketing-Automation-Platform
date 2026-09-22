@@ -19,6 +19,10 @@ Codes: `VALIDATION_ERROR` (422), `NOT_FOUND` (404), `CONFLICT` (409),
 `UPSTREAM_UNAVAILABLE` (503: Mongo, MCP or OpenAI unreachable), `INTERNAL`
 (500). The UI shows `message` verbatim.
 
+The Marketing Intelligence MCP reuses the `VALIDATION_ERROR` and `NOT_FOUND`
+code strings in its text-JSON tool envelopes; this does not change the
+Platform API's HTTP status mapping.
+
 ---
 
 ## Health and meta
