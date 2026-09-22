@@ -1,10 +1,12 @@
+from datetime import UTC, datetime
+
 import pytest
 
 from app.pipelines.seed.loader import SeedValidationError, load_seed_bundle, validate_seed_bundle
 
 
 def test_seed_bundle_meets_documented_minimums() -> None:
-    coverage = validate_seed_bundle(load_seed_bundle())
+    coverage = validate_seed_bundle(load_seed_bundle(), now=datetime(2026, 9, 22, tzinfo=UTC))
 
     assert coverage.counts == {
         "companies": 1,

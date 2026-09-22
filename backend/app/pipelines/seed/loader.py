@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from collections import Counter
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TypeVar
 
@@ -69,7 +69,7 @@ def load_seed_bundle(directory: Path = SEED_DIRECTORY) -> SeedBundle:
     )
 
 
-def validate_seed_bundle(bundle: SeedBundle) -> SeedCoverage:
+def validate_seed_bundle(bundle: SeedBundle, *, now: datetime | None = None) -> SeedCoverage:
     """Enforce the minimum demo coverage from data-contract.md §5."""
 
     if len(bundle.companies) < 1:
@@ -103,15 +103,21 @@ def validate_seed_bundle(bundle: SeedBundle) -> SeedCoverage:
         missing = sorted(item.value for item in required_activity_channels - activity_channels)
         raise SeedValidationError(f"activity channel coverage is missing: {', '.join(missing)}")
     detected = [item.detected_at for item in bundle.competitor_activities]
-    latest = max(detected)
-    if latest - min(detected) > timedelta(days=30):
-        raise SeedValidationError("activities must fit within a 30-day seed window")
-    if sum(item >= latest - timedelta(hours=48) for item in detected) < 6:
+    current_time = now or datetime.now(UTC)
+    if any(item < current_time - timedelta(days=30) for item in detected):
+        raise SeedValidationError("activities must fall within the last 30 days")
+    if sum(item >= current_time - timedelta(hours=48) for item in detected) < 6:
         raise SeedValidationError("at least six activities must fall within the latest 48 hours")
 
     if any(not _is_mock(item) for item in _all_records(bundle)):
         raise SeedValidationError("every seeded record must set is_mock=true")
     fictional_ids = {item.id for item in fictional}
+    real_ids = {item.id for item in bundle.competitors if not item.is_fictional}
+    if any(
+        item.competitor_id in real_ids and item.is_mock and not item.is_simulated
+        for item in bundle.competitor_activities
+    ):
+        raise SeedValidationError("real competitors cannot have fabricated mock activities")
     restricted_types = {
         ActivityType.SOCIAL_POST,
         ActivityType.EXECUTIVE_POST,

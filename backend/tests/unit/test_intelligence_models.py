@@ -68,3 +68,23 @@ def test_activity_rejects_naive_timestamps() -> None:
             is_simulated=False,
             ingested_at=datetime(2026, 9, 22, tzinfo=UTC),
         )
+
+
+def test_activity_rejects_incompatible_type_fields() -> None:
+    with pytest.raises(ValidationError, match="engagement"):
+        CompetitorActivity(
+            _id="act_seed_002",
+            company_id="cmp_marketing_eye",
+            competitor_id="cpt_brightlane",
+            competitor_name="Brightlane Marketing",
+            activity_type=ActivityType.SOCIAL_POST,
+            channel=Channel.LINKEDIN,
+            title="A title",
+            summary="A summary",
+            occurred_at=datetime(2026, 9, 22, tzinfo=UTC),
+            detected_at=datetime(2026, 9, 22, tzinfo=UTC),
+            source=Provenance(system=SourceSystem.MOCK_SEED, ref_id="activity-2"),
+            is_mock=True,
+            is_simulated=False,
+            ingested_at=datetime(2026, 9, 22, tzinfo=UTC),
+        )

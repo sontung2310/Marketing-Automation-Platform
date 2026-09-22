@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ActivityType(StrEnum):
@@ -187,6 +187,12 @@ class Competitor(TenantModel):
     source: Provenance
     is_mock: bool
 
+    @model_validator(mode="after")
+    def fictional_executive_rule(self) -> Competitor:
+        if not self.is_fictional and self.executives:
+            raise ValueError("non-fictional competitors cannot have fictional executives")
+        return self
+
 
 class Price(ModelBase):
     before: float = Field(ge=0)
@@ -239,6 +245,24 @@ class CompetitorActivity(TenantModel):
     @classmethod
     def timestamps_are_aware(cls, value: datetime | None) -> datetime | None:
         return ensure_aware(value) if value is not None else None
+
+    @model_validator(mode="after")
+    def validate_type_specific_fields(self) -> CompetitorActivity:
+        social_types = {ActivityType.SOCIAL_POST, ActivityType.EXECUTIVE_POST}
+        if self.activity_type == ActivityType.EXECUTIVE_POST and self.author is None:
+            raise ValueError("EXECUTIVE_POST requires an author")
+        if self.activity_type != ActivityType.EXECUTIVE_POST and self.author is not None:
+            raise ValueError("author is only valid for EXECUTIVE_POST")
+        price_types = {ActivityType.PRICE_CHANGE, ActivityType.PROMOTION}
+        if self.activity_type in price_types and self.price is None:
+            raise ValueError(f"{self.activity_type} requires price data")
+        if self.activity_type not in price_types and self.price is not None:
+            raise ValueError("price is only valid for PRICE_CHANGE or PROMOTION")
+        if self.activity_type in social_types and self.engagement is None:
+            raise ValueError(f"{self.activity_type} requires engagement data")
+        if self.activity_type not in social_types and self.engagement is not None:
+            raise ValueError("engagement is only valid for social activity types")
+        return self
 
 
 class SamplePost(ModelBase):
