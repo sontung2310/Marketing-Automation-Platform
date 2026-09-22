@@ -109,7 +109,9 @@ class SimulationService:
         competitor_id: str | None = None,
         company_id: str = "cmp_marketing_eye",
     ) -> CompetitorActivity:
-        competitors = await CompetitorsRepository(self.database).list(limit=100)
+        competitors = await CompetitorsRepository(self.database).list_for_company(
+            company_id, limit=100
+        )
         if competitor_id is not None:
             competitor = next((item for item in competitors if item.id == competitor_id), None)
             if competitor is None:

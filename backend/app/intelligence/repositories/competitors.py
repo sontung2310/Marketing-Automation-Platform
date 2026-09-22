@@ -22,3 +22,9 @@ class CompetitorsRepository(Repository[Competitor]):
                 unique=True,
             ),
         ]
+
+    async def list_for_company(self, company_id: str, *, limit: int = 100) -> list[Competitor]:
+        if limit < 1:
+            return []
+        documents = self.collection.find({"company_id": company_id}).limit(limit)
+        return [self.model_type.model_validate(document) async for document in documents]

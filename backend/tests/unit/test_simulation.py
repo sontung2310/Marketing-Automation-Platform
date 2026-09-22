@@ -39,7 +39,16 @@ class _Collection:
         self.documents = documents
         self.writes = 0
 
-    def find(self, _query: Document) -> _Cursor:
+    def find(self, query: Document) -> _Cursor:
+        company_id = query.get("company_id")
+        if isinstance(company_id, str):
+            return _Cursor(
+                [
+                    document
+                    for document in self.documents
+                    if document.get("company_id") == company_id
+                ]
+            )
         return _Cursor(self.documents)
 
     async def update_one(self, _query: Document, _update: Document, *, upsert: bool) -> _Result:
@@ -115,6 +124,30 @@ async def test_random_simulation_never_selects_real_competitor() -> None:
     activity = await service.simulate_activity()
 
     assert activity.competitor_id == "cpt_brightlane"
+
+
+@pytest.mark.asyncio
+async def test_cross_tenant_competitor_is_not_visible_to_simulation() -> None:
+    other_tenant = Competitor(
+        id="cpt_other_tenant",
+        company_id="cmp_other",
+        name="Other Fictional",
+        website="https://other.example/",
+        is_fictional=True,
+        source=Provenance(system=SourceSystem.MOCK_SEED, ref_id="other"),
+        is_mock=True,
+    ).model_dump(by_alias=True, mode="python")
+    database = _Database([*_competitors(), other_tenant])
+    service = SimulationService(
+        cast(AsyncDatabase[Document], database), load_seed_bundle().simulation_templates
+    )
+
+    with pytest.raises(ValidationError, match="not found"):
+        await service.simulate_activity(
+            competitor_id="cpt_other_tenant", company_id="cmp_marketing_eye"
+        )
+
+    assert database.collections["competitor_activities"].writes == 0
 
 
 @pytest.mark.asyncio

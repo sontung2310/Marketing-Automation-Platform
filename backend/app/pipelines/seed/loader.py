@@ -138,6 +138,15 @@ def validate_seed_bundle(bundle: SeedBundle, *, now: datetime | None = None) -> 
         for item in bundle.competitor_activities
     ):
         raise SeedValidationError("fictional competitor activity URLs must use .example")
+    competitors_by_id = {item.id: item for item in bundle.competitors}
+    for template in bundle.simulation_templates:
+        template_competitor = competitors_by_id.get(template.competitor_id)
+        if template_competitor is None or not template_competitor.is_fictional:
+            raise SeedValidationError(
+                "simulation templates must target fictional seeded competitors"
+            )
+        if not template.url or ".example" not in template.url:
+            raise SeedValidationError("simulation template URLs must use .example")
 
     if len(bundle.trends) < 16:
         raise SeedValidationError("seed requires at least 16 trends")
