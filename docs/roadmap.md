@@ -27,8 +27,8 @@ contract based on what actually exists in MongoDB.
 
 - [ ] 0.1 Scaffold the repo per [AGENTS.md](../AGENTS.md) §1: `uv` backend package, Vite React TS frontend, `docker-compose.yml`, `.env.example`, root `package.json` task runner (`npm run check`), husky + lint-staged pre-commit, and a single-job CI workflow. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_ <!-- EVIDENCE-HOLD: #9 -->
 - [ ] 0.2 `core/config.py` (pydantic-settings), `core/db.py` (async Mongo client), structured logging, error envelope and `GET /api/health`. _(Implementation merged in [#3](https://github.com/sontung2310/Marketing-Automation-Platform/pull/3); success-criteria evidence is outstanding in [#9](https://github.com/sontung2310/Marketing-Automation-Platform/issues/9).)_ <!-- EVIDENCE-HOLD: #9 -->
-- [ ] 0.3 Fix the MongoDB MCP connection and inspect the source collections (CompetitorScope `changes`/competitors/targets, DCT `influencer_candidates`, Pace `ai_posts`). Record their real names, fields, counts and date ranges.
-- [ ] 0.4 Update [data-contract.md](data-contract.md) §4 with the verified mappings, remove the **VERIFY** markers and resolve specs Q1–Q3.
+- [x] 0.3 Fix the MongoDB MCP connection and inspect the source collections (CompetitorScope `changes`/competitors/targets, DCT `influencer_candidates`, Pace `ai_posts`). Record their real names, fields, counts and date ranges.
+- [x] 0.4 Update [data-contract.md](data-contract.md) §4 with the verified mappings, remove the **VERIFY** markers and resolve specs Q1–Q3.
 
 **Success criteria**
 
@@ -57,7 +57,7 @@ the seed, and the simulate trigger works.
 | 1-A | **Given** an empty `marketing_automation` DB, **when** `seed_db.py` runs twice, **then** the collection counts are identical after both runs and meet every minimum in data-contract §5, including ≥ 3 activities per `ActivityType`. | `backend/tests/integration/test_seed.py` |
 | 1-B | **Given** CompetitorScope has Lyfe Marketing changes, **when** the competitor pipeline runs, **then** each change appears once in `competitor_activities` with `source.system = COMPETITORSCOPE`, a non-empty `title` and the correct `activity_type`. Running it again inserts 0 new records. | `backend/tests/integration/test_competitor_pipeline.py` against a seeded copy of the real source shape |
 | 1-C | **Given** a source change with an unknown `change_type`, **when** the pipeline runs, **then** it is skipped and logged with its source ID, and the run still succeeds. | Unit test |
-| 1-D | **Given** changes belonging to test tenants (Brown Bag, Elevation), **when** the pipeline runs, **then** none of them are ingested. | Unit test |
+| 1-D | **Given** a source change resolves to a competitor with `company_id` absent (the verified Brown Bag / Elevation shape) or to a competitor under a different company, **when** the pipeline runs, **then** it is not ingested. | Unit test |
 | 1-E | **Given** Lyfe Marketing is not fictional, **when** simulation is requested for it, **then** it is rejected. A request for a fictional competitor creates a record with `is_simulated: true`. | Unit + integration |
 | 1-F | Every seeded record has `is_mock: true`. No mock `SOCIAL_POST`/`EXECUTIVE_POST`/`PROMOTION`/`CAMPAIGN_LAUNCH` record references a non-fictional competitor. Fictional URLs use `.example`. | `backend/tests/unit/test_seed_rules.py` |
 
