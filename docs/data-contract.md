@@ -188,6 +188,7 @@ copied, so the contract does not become a second source of customer data.
 | Source | Verified location | Point-in-time evidence | Target | Pipeline module |
 |---|---|---|---|---|
 | CompetitorScope changes | `competitors_monitoring_test.changes` | 118 documents; `detected_at` range 2026-09-08T09:58:03.907Z–2026-09-09T06:15:14.219Z | `competitor_activities` | `pipelines/competitor_activity.py` |
+| CompetitorScope companies | `competitors_monitoring_test.companies` | 5 documents; exactly one has `name: "Marketing Eye"` and an ObjectId `_id` | the tenant lookup for the competitor filter | same |
 | CompetitorScope competitors | `competitors_monitoring_test.competitors` | 22 documents; `updated_at` range 2026-09-04T04:48:17.178Z–2026-09-20T14:47:17.615Z | `competitors` | same |
 | CompetitorScope monitoring targets | `competitors_monitoring_test.monitoring_targets` | 610 documents; `last_checked_at` is a date on 5 (range 2026-09-05T10:32:14.086Z–2026-09-09T06:24:25.595Z) and `null` on 605 | the change-to-competitor join | same |
 | DCT influencer candidates | `influencer_discovery.influencer_candidates` | 296 documents; `updated_at` range 2026-08-26T05:26:01.542Z–2026-09-03T06:32:53.218Z. The Marketing Eye source subset is 252 documents. | `influencers` | `pipelines/influencers.py` |
@@ -233,12 +234,15 @@ changes.monitoring_target_id
 ```
 
 `competitors.company_id` is the tenant discriminator when present; neither
-`changes` nor `monitoring_targets` carries a direct tenant ID. Resolve
-Marketing Eye's source `companies._id`, then use it as the sole allowlist for
-`competitors.company_id`. The inspection found seven active competitors and
-31 targets under that allowlist; only 3 of those targets are `active: true`.
-Only one of those competitors, Lyfe Marketing, has produced changes so far:
-13, all `NEW_BLOG`.
+`changes` nor `monitoring_targets` carries a direct tenant ID. Query the
+source collection `competitors_monitoring_test.companies` with the exact
+filter `{name: "Marketing Eye"}` and require its single result's ObjectId
+`_id`. Use that ObjectId as the sole allowlist value for
+`competitors.company_id`; do not query the owned `marketing_automation`
+`companies` collection during ingestion. The inspection found seven active
+competitors and 31 targets under that allowlist; only 3 of those targets are
+`active: true`. Only one of those competitors, Lyfe Marketing, has produced
+changes so far: 13, all `NEW_BLOG`.
 
 Brown Bag Marketing and Elevation Marketing are `competitors` rows, not
 `companies` rows. In the inspected documents both have a missing
@@ -368,6 +372,26 @@ The observed topic values are `Marketing` (11), `News` (11), `Technology`
 seven days and `momentum_pct` against the preceding seven; retain up to three
 sample posts for each topic.
 
+#### Aggregate identity and upsert
+
+Capture `window_end_date` once when the pipeline starts as that run's UTC
+calendar date. Its aggregation interval is the 14-day half-open interval
+`[window_end_date - 14 days, window_end_date)`. For each `(topic,
+mapped_channel)` group, set `source.ref_id` to:
+
+```text
+trend:<window_end_date>:<mapped_channel>:<SHA-256(UTF-8(topic))>
+```
+
+The full lowercase hexadecimal SHA-256 digest prevents delimiters or Unicode
+in a source topic from making the key ambiguous. The pipeline upserts on
+`{ "source.system": "PACE", "source.ref_id": <that key> }`, setting the
+aggregate fields and `computed_at` on every run, and sets a new `trd_` ID only
+with `$setOnInsert`. Therefore a re-run for the same window, topic and channel
+updates exactly one trend document; a new UTC window creates a distinct,
+dated aggregate. A raw Pace post `_id` is never used as a trend's
+`source.ref_id` because a group can contain many posts.
+
 The complete observed `PACE_SOURCE_CHANNELS` registry is:
 
 | `source` | Count | `Channel` |
@@ -387,7 +411,7 @@ it must not be assigned a guessed channel or included in the aggregation.
 
 | Source field | Verified sample value | Target | Rule |
 |---|---|---|---|
-| `_id` | `ObjectId` (24 hexadecimal characters) | `source.ref_id` | Stringify the ObjectId; set `source.system = PACE`. |
+| `_id` | `ObjectId` (24 hexadecimal characters) | aggregation input only | Use only to identify and log an individual raw post. Do not copy it to `trends.source.ref_id`; the aggregate identity above is the sole Pace trend reference. |
 | `created_at` | `2026-08-07T05:43:30.933Z` | aggregation window | This is the authoritative window field, not the numeric crawl or publication timestamps. |
 | `topics[]` | `["Business"]` | `topic`, grouping key | Unwind and group by each topic value. |
 | `topic_confidence` | `0.72` | aggregation quality input | Keep only as a pipeline diagnostic until a threshold is specified. |
