@@ -445,6 +445,8 @@ it must not be assigned a guessed channel or included in the aggregation.
 Seed files live in `backend/app/pipelines/seed/*.json`.
 They are loaded by `backend/scripts/seed_db.py`, and every seeded record is
 `is_mock: true`.
+At seed time, their timestamps are rebased from the fixed authored anchor to
+the load time, preserving relative spacing.
 
 | Dataset | Minimum content |
 |---|---|

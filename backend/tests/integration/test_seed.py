@@ -30,14 +30,12 @@ async def seed_test_database() -> AsyncIterator[AsyncDatabase[Document]]:
 async def test_seed_is_idempotent_and_meets_minimums(
     seed_test_database: AsyncDatabase[Document],
 ) -> None:
-    bundle = load_seed_bundle()
-
-    first = await seed_database(seed_test_database, bundle)
+    first = await seed_database(seed_test_database, load_seed_bundle())
     first_counts = {
         name: await seed_test_database[name].count_documents({})
         for name in ("companies", "competitors", "competitor_activities", "trends", "influencers")
     }
-    second = await seed_database(seed_test_database, bundle)
+    second = await seed_database(seed_test_database, load_seed_bundle())
     second_counts = {
         name: await seed_test_database[name].count_documents({}) for name in first_counts
     }
@@ -45,7 +43,7 @@ async def test_seed_is_idempotent_and_meets_minimums(
     assert first.coverage.counts["competitor_activities"] == 45
     assert first_counts == second_counts
     assert second.collections["competitor_activities"].inserted == 0
-    assert second.collections["competitor_activities"].skipped == 45
+    assert second.collections["competitor_activities"].total == 45
 
 
 async def test_duplicate_provenance_with_different_id_updates_existing_record(
