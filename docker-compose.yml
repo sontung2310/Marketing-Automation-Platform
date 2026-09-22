@@ -5,6 +5,13 @@ services:
     env_file: .env
     ports: ["8000:8000"]
 
+  # Bounded local scheduler for the read-only source pipelines (15 minutes).
+  pipelines:
+    build: ./backend
+    env_file: .env
+    command: sh -c "while true; do python scripts/run_pipelines.py; sleep 900; done"
+    restart: unless-stopped
+
   web:
     image: node:24-alpine
     working_dir: /app
