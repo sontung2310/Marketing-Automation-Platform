@@ -62,7 +62,7 @@ description for each skill on the allowlist). Instructions must contain:
 
 ## 3. Marketing Intelligence MCP
 
-Implemented with FastMCP (`mcp_server/server.py`) and served over streamable
+Implemented with MCP SDK 2.x `MCPServer` (`mcp_server/server.py`) and served over streamable
 HTTP at `MCP_URL`. All tools are **read-only**, scoped by `company_id` (taken
 from server config in the PoC) and return JSON. Every returned record includes
 its prefixed `id`, which the agents cite as evidence.

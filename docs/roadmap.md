@@ -67,7 +67,7 @@ the seed, and the simulate trigger works.
 **Goal:** agents can retrieve every kind of evidence through semantic,
 read-only tools.
 
-- [ ] 2.1 A FastMCP server with the tools in [agents-spec.md §3](agents-spec.md#3-marketing-intelligence-mcp), reading only through repositories.
+- [ ] 2.1 An MCP SDK 2.x `MCPServer` with the tools in [agents-spec.md §3](agents-spec.md#3-marketing-intelligence-mcp), reading only through repositories.
 - [ ] 2.2 Argument validation, error objects, the empty-result note and the limit cap.
 - [ ] 2.3 Add the MCP service to compose, plus a smoke script that lists the tools and calls each one.
 
