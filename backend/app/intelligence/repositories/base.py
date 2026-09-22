@@ -9,7 +9,7 @@ from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.collection import AsyncCollection
 from pymongo.asynchronous.database import AsyncDatabase
 
-from app.intelligence.models import ModelBase, Provenance
+from app.intelligence.models import ModelBase, Provenance, SourceSystem
 
 Document = dict[str, object]
 ModelT = TypeVar("ModelT", bound=ModelBase)
@@ -48,6 +48,14 @@ class Repository(Generic[ModelT]):
 
     async def get(self, document_id: str) -> ModelT | None:
         document = await self.collection.find_one({"_id": document_id})
+        if document is None:
+            return None
+        return self.model_type.model_validate(document)
+
+    async def get_by_source(self, system: SourceSystem, ref_id: str) -> ModelT | None:
+        document = await self.collection.find_one(
+            {"source.system": system, "source.ref_id": ref_id}
+        )
         if document is None:
             return None
         return self.model_type.model_validate(document)
