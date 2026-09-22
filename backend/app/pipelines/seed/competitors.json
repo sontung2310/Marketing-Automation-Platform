@@ -1,0 +1,35 @@
+[
+  {
+    "_id": "cpt_lyfe_marketing",
+    "company_id": "cmp_marketing_eye",
+    "name": "Lyfe Marketing",
+    "website": "https://www.lyfemarketing.com",
+    "is_fictional": false,
+    "social": {"LINKEDIN": "https://www.linkedin.com/company/lyfe-marketing", "X": "https://x.com/lyfemarketing", "INSTAGRAM": "https://www.instagram.com/lyfemarketing"},
+    "executives": [],
+    "source": {"system": "MOCK_SEED", "ref_id": "competitor-lyfe-marketing"},
+    "is_mock": true
+  },
+  {
+    "_id": "cpt_brightlane",
+    "company_id": "cmp_marketing_eye",
+    "name": "Brightlane Marketing",
+    "website": "https://brightlane.example",
+    "is_fictional": true,
+    "social": {"LINKEDIN": "https://brightlane.example/linkedin", "X": "https://brightlane.example/x", "INSTAGRAM": "https://brightlane.example/instagram"},
+    "executives": [{"name": "Maya Chen", "role": "CEO"}],
+    "source": {"system": "MOCK_SEED", "ref_id": "competitor-brightlane"},
+    "is_mock": true
+  },
+  {
+    "_id": "cpt_kestrel",
+    "company_id": "cmp_marketing_eye",
+    "name": "Kestrel Growth Co.",
+    "website": "https://kestrel.example",
+    "is_fictional": true,
+    "social": {"LINKEDIN": "https://kestrel.example/linkedin", "X": "https://kestrel.example/x", "INSTAGRAM": "https://kestrel.example/instagram"},
+    "executives": [{"name": "Jordan Bell", "role": "CEO"}],
+    "source": {"system": "MOCK_SEED", "ref_id": "competitor-kestrel"},
+    "is_mock": true
+  }
+]
