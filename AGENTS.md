@@ -79,7 +79,7 @@ Layering is enforced by import-linter:
 | Ground | anyone | — | the relevant `openspec/specs/` and `docs/` have been read, before the idea is discussed |
 | Grill | product + engineering | `grill-me` | every open decision about the outcome is answered |
 | Ticket handoff | whoever ran the grilling | `to-tickets` | one GitHub issue exists for the roadmap Step, naming every Given/When/Then scenario in its success-criteria table, blockers and its `Roadmap: X.Y` sub-steps. No OpenSpec change exists yet. |
-| Specify | implementer agent, reviewed by the lead | `openspec-propose` (system-behaviour work) | at most one change per system-behaviour Step (proposal with every `Roadmap: X.Y` sub-step, delta specs, design and tasks), reviewed by the lead and approved once by a human before implementation starts |
+| Specify | implementer agent, reviewed by the lead | `openspec-propose` (system-behaviour work) | at most one change per system-behaviour Step (proposal with every `Roadmap: X.Y` sub-step, delta specs, design and tasks), reviewed by the lead; outside autopilot, approved once by a human before implementation and recorded by the lead on the Step issue; in autopilot, reviewed by the human in the Step PR |
 | Implement | implementer agent | `openspec-apply-change` | sub-steps are implemented in order on the Step branch; each is briefed, verified, committed and pushed before the next begins |
 | Review and close | implementer (archive) + reviewer (review) + human (merge); the lead merges only in autopilot | `openspec-archive-change` | the fair review meets the §4 merge bar, any OpenSpec change is archived in the same PR, and the PR is merged under that bar |
 
@@ -89,7 +89,9 @@ Layering is enforced by import-linter:
 - **Behaviour changes during implementation:** update the delta spec and
   get it re-reviewed before the code relies on it.
 - **OpenSpec scope:** system-behaviour work has at most one OpenSpec change per
-  Step. The human approves it once before implementation begins. Discovery and
+  Step. Outside autopilot, the human approves it once before implementation and
+  the lead records that approval as a comment on the Step issue. In autopilot,
+  the human reviews the delta specs in the Step PR instead. Discovery and
   doc-only work has no OpenSpec change.
 - **Scope:** one issue per Step names every scenario in that Step's
   success-criteria table. A defect in an already-merged Step gets its own
@@ -108,7 +110,8 @@ Layering is enforced by import-linter:
 - **PRs:** one PR per Step, opened only after every sub-step is implemented
   and verified. It lists every completed sub-step (`Roadmap: 2.1, 2.2, 2.3`),
   carries evidence for every Step success-criteria scenario and is fairly
-  reviewed as one whole.
+  reviewed as one whole. The Step PR itself ticks every sub-step roadmap box
+  with its evidence, so the ticks land on `main` with the merge.
 - **Commits:** use Conventional Commits, and squash-merge.
 - **Contract docs:** update `api-contract`, `data-contract` and
   `agents-spec` in the same PR as the code they describe.
@@ -146,9 +149,11 @@ Autopilot runs it without a human in the chat.
   reports back. Commits, pushes and opens the PR when told.
 - **Reviewer:** a fresh Claude subagent. Reviews blind, against the spec
   and the standards.
-- **Human:** approves the change, answers escalations and merges outside
-  autopilot under the merge bar. In autopilot, the human audits afterwards
-  through the human queue.
+- **Human:** outside autopilot, approves a Step's OpenSpec change once before
+  implementation; the lead records that approval on the Step issue. Answers
+  escalations and merges outside autopilot under the merge bar. In autopilot,
+  reviews the delta specs in the Step PR and audits afterwards through the
+  human queue.
 
 ### Merge bar
 

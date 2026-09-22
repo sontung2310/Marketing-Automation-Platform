@@ -3,7 +3,8 @@
 > Parent: [specs.md](specs.md). Work eligible Steps in order: one GitHub issue,
 > `feature/<step-number>-<slug>` branch and PR per Step. Work a Step's
 > sub-steps in order; its PR opens only after every sub-step is implemented and
-> verified, and its sub-steps are ticked when that PR merges. Follow AGENTS.md
+> verified. The Step PR itself ticks every sub-step box with evidence, so the
+> ticks land on `main` with its merge. Follow AGENTS.md
 > §3 for OpenSpec scope.
 >
 > **Evidence-hold marker:** append `<!-- EVIDENCE-HOLD: #<issue> -->` to the

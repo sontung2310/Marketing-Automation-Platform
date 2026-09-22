@@ -203,6 +203,15 @@ def validate_seed_bundle(bundle: SeedBundle, *, now: datetime | None = None) -> 
     scores = [item.relevance_score for item in bundle.influencers]
     if min(scores) > 0.3 or max(scores) < 0.95:
         raise SeedValidationError("influencer relevance scores must span 0.3 to 0.95")
+    if any(
+        not _uses_example_hostname(url)
+        for influencer in bundle.influencers
+        for url in [
+            influencer.profile_url,
+            *(evidence.url for evidence in influencer.evidence),
+        ]
+    ):
+        raise SeedValidationError("influencer URLs must use .example")
 
     template_counts = Counter(item.activity_type.value for item in bundle.simulation_templates)
     missing_templates = [item.value for item in ActivityType if template_counts[item.value] < 2]

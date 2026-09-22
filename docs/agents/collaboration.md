@@ -8,7 +8,7 @@
 | **Lead** | Claude Code, Opus 5 at the highest effort | The issue end to end: plans, briefs, reviews the proposed OpenSpec change and implementer reports, verifies every result, decides when work is done and spawns the reviewer. Owns GitHub bookkeeping (issues, labels and human queue), autopilot merging and the `.handoffs/` checkpoint. Its repository boundary and merge bar are in AGENTS.md §4. |
 | **Implementer** | Codex, `gpt-5.6-terra` at `xhigh` (`~/.codex/config.toml`) | Writes the OpenSpec change from the lead's prompt, then does exactly the briefed tasks via `openspec-apply-change`: implements, checks and reports. Commits, pushes and opens the PR when the lead says so. |
 | **Reviewer** | A fresh Claude subagent, spawned by the lead | An independent verdict on the PR (see "Fair review") |
-| **Human** | The engineer on duty | Approves the OpenSpec change, answers escalations and merges outside autopilot. In **autopilot**, the lead merges only under the AGENTS.md §4 merge bar; the human audits asynchronously through the human queue (see "Autopilot"). |
+| **Human** | The engineer on duty | Outside autopilot, approves a Step's OpenSpec change once before implementation; the lead records that approval as a comment on the Step issue. Answers escalations and merges outside autopilot. In **autopilot**, the human reviews delta specs in the Step PR; the lead merges only under the AGENTS.md §4 merge bar, and the human audits asynchronously through the human queue (see "Autopilot"). |
 
 ## Setup
 
@@ -78,7 +78,8 @@
    is verified, the lead tells the implementer to open the PR from
    `.github/pull_request_template.md`, listing every `Roadmap: X.Y` sub-step,
    `Closes #<issue>` and evidence for every Step success-criteria scenario.
-   Tick the Step's roadmap boxes when that PR merges.
+   The Step PR itself ticks every sub-step roadmap box with its evidence, so
+   those ticks land on `main` with the merge.
 7. **Review.** The lead spawns the reviewer. Every finding is either fixed
    through another loop round, or answered on the PR with a written reason.
    Once the fair review is clean, the lead tells the implementer to archive
@@ -137,6 +138,10 @@ stop.
 For a system-behaviour change, the implementer runs `openspec-propose` from
 the lead's prompt, and the lead reviews it with follow-ups before
 implementation begins.
+
+Outside autopilot, the human approves the change once before implementation and
+the lead records that approval as a comment on the Step issue. In autopilot,
+the human reviews the delta specs in the Step PR instead.
 
 **OpenSpec scope.** Follow AGENTS.md §3. A Step that is pure investigation or
 documentation — inspecting source collections, rewriting a contract doc —
@@ -219,9 +224,11 @@ every phase, never only at the end.
 3. **Specify.** For system-behaviour work, the implementer runs
    `openspec-propose` from the lead's prompt for the Step issue, listing every
    `Roadmap: X.Y` sub-step. The lead validates it with `npm run openspec:check`
-   and reviews it with follow-ups; the human approves the change once before
-   implementation begins. Done when validation passes, approval is recorded
-   and the lead has no unresolved follow-up.
+   and reviews it with follow-ups. Outside autopilot, the human approves the
+   change once before implementation and the lead records that approval as a
+   comment on the Step issue. In autopilot, the human reviews the delta specs
+   in the Step PR instead. Done when validation passes, the required review
+   path is recorded and the lead has no unresolved follow-up.
    - **Discovery or doc-only Steps** (e.g. 0.3–0.4, verifying the data
      contract against the live cluster) follow AGENTS.md §3 — skip straight
      to step 4. They are still briefed to the implementer like any other work:
@@ -258,8 +265,9 @@ every phase, never only at the end.
    met, leave the PR open, record it on the
    [human-queue issue #4](https://github.com/sontung2310/Marketing-Automation-Platform/issues/4)
    and stop. After merging, sync `main` locally. The human audits merged work
-   asynchronously and can revert it. Done when the Step PR is merged, every
-   Step roadmap box is ticked and CI on `main` is green.
+   asynchronously and can revert it. The Step PR itself ticks every Step
+   roadmap box with its evidence, so those ticks land on `main` with the merge.
+   Done when the Step PR is merged and CI on `main` is green.
 
 ### Human queue
 

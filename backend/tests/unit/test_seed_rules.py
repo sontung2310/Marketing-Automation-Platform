@@ -108,11 +108,16 @@ def test_seed_validation_rejects_future_activity() -> None:
         validate_seed_bundle(invalid_bundle, now=SEED_AUTHORED_AT)
 
 
-def test_seed_load_and_validation_reject_naive_now() -> None:
+def test_seed_load_rejects_naive_now() -> None:
     naive_now = datetime(2026, 9, 22)
 
     with pytest.raises(ValueError, match="timezone"):
         load_seed_bundle(now=naive_now)
+
+
+def test_seed_validation_rejects_naive_now() -> None:
+    naive_now = datetime(2026, 9, 22)
+
     with pytest.raises(ValueError, match="timezone"):
         validate_seed_bundle(load_seed_bundle(now=SEED_AUTHORED_AT), now=naive_now)
 
@@ -267,4 +272,35 @@ def test_seed_validation_rejects_non_example_trend_sample_post_url() -> None:
     invalid_bundle = bundle.model_copy(update={"trends": [invalid_trend, *bundle.trends[1:]]})
 
     with pytest.raises(SeedValidationError, match="trend sample post URLs"):
+        validate_seed_bundle(invalid_bundle)
+
+
+def test_seed_validation_rejects_non_example_influencer_profile_url() -> None:
+    bundle = load_seed_bundle()
+    invalid_influencer = bundle.influencers[0].model_copy(
+        update={"profile_url": "https://influencers.example.com/aisha-patel"}
+    )
+    invalid_bundle = bundle.model_copy(
+        update={"influencers": [invalid_influencer, *bundle.influencers[1:]]}
+    )
+
+    with pytest.raises(SeedValidationError, match="influencer URLs"):
+        validate_seed_bundle(invalid_bundle)
+
+
+def test_seed_validation_rejects_non_example_influencer_evidence_url() -> None:
+    bundle = load_seed_bundle()
+    invalid_evidence = (
+        bundle.influencers[0]
+        .evidence[0]
+        .model_copy(update={"url": "https://influencers.example.com/aisha-patel/notes"})
+    )
+    invalid_influencer = bundle.influencers[0].model_copy(
+        update={"evidence": [invalid_evidence, *bundle.influencers[0].evidence[1:]]}
+    )
+    invalid_bundle = bundle.model_copy(
+        update={"influencers": [invalid_influencer, *bundle.influencers[1:]]}
+    )
+
+    with pytest.raises(SeedValidationError, match="influencer URLs"):
         validate_seed_bundle(invalid_bundle)

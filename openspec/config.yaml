@@ -9,11 +9,12 @@ context: |
   UI: ONE page, CompetitorScope Design System (Robotic Marketer brand).
   Source of truth: docs/specs.md and companions (data-contract, agents-spec, api-contract,
   ui-spec, evaluation-spec, roadmap). Conventions and layering: AGENTS.md.
-  Each change maps to one roadmap sub-step (docs/roadmap.md). Quality gate: npm run check.
+  Each change maps to one roadmap Step and lists its sub-steps (for example,
+  Roadmap: 2.1, 2.2, 2.3; docs/roadmap.md). Quality gate: npm run check.
 
 rules:
   proposal:
-    - Reference the roadmap sub-step ID (e.g. 4.2) and the CAP-* capability IDs from docs/specs.md §5
+    - Reference the roadmap Step's sub-steps (e.g. Roadmap: 2.1, 2.2, 2.3) and the CAP-* capability IDs from docs/specs.md §5
   specs:
     - Write scenarios as Given/When/Then against a real running environment, reusing the roadmap success criteria
   tasks:
