@@ -392,6 +392,25 @@ updates exactly one trend document; a new UTC window creates a distinct,
 dated aggregate. A raw Pace post `_id` is never used as a trend's
 `source.ref_id` because a group can contain many posts.
 
+#### Aggregate output construction
+
+For each dated group, `mention_count` is the count in the latest seven days
+`[window_end_date - 7 days, window_end_date)`, so `window_days` is always
+`7`. Let `current_count` be that count and `previous_count` be the count in
+the preceding seven-day interval. Set `momentum_pct` to
+`(current_count - previous_count) / max(previous_count, 1) * 100` and map it
+to `direction` through `PACE_TREND_DIRECTIONS`: greater than `10` is `RISING`,
+less than `-10` is `FALLING`, and every other value is `STEADY`.
+
+Build `keywords` from the group's non-empty string `keywords[].term` values
+that have a numeric `keywords[].score`: take at most five distinct terms,
+ordered by their mean score descending and then their Unicode code-point order
+ascending. If none qualify, use `[]`. Set `sentiment` to the mean of the
+per-post signed values defined below, or `0.0` if no post has one. Select up
+to three `sample_posts` newest-first by `created_at`, breaking a tie by raw
+post `_id` ascending. Every Pace-derived aggregate sets `is_mock: false`; only
+the seed fallback has `is_mock: true`.
+
 The complete observed `PACE_SOURCE_CHANNELS` registry is:
 
 | `source` | Count | `Channel` |
