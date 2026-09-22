@@ -21,6 +21,7 @@ from app.intelligence.models import (
     Influencer,
     SimulationTemplate,
     Trend,
+    ensure_aware,
 )
 
 SEED_DIRECTORY = Path(__file__).resolve().parent
@@ -71,7 +72,7 @@ def load_seed_bundle(
             directory / "simulation_templates.json", list[SimulationTemplate]
         ),
     )
-    return _rebase_datetimes(bundle, now=(now or datetime.now(UTC)))
+    return _rebase_datetimes(bundle, now=ensure_aware(now or datetime.now(UTC)))
 
 
 def validate_seed_bundle(bundle: SeedBundle, *, now: datetime | None = None) -> SeedCoverage:
@@ -108,7 +109,9 @@ def validate_seed_bundle(bundle: SeedBundle, *, now: datetime | None = None) -> 
         missing = sorted(item.value for item in required_activity_channels - activity_channels)
         raise SeedValidationError(f"activity channel coverage is missing: {', '.join(missing)}")
     detected = [item.detected_at for item in bundle.competitor_activities]
-    current_time = now or datetime.now(UTC)
+    current_time = ensure_aware(now or datetime.now(UTC))
+    if any(item > current_time for item in detected):
+        raise SeedValidationError("activities cannot be dated in the future")
     if any(item < current_time - timedelta(days=30) for item in detected):
         raise SeedValidationError("activities must fall within the last 30 days")
     if sum(item >= current_time - timedelta(hours=48) for item in detected) < 6:
@@ -139,10 +142,24 @@ def validate_seed_bundle(bundle: SeedBundle, *, now: datetime | None = None) -> 
     if any(item.is_fictional and not _uses_example_hostname(item.website) for item in fictional):
         raise SeedValidationError("fictional competitor websites must use .example")
     if any(
-        item.competitor_id in fictional_ids and item.url and not _uses_example_hostname(item.url)
+        url is not None and not _uses_example_hostname(url)
+        for item in fictional
+        for url in item.social.values()
+    ):
+        raise SeedValidationError("fictional competitor social URLs must use .example")
+    if any(
+        item.competitor_id in fictional_ids
+        and item.url is not None
+        and not _uses_example_hostname(item.url)
         for item in bundle.competitor_activities
     ):
         raise SeedValidationError("fictional competitor activity URLs must use .example")
+    if any(
+        not _uses_example_hostname(sample_post.url)
+        for trend in bundle.trends
+        for sample_post in trend.sample_posts
+    ):
+        raise SeedValidationError("trend sample post URLs must use .example")
     competitors_by_id = {item.id: item for item in bundle.competitors}
     for template in bundle.simulation_templates:
         template_competitor = competitors_by_id.get(template.competitor_id)
@@ -242,15 +259,21 @@ def _shift_datetime_value(value: object, *, offset: timedelta) -> object:
         return _shift_datetime_values(value, offset=offset)
     if isinstance(value, list):
         return [_shift_datetime_value(item, offset=offset) for item in value]
-    if isinstance(value, tuple):
-        return tuple(_shift_datetime_value(item, offset=offset) for item in value)
     if isinstance(value, dict):
         return {key: _shift_datetime_value(item, offset=offset) for key, item in value.items()}
     return value
 
 
 def _uses_example_hostname(url: str) -> bool:
-    return (hostname := urlsplit(url).hostname) is not None and hostname.endswith(".example")
+    try:
+        parsed = urlsplit(url)
+    except ValueError:
+        return False
+    return (
+        parsed.username is None
+        and (hostname := parsed.hostname) is not None
+        and hostname.endswith(".example")
+    )
 
 
 def _all_records(bundle: SeedBundle) -> list[BaseModel]:

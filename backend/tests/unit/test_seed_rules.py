@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.intelligence.models import ActivityType
+from app.intelligence.models import ActivityType, Channel
 from app.pipelines.seed.loader import (
     SEED_AUTHORED_AT,
     SeedValidationError,
@@ -60,6 +60,63 @@ def test_seed_validation_rejects_missing_activity_coverage() -> None:
         validate_seed_bundle(reduced)
 
 
+def test_seed_validation_rejects_activity_older_than_30_days() -> None:
+    bundle = load_seed_bundle(now=SEED_AUTHORED_AT)
+    invalid_activity = bundle.competitor_activities[0].model_copy(
+        update={"detected_at": SEED_AUTHORED_AT - timedelta(days=31)}
+    )
+    invalid_bundle = bundle.model_copy(
+        update={"competitor_activities": [invalid_activity, *bundle.competitor_activities[1:]]}
+    )
+
+    with pytest.raises(SeedValidationError, match="last 30 days"):
+        validate_seed_bundle(invalid_bundle, now=SEED_AUTHORED_AT)
+
+
+def test_seed_validation_rejects_fewer_than_six_recent_activities() -> None:
+    bundle = load_seed_bundle(now=SEED_AUTHORED_AT)
+    recent_activity_ids = {
+        item.id
+        for item in bundle.competitor_activities
+        if item.detected_at >= SEED_AUTHORED_AT - timedelta(hours=48)
+    }
+    invalid_bundle = bundle.model_copy(
+        update={
+            "competitor_activities": [
+                item.model_copy(update={"detected_at": SEED_AUTHORED_AT - timedelta(hours=49)})
+                if item.id in recent_activity_ids
+                else item
+                for item in bundle.competitor_activities
+            ]
+        }
+    )
+
+    with pytest.raises(SeedValidationError, match="latest 48 hours"):
+        validate_seed_bundle(invalid_bundle, now=SEED_AUTHORED_AT)
+
+
+def test_seed_validation_rejects_future_activity() -> None:
+    bundle = load_seed_bundle(now=SEED_AUTHORED_AT)
+    invalid_activity = bundle.competitor_activities[0].model_copy(
+        update={"detected_at": SEED_AUTHORED_AT + timedelta(minutes=1)}
+    )
+    invalid_bundle = bundle.model_copy(
+        update={"competitor_activities": [invalid_activity, *bundle.competitor_activities[1:]]}
+    )
+
+    with pytest.raises(SeedValidationError, match="future"):
+        validate_seed_bundle(invalid_bundle, now=SEED_AUTHORED_AT)
+
+
+def test_seed_load_and_validation_reject_naive_now() -> None:
+    naive_now = datetime(2026, 9, 22)
+
+    with pytest.raises(ValueError, match="timezone"):
+        load_seed_bundle(now=naive_now)
+    with pytest.raises(ValueError, match="timezone"):
+        validate_seed_bundle(load_seed_bundle(now=SEED_AUTHORED_AT), now=naive_now)
+
+
 def test_seed_validation_rejects_record_without_is_mock() -> None:
     bundle = load_seed_bundle()
     invalid_company = bundle.companies[0].model_copy(update={"is_mock": False})
@@ -111,6 +168,55 @@ def test_seed_validation_rejects_restricted_activity_for_real_competitor() -> No
         validate_seed_bundle(invalid_bundle)
 
 
+def test_seed_validation_rejects_non_example_fictional_competitor_website() -> None:
+    bundle = load_seed_bundle()
+    invalid_competitor = bundle.competitors[1].model_copy(
+        update={"website": "https://brightlane.example.com"}
+    )
+    invalid_bundle = bundle.model_copy(
+        update={"competitors": [bundle.competitors[0], invalid_competitor, *bundle.competitors[2:]]}
+    )
+
+    with pytest.raises(SeedValidationError, match="websites"):
+        validate_seed_bundle(invalid_bundle)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        r"https://real-competitor.com\@brightlane.example/x",
+        "https://[bad",
+    ],
+)
+def test_seed_validation_rejects_unsafe_fictional_competitor_website(url: str) -> None:
+    bundle = load_seed_bundle()
+    invalid_competitor = bundle.competitors[1].model_copy(update={"website": url})
+    invalid_bundle = bundle.model_copy(
+        update={"competitors": [bundle.competitors[0], invalid_competitor, *bundle.competitors[2:]]}
+    )
+
+    with pytest.raises(SeedValidationError, match="websites"):
+        validate_seed_bundle(invalid_bundle)
+
+
+def test_seed_validation_rejects_non_example_fictional_social_url() -> None:
+    bundle = load_seed_bundle()
+    invalid_competitor = bundle.competitors[1].model_copy(
+        update={
+            "social": {
+                **bundle.competitors[1].social,
+                Channel.LINKEDIN: "https://brightlane.example.com/linkedin",
+            }
+        }
+    )
+    invalid_bundle = bundle.model_copy(
+        update={"competitors": [bundle.competitors[0], invalid_competitor, *bundle.competitors[2:]]}
+    )
+
+    with pytest.raises(SeedValidationError, match="social URLs"):
+        validate_seed_bundle(invalid_bundle)
+
+
 def test_seed_validation_rejects_real_competitor_simulation_template() -> None:
     bundle = load_seed_bundle()
     invalid_template = bundle.simulation_templates[0].model_copy(
@@ -147,4 +253,18 @@ def test_seed_validation_rejects_example_com_fictional_activity_url() -> None:
     )
 
     with pytest.raises(SeedValidationError, match="activity URLs"):
+        validate_seed_bundle(invalid_bundle)
+
+
+def test_seed_validation_rejects_non_example_trend_sample_post_url() -> None:
+    bundle = load_seed_bundle()
+    invalid_sample_post = (
+        bundle.trends[0]
+        .sample_posts[0]
+        .model_copy(update={"url": "https://brightlane.example.com/post"})
+    )
+    invalid_trend = bundle.trends[0].model_copy(update={"sample_posts": [invalid_sample_post]})
+    invalid_bundle = bundle.model_copy(update={"trends": [invalid_trend, *bundle.trends[1:]]})
+
+    with pytest.raises(SeedValidationError, match="trend sample post URLs"):
         validate_seed_bundle(invalid_bundle)
