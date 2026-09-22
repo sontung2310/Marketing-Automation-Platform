@@ -41,5 +41,21 @@ jobs:
       - name: Install dependencies
         run: npm ci && uv sync --frozen --directory backend
 
+      - name: Check committed secrets
+        shell: bash
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env must not be tracked"
+            exit 1
+          fi
+
+          matches="$(git grep -n -i 'mongodb+srv://' -- . || true)"
+          unexpected="$(printf '%s\n' "$matches" | grep -v -F '.env.example:' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "::error::A non-placeholder MongoDB URI is tracked"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
       - name: Check code
         run: npm run check

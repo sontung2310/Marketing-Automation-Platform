@@ -37,7 +37,7 @@ contract based on what actually exists in MongoDB.
 | 0-A | **Given** a fresh clone and a filled `.env`, **when** a developer runs `docker compose up`, **then** `GET /api/health` returns `mongo: ok` and the frontend serves at `:5173` within 2 minutes. | Manual + `backend/tests/integration/test_health.py` |
 | 0-B | **Given** a PR with a formatting or type error, **when** CI runs, **then** the pipeline fails on the lint or typecheck job. | A deliberately broken PR (then reverted) |
 | 0-C | **Given** the MongoDB MCP is connected, **when** the source collections are inspected, **then** data-contract §4 lists every mapped source field with a real sample value. It contains no "VERIFY" markers. | Doc review |
-| 0-D | `.env` is gitignored, and `git grep -i "mongodb+srv://"` finds only placeholders. | CI secret-scan step |
+| 0-D | `.env` is gitignored, and a repository-wide MongoDB URI scan finds only the `.env.example` placeholder. | CI secret-scan step |
 
 ## Step 1 — Intelligence DB and pipelines
 
