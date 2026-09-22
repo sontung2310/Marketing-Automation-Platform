@@ -1,6 +1,6 @@
-## Roadmap sub-step(s)
+## Roadmap Step and sub-steps
 
-<!-- The sub-step(s) this PR completes, e.g. `Roadmap: 2.3` or `Roadmap: 2.3, 2.4`. Branch: feature/<step-number>-<slug>. -->
+<!-- List every sub-step in the Step, e.g. `Roadmap: 2.1, 2.2, 2.3`. Branch: feature/<step-number>-<slug>. -->
 Roadmap:
 OpenSpec change: `openspec/changes/<name>` or `none`
 

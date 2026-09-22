@@ -78,9 +78,9 @@ Layering is enforced by import-linter:
 |---|---|---|---|
 | Ground | anyone | — | the relevant `openspec/specs/` and `docs/` have been read, before the idea is discussed |
 | Grill | product + engineering | `grill-me` | every open decision about the outcome is answered |
-| Ticket handoff | whoever ran the grilling | `to-tickets` | GitHub issues exist with behavioural acceptance criteria, blockers and `Roadmap: X.Y`. No OpenSpec change exists yet. |
-| Specify | implementer agent, reviewed by the lead | `openspec-propose` (system-behaviour work) | one change per system-behaviour issue (proposal with `Roadmap: X.Y`, delta specs, design, tasks), reviewed by the lead and, outside autopilot, approved by a human |
-| Implement | implementer agent | `openspec-apply-change` | every task is checked off and `npm run check` is green |
+| Ticket handoff | whoever ran the grilling | `to-tickets` | one GitHub issue exists for the roadmap Step, naming every Given/When/Then scenario in its success-criteria table, blockers and its `Roadmap: X.Y` sub-steps. No OpenSpec change exists yet. |
+| Specify | implementer agent, reviewed by the lead | `openspec-propose` (system-behaviour work) | at most one change per system-behaviour Step (proposal with every `Roadmap: X.Y` sub-step, delta specs, design and tasks), reviewed by the lead and approved once by a human before implementation starts |
+| Implement | implementer agent | `openspec-apply-change` | sub-steps are implemented in order on the Step branch; each is briefed, verified, committed and pushed before the next begins |
 | Review and close | implementer (archive) + reviewer (review) + human (merge); the lead merges only in autopilot | `openspec-archive-change` | the fair review meets the §4 merge bar, any OpenSpec change is archived in the same PR, and the PR is merged under that bar |
 
 - **Behaviour vs. engineering:** nontechnical teammates own behaviour
@@ -88,10 +88,13 @@ Layering is enforced by import-linter:
   the tasks.
 - **Behaviour changes during implementation:** update the delta spec and
   get it re-reviewed before the code relies on it.
-- **OpenSpec scope:** system-behaviour work has one OpenSpec change per issue.
-  Discovery and doc-only work has no OpenSpec change.
-- **Scope:** one issue per system-behaviour change. A new problem becomes a
-  new issue.
+- **OpenSpec scope:** system-behaviour work has at most one OpenSpec change per
+  Step. The human approves it once before implementation begins. Discovery and
+  doc-only work has no OpenSpec change.
+- **Scope:** one issue per Step names every scenario in that Step's
+  success-criteria table. A defect in an already-merged Step gets its own
+  issue and a commit on the current Step's PR; it gets its own PR only when it
+  breaks `main`.
 - **Evaluation data** (golden datasets, fixtures, rubrics, reports) lives
   only in `evaluation/`. The harness code lives in `backend/evals/`.
 - **Issue commands:** [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
@@ -100,11 +103,12 @@ Layering is enforced by import-linter:
 
 - **`main` is protected.** No direct commits: every change reaches `main`
   through a PR that passes **Check**.
-- **Branches:** one branch per roadmap sub-step, or per tightly related group
-  of sub-steps, named `feature/<step-number>-<slug>` (e.g.
-  `feature/2.3-competitor-endpoints`).
-- **PRs:** one PR per branch. The PR description references the roadmap
-  sub-step(s) it completes (`Roadmap: 2.3`, or `Roadmap: 2.3, 2.4`).
+- **Branches:** one branch per roadmap Step, named
+  `feature/<step-number>-<slug>` (e.g. `feature/2-mcp-server`).
+- **PRs:** one PR per Step, opened only after every sub-step is implemented
+  and verified. It lists every completed sub-step (`Roadmap: 2.1, 2.2, 2.3`),
+  carries evidence for every Step success-criteria scenario and is fairly
+  reviewed as one whole.
 - **Commits:** use Conventional Commits, and squash-merge.
 - **Contract docs:** update `api-contract`, `data-contract` and
   `agents-spec` in the same PR as the code they describe.
@@ -174,7 +178,7 @@ reason in the PR; that satisfies the item for the merge bar.
    `docs/roadmap.md`, and the relevant `openspec/specs/`.
 2. Before writing code, state:
    - the issue;
-   - the roadmap sub-step;
+   - the roadmap Step and the sub-step in progress;
    - the OpenSpec change;
    - your role;
    - the layers the work touches.
