@@ -249,17 +249,11 @@ class CompetitorActivity(TenantModel):
     @model_validator(mode="after")
     def validate_type_specific_fields(self) -> CompetitorActivity:
         social_types = {ActivityType.SOCIAL_POST, ActivityType.EXECUTIVE_POST}
-        if self.activity_type == ActivityType.EXECUTIVE_POST and self.author is None:
-            raise ValueError("EXECUTIVE_POST requires an author")
         if self.activity_type != ActivityType.EXECUTIVE_POST and self.author is not None:
             raise ValueError("author is only valid for EXECUTIVE_POST")
         price_types = {ActivityType.PRICE_CHANGE, ActivityType.PROMOTION}
-        if self.activity_type in price_types and self.price is None:
-            raise ValueError(f"{self.activity_type} requires price data")
         if self.activity_type not in price_types and self.price is not None:
             raise ValueError("price is only valid for PRICE_CHANGE or PROMOTION")
-        if self.activity_type in social_types and self.engagement is None:
-            raise ValueError(f"{self.activity_type} requires engagement data")
         if self.activity_type not in social_types and self.engagement is not None:
             raise ValueError("engagement is only valid for social activity types")
         return self
