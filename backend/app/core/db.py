@@ -16,7 +16,9 @@ def get_client() -> AsyncMongoClient[Document]:
     settings = get_settings()
     if settings.mongodb_uri is None:
         raise UpstreamUnavailableError("MONGODB_URI is not configured")
-    return AsyncMongoClient(settings.mongodb_uri.get_secret_value(), serverSelectionTimeoutMS=5000)
+    return AsyncMongoClient(
+        settings.mongodb_uri.get_secret_value(), serverSelectionTimeoutMS=5000, tz_aware=True
+    )
 
 
 def get_database() -> AsyncDatabase[Document]:

@@ -66,17 +66,20 @@ read preserves the established ownership model without a data-contract change.
 MCP validates function signatures before calling a handler. Therefore every
 tool signature uses plain JSON types (`str | None`, `int | None`, and
 `list[str] | None`), never domain enums or bounded Pydantic values. Enum values
-remain visible to agents in the generated input schema through `Field` JSON
-schema extras (for example an `items.enum` list for `activity_types`).
+remain visible to agents in the generated input schema through an item-level
+`Annotated[str, Field(json_schema_extra={"enum": [...]})]` built from the
+domain enum registry (for example an `items.enum` list for `activity_types`).
 
 One shared helper parses those raw arguments into the tool's typed Pydantic
 argument model and converts `ValidationError` into
 `{error: {code: "VALIDATION_ERROR", message: ...}}`. Every handler uses this
-one pattern. Its declared return annotation is a union of that shared error
-model and its typed success model, which the installed MCP SDK's structured
-output adapter can serialize. The real HTTP test asserts an invalid enum
-returns that JSON envelope with `CallToolResult.is_error == false`, rather than
-the SDK's pre-handler text `ToolError` result.
+one pattern and declares a union of its typed success model and that shared
+error model. Every tool is registered with `structured_output=False`: the
+installed SDK therefore advertises no output-schema wrapper and returns only
+the documented JSON as text content, with `CallToolResult.is_error == false`.
+The typed boundary serializer emits public `id` fields rather than Mongo `_id`
+aliases. Agents SDK clients retain their default `use_structured_content=False`;
+tests parse the text content rather than relying on structured content.
 
 `list_competitors`, `search_competitor_activity`, `search_trends`, and
 `search_influencers` always return `{results: [...]}`; an empty list adds the

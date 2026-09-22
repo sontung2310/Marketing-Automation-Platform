@@ -15,34 +15,35 @@
 - [x] 1.1 Update the backend dependency declaration to `mcp>=2.2,<3`,
   regenerate `backend/uv.lock`, and verify the lock resolves MCP 2.2.x with
   `uv tree --directory backend`.
-- [ ] 1.2 Add the dependency-injectable MCP SDK 2.x `MCPServer` factory,
+- [x] 1.2 Add the dependency-injectable MCP SDK 2.x `MCPServer` factory,
   streamable-HTTP app, and Uvicorn entrypoint, registering all nine CAP-MCP-01
   tools with descriptions; use plain JSON signature types while advertising
   domain enum values in each input schema, and verify registration against the
   installed SDK.
-- [ ] 1.3 Add typed, tenant-filtered repository reads for company context,
+- [x] 1.3 Add typed, tenant-filtered repository reads for company context,
   competitors, activities, trends, and influencers; add a
   `RecommendationsRepository` aggregation that `$lookup`s `sessions` on
   `session_id` and filters the joined `company_id`; verify a cross-tenant
   recommendation returns no model without adding `company_id` to recommendations.
-- [ ] 1.4 Implement the nine handlers with documented prefixed-ID fields and
+- [x] 1.4 Implement the nine handlers with documented prefixed-ID fields and
   `{results: [...]}` for every list/search tool; route all raw arguments through
   one shared typed Pydantic parser that returns the `VALIDATION_ERROR` envelope,
-  and declare each return as a success/error union accepted by MCP structured
-  output; verify unit tests cover each representative result shape and
+  declare each return as a success/error union, and register every tool with
+  `structured_output=False` so parsed text content has only the documented JSON
+  shape; verify unit tests cover each representative result shape and
   repository-only delegation.
-- [ ] 1.5 Build the MCP integration fixture with its own typed, time-relative
+- [x] 1.5 Build the MCP integration fixture with its own typed, time-relative
   records, UUID-suffixed disposable Mongo database, second-company session and
   recommendation, ephemeral `127.0.0.1` Uvicorn server, and
   `MCPServerStreamableHttp` URL client; verify teardown drops the database and
   parallel runs do not share names.
-- [ ] 1.6 Add real-HTTP integration tests that prove 2-A's filtered,
+- [x] 1.6 Add real-HTTP integration tests that prove 2-A's filtered,
   newest-first `PRICE_CHANGE` results and 2-E's nine described tools through
   an Agents SDK client; prove `activity_types=["BOGUS"]` returns the JSON
   `VALIDATION_ERROR` envelope with `is_error == false`; also verify list/search
   exclude cross-tenant competitor, activity, trend, and influencer records and
   a cross-tenant recommendation returns no record.
-- [ ] 1.7 Add or extend MCP layering/read-only coverage; verify 2-D through
+- [x] 1.7 Add or extend MCP layering/read-only coverage; verify 2-D through
   the import-linter contract, no direct MongoDB imports or writes, and unchanged
   collection snapshots after all nine calls.
 
