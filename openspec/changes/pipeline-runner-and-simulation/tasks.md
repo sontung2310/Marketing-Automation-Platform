@@ -13,5 +13,5 @@
 
 ## 3. Documentation and verification
 
-- [ ] 3.1 Update `docs/roadmap.md` and the relevant API/data contract notes without adding the future HTTP route; verify the roadmap links the PR and the scheduler/CLI contract is documented
+- [x] 3.1 Update `docs/roadmap.md` and the relevant API/data contract notes without adding the future HTTP route; verify the roadmap links the PR and the scheduler/CLI contract is documented
 - [ ] 3.2 Run the complete quality gate and OpenSpec checks (`npm run check`, integration tests, `openspec validate --all --strict --no-interactive`, and conflict detection); verify all affected tests pass
