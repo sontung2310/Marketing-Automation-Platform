@@ -73,9 +73,15 @@ class Repository(Generic[ModelT]):
         source = getattr(model, "source", None)
         if not isinstance(source, Provenance):
             raise TypeError(f"{self.collection_name} records require a source provenance")
-        result = await self.collection.replace_one(
+        model_document = model.model_dump(by_alias=True, mode="python")
+        document_id = model_document["_id"]
+        document = {key: value for key, value in model_document.items() if key != "_id"}
+        result = await self.collection.update_one(
             {"source.system": source.system, "source.ref_id": source.ref_id},
-            cast(Document, model.model_dump(by_alias=True, mode="python")),
+            {
+                "$set": cast(Document, document),
+                "$setOnInsert": {"_id": document_id},
+            },
             upsert=True,
         )
         return UpsertResult(

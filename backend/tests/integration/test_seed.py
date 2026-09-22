@@ -5,7 +5,9 @@ from pymongo.asynchronous.database import AsyncDatabase
 
 from app.core import db
 from app.core.config import get_settings
+from app.intelligence.models import Competitor
 from app.intelligence.repositories.base import Document
+from app.intelligence.repositories.competitors import CompetitorsRepository
 from app.pipelines.seed.loader import load_seed_bundle
 from app.pipelines.seed.writer import seed_database
 
@@ -44,3 +46,27 @@ async def test_seed_is_idempotent_and_meets_minimums(
     assert first_counts == second_counts
     assert second.collections["competitor_activities"].inserted == 0
     assert second.collections["competitor_activities"].skipped == 45
+
+
+async def test_duplicate_provenance_with_different_id_updates_existing_record(
+    seed_test_database: AsyncDatabase[Document],
+) -> None:
+    bundle = load_seed_bundle()
+    await seed_database(seed_test_database, bundle)
+
+    original = bundle.competitors[0]
+    replacement_data = original.model_dump(by_alias=True, mode="python")
+    replacement_data.update({"_id": "cpt_replacement", "name": "Updated competitor"})
+    replacement = Competitor.model_validate(replacement_data)
+
+    result = await CompetitorsRepository(seed_test_database).upsert_by_source(replacement)
+
+    assert result.inserted is False
+    assert result.updated is True
+    assert await seed_test_database["competitors"].count_documents({}) == len(bundle.competitors)
+    stored = await seed_test_database["competitors"].find_one(
+        {"source.system": original.source.system, "source.ref_id": original.source.ref_id}
+    )
+    assert stored is not None
+    assert stored["_id"] == original.id
+    assert stored["name"] == "Updated competitor"
