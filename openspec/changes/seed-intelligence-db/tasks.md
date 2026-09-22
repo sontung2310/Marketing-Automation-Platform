@@ -15,4 +15,4 @@
 
 - [x] 3.1 Implement async `backend/scripts/seed_db.py` with configured URI/database, `--dry-run`/validation mode, index setup, idempotent provenance upserts, and inserted/updated/skipped totals; verify dry-run leaves counts unchanged.
 - [x] 3.2 Add model, seed-rule, repository/index, and two-run integration tests against a disposable or configured Mongo database; verify the second seed run adds no logical records and all §5 counts remain satisfied.
-- [ ] 3.3 Update `docs/roadmap.md` and any affected contract documentation with the merged evidence and run `npm run check`; verify the Step 1.1–1.2 checkboxes remain unticked until the PR evidence is complete, then tick them in the same PR.
+- [x] 3.3 Update `docs/roadmap.md` and any affected contract documentation with the merged evidence and run `npm run check`; verify the Step 1.1–1.2 checkboxes remain unticked until the PR evidence is complete, then tick them in the same PR.
