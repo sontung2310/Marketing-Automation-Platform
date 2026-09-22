@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     mongodb_uri: SecretStr | None = None
     mongodb_database: str = "marketing_automation"
     competitorscope_database: str = "competitors_monitoring_test"
+    dct_database: str = "influencer_discovery"
+    pace_database: str = "pace_database"
 
     openai_api_key: SecretStr | None = None
     openai_model_agent: str | None = None

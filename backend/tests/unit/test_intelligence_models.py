@@ -9,8 +9,10 @@ from app.intelligence.models import (
     Channel,
     Company,
     CompetitorActivity,
+    Influencer,
     Provenance,
     SourceSystem,
+    Trend,
 )
 
 
@@ -89,3 +91,42 @@ def test_activity_rejects_incompatible_type_fields() -> None:
             is_simulated=False,
             ingested_at=datetime(2026, 9, 22, tzinfo=UTC),
         )
+
+
+def test_source_derived_collections_allow_empty_optional_lists() -> None:
+    influencer = Influencer(
+        id="inf_dct_1",
+        company_id="cmp_marketing_eye",
+        name="Creator",
+        handle="@creator",
+        channel=Channel.X,
+        profile_url="https://x.example/creator",
+        followers=1,
+        engagement_rate=0.0,
+        topics=[],
+        audience_region="UNKNOWN",
+        relevance_score=0.5,
+        evidence=[],
+        source=Provenance(system=SourceSystem.DCT, ref_id="dct-1"),
+        is_mock=False,
+    )
+    trend = Trend(
+        id="trd_pace_1",
+        company_id="cmp_marketing_eye",
+        topic="Marketing",
+        keywords=[],
+        channel=Channel.X,
+        window_days=7,
+        mention_count=0,
+        momentum_pct=0.0,
+        direction="STEADY",
+        sentiment=0.0,
+        sample_posts=[{"title": "A post", "url": "https://example.test/post", "channel": "X"}],
+        computed_at=datetime(2026, 9, 22, tzinfo=UTC),
+        source=Provenance(system=SourceSystem.PACE, ref_id="pace-1"),
+        is_mock=False,
+    )
+
+    assert influencer.topics == []
+    assert influencer.evidence == []
+    assert trend.keywords == []
