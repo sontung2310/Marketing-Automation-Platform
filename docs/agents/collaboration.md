@@ -48,8 +48,9 @@
      leave untouched.
    - **Done when:** checks to run, success-criteria scenarios to prove.
    - **Report format:** as in step 3.
-2. **Implement.** The implementer works the tasks and checks them off in
-   `tasks.md`.
+2. **Implement.** For work with an OpenSpec change, the implementer works the
+   scoped tasks and checks them off in `tasks.md`. For discovery or doc-only
+   work, the implementer completes the written brief; there is no `tasks.md`.
 3. **Report.** Every implementer turn ends with:
    - `STATUS: DONE | BLOCKED | NEEDS_DECISION`
    - tasks done
@@ -63,7 +64,9 @@
    it's cut off, the lead asks for it as `.handoffs/<change>/report-<n>.md`.
 4. **Verify.** The report is a claim. The lead reads `git diff`, runs
    `npm run check` and the success-criteria scenarios, and compares the result
-   with `tasks.md` and the delta specs.
+   with `tasks.md` and the delta specs when there is an OpenSpec change;
+   otherwise, it compares the result with the written brief and issue
+   acceptance criteria.
 5. **Follow up.** Each follow-up names the file and line, the failing output
    and the expected behaviour. Allow at most **3 rounds per task group**;
    after that, in autopilot add a summary to the human queue and stop;
