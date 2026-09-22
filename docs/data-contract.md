@@ -453,7 +453,7 @@ They are loaded by `backend/scripts/seed_db.py`, and every seeded record is
 | `competitor_activities` | ≥ 45 records over the last 30 days. **Every** `ActivityType` has at least 3. Channels cover WEBSITE, LINKEDIN, X and INSTAGRAM. At least 6 records fall in the last 48 h, so the feed looks alive. Mock social, executive, campaign and promotion activity belongs only to the fictional competitors. |
 | `trends` | ≥ 16 records across LINKEDIN, X, REDDIT and NEWS, mixing RISING, STEADY and FALLING. At least 4 overlap topically with competitor activity, so cross-evidence reasoning is possible. |
 | `influencers` | ≥ 20 across LINKEDIN, X and YOUTUBE, with 60% AU audiences and relevance scores spread across 0.3–0.95 |
-| Simulation templates | ≥ 2 templates per `ActivityType`, used by `POST /activities/simulate` (records are `is_simulated: true`, `source.system = SIMULATED`) |
+| Simulation templates | ≥ 2 templates per `ActivityType`, used by `POST /activities/simulate`; every template targets a fictional competitor and uses a `.example` URL (records are `is_simulated: true`, `source.system = SIMULATED`) |
 
 Content rules for the seed:
 
