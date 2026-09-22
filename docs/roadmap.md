@@ -47,7 +47,7 @@ the seed, and the simulate trigger works.
 - [x] 1.1 Domain models (Pydantic) and repositories for every owned collection, with indexes created at startup. _(Implemented and evidenced in [#12](https://github.com/sontung2310/Marketing-Automation-Platform/pull/12).)_
 - [x] 1.2 Seed files and `backend/scripts/seed_db.py` (idempotent), meeting data-contract §5. _(Implemented and evidenced in [#12](https://github.com/sontung2310/Marketing-Automation-Platform/pull/12).)_
 - [x] 1.3 `pipelines/competitor_activity.py`: CompetitorScope → `competitor_activities` (upsert, skip unknown types, tenant filter). _(Implemented and evidenced in [#14](https://github.com/sontung2310/Marketing-Automation-Platform/pull/14).)_
-- [ ] 1.4 `pipelines/influencers.py` (DCT) and `pipelines/trends.py` (Pace aggregation, falling back to the seed).
+- [x] 1.4 `pipelines/influencers.py` (DCT) and `pipelines/trends.py` (Pace aggregation, falling back to the seed). _(Implemented and evidenced in [#17](https://github.com/sontung2310/Marketing-Automation-Platform/pull/17).)_
 - [ ] 1.5 `backend/scripts/run_pipelines.py` (CLI, `--only <name>`), plus a cron entry in compose. Simulation templates and the `simulate_activity()` service.
 
 **Success criteria**

@@ -17,5 +17,5 @@
 
 ## 4. Documentation and verification
 
-- [ ] 4.1 Update `docs/roadmap.md` and any contract documentation changed by the implementation; verify the roadmap links the merged PR and the documented defaults match settings
+- [x] 4.1 Update `docs/roadmap.md` and any contract documentation changed by the implementation; verify the roadmap links the PR and the documented defaults match settings
 - [x] 4.2 Run the complete quality gate and OpenSpec checks (`npm run check`, `openspec validate --all --strict --no-interactive`, and conflict detection); verify all affected tests and checks pass

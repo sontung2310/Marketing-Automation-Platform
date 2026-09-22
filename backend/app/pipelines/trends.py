@@ -225,6 +225,13 @@ def _known_source_posts(posts: Iterable[PacePost]) -> tuple[list[PacePost], int]
                 extra={"ctx": {"source_id": post.source_id, "source": post.source}},
             )
             continue
+        if not any(topic.strip() for topic in post.topics):
+            skipped += 1
+            logger.warning(
+                "Skipping Pace post with no usable topics",
+                extra={"ctx": {"source_id": post.source_id}},
+            )
+            continue
         known.append(post)
     return known, skipped
 

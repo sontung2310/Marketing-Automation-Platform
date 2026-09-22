@@ -23,7 +23,7 @@ def post(
     return PacePost(
         source_id=source_id,
         created_at=created_at,
-        topics=topics or ["Marketing"],
+        topics=topics if topics is not None else ["Marketing"],
         keywords=[PaceKeyword(term="growth", score=0.8)],
         source=source,
         title=f"Title {source_id}",
@@ -101,3 +101,29 @@ async def test_unknown_source_is_skipped_and_fallback_performs_no_writes() -> No
     assert result.trends.inserted == 0
     assert result.trends.updated == 0
     assert result.trends.skipped == 1
+
+
+@pytest.mark.asyncio
+async def test_posts_without_topics_do_not_cross_live_threshold() -> None:
+    class Reader:
+        async def read(self, *, window_start: datetime, window_end: datetime) -> PaceReadResult:
+            return PaceReadResult(
+                posts=[
+                    post(
+                        str(index),
+                        window_end - timedelta(days=1),
+                        topics=[],
+                    )
+                    for index in range(50)
+                ]
+            )
+
+    class Database:
+        def __getitem__(self, _name: str):
+            raise AssertionError("topic-less posts must not write live trends")
+
+    result = await run_trend_pipeline(Reader(), Database(), window_end_date=date(2026, 9, 22))
+
+    assert result.used_seed_fallback is True
+    assert result.trends.inserted == 0
+    assert result.trends.skipped == 50
