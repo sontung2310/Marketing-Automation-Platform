@@ -31,10 +31,11 @@ backend/                 Python service: pyproject.toml, uv.lock, Dockerfile (bu
     connectors/          action connectors (mock/ in the PoC)
     api/                 FastAPI routes and schemas
   tests/                 unit/, integration/
-  evals/                 golden datasets, fixtures, runner, reports
+  evals/                 evaluation harness code (reads /evaluation)
   scripts/               seed, pipeline and fixture CLIs
 frontend/                React + Vite service (npm workspace)
   src/                   api/ (sole backend caller), components/ds/, features/, hooks/, lib/, styles/theme.css (sole token source)
+evaluation/              agent evaluation data: golden/, fixtures/, rubrics/, reports/
 tools/                   repo tooling in Node (OpenSpec conflict check)
 docs/  openspec/         specs and plan; specs/ (current behaviour), changes/ (proposed)
 .agents/skills/          team skills (source of truth); .claude/skills/ links to them
@@ -78,22 +79,33 @@ Layering is enforced by import-linter:
 | Ground | anyone | — | the relevant `openspec/specs/` and `docs/` have been read, before the idea is discussed |
 | Grill | product + engineering | `grill-me` | every open decision about the outcome is answered |
 | Ticket handoff | whoever ran the grilling | `to-tickets` | GitHub issues exist with behavioural acceptance criteria, blockers and `Roadmap: X.Y`. No OpenSpec change exists yet. |
-| Specify | lead agent | `openspec-propose` | one change per issue (proposal with `Roadmap: X.Y`, delta specs, design, tasks), approved by a human |
+| Specify | implementer agent, reviewed by the lead | `openspec-propose` (system-behaviour work) | one change per system-behaviour issue (proposal with `Roadmap: X.Y`, delta specs, design, tasks), reviewed by the lead and, outside autopilot, approved by a human |
 | Implement | implementer agent | `openspec-apply-change` | every task is checked off and `npm run check` is green |
-| Review and close | reviewer + human | `openspec-archive-change` | every review finding is answered, the change is archived in the same PR, and a human merges |
+| Review and close | implementer (archive) + reviewer (review) + human (merge); the lead merges only in autopilot | `openspec-archive-change` | the fair review meets the §4 merge bar, any OpenSpec change is archived in the same PR, and the PR is merged under that bar |
 
 - **Behaviour vs. engineering:** nontechnical teammates own behaviour
   (grilling, tickets, delta-spec review). Engineering owns the design and
   the tasks.
 - **Behaviour changes during implementation:** update the delta spec and
   get it re-reviewed before the code relies on it.
-- **Scope:** one issue per change. A new problem becomes a new issue.
+- **OpenSpec scope:** system-behaviour work has one OpenSpec change per issue.
+  Discovery and doc-only work has no OpenSpec change.
+- **Scope:** one issue per system-behaviour change. A new problem becomes a
+  new issue.
+- **Evaluation data** (golden datasets, fixtures, rubrics, reports) lives
+  only in `evaluation/`. The harness code lives in `backend/evals/`.
 - **Issue commands:** [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
 
 ### Git and CI
 
-- **Branches and commits:** branch `feature/<step>-<slug>` off `main`. Use
-  Conventional Commits. Squash-merge, one PR per issue.
+- **`main` is protected.** No direct commits: every change reaches `main`
+  through a PR that passes **Check**.
+- **Branches:** one branch per roadmap sub-step, or per tightly related group
+  of sub-steps, named `feature/<step-number>-<slug>` (e.g.
+  `feature/2.3-competitor-endpoints`).
+- **PRs:** one PR per branch. The PR description references the roadmap
+  sub-step(s) it completes (`Roadmap: 2.3`, or `Roadmap: 2.3, 2.4`).
+- **Commits:** use Conventional Commits, and squash-merge.
 - **Contract docs:** update `api-contract`, `data-contract` and
   `agents-spec` in the same PR as the code they describe.
 - **One check everywhere:** `npm run check` runs type checks, tests, lint,
@@ -116,25 +128,44 @@ Layering is enforced by import-linter:
 
 ## 4. Agent roles (Herdr)
 
-Specify → review runs as a supervised loop in one Herdr session:
+Specify → review runs as a lead/implementer loop in one Herdr session.
+Autopilot runs it without a human in the chat.
 
-- **Lead:** Claude Code (Opus 5, highest effort). Specifies, briefs,
-  verifies every result itself, and spawns the reviewer.
-- **Implementer:** Codex (`gpt-5.6-terra`, `xhigh`). Implements exactly the
-  briefed tasks and reports back. Commits and opens the PR when told.
+- **Lead:** Claude Code (Opus 5, highest effort). Never edits tracked
+  repository files or commits or pushes. Plans, briefs, reviews the proposed
+  OpenSpec change, verifies every result itself, and spawns the reviewer.
+  Owns GitHub bookkeeping (issues, labels, human queue and review-thread
+  resolution) and the `.handoffs/` checkpoint; in autopilot it merges only
+  under the merge bar.
+- **Implementer:** Codex (`gpt-5.6-terra`, `xhigh`). Writes the OpenSpec
+  change from the lead's prompt, implements exactly the briefed tasks and
+  reports back. Commits, pushes and opens the PR when told.
 - **Reviewer:** a fresh Claude subagent. Reviews blind, against the spec
   and the standards.
-- **Human:** approves the change, answers escalations and merges.
+- **Human:** approves the change, answers escalations and merges outside
+  autopilot under the merge bar. In autopilot, the human audits afterwards
+  through the human queue.
+
+### Merge bar
+
+A human outside autopilot, or the lead in autopilot through
+`gh pr merge --squash`, may merge only when **Check** is green, every
+requirement in §5 is met, every fair-review finding is fixed or answered with
+a written reason, no high-severity finding is merely answered, and every
+review thread is resolved.
 
 ## 5. Definition of done
 
+An item that does not apply to a change is marked not applicable with its
+reason in the PR; that satisfies the item for the merge bar.
+
 1. CI is green.
-2. The roadmap sub-step's success-criteria scenarios pass against a running
+2. The change's scoped success-criteria scenarios pass against a running
    environment, with evidence in the PR.
 3. For changes to agents, skills, instructions, MCP tools or model defaults,
    the eval report is in the PR and the evaluation-spec §6 thresholds hold.
-4. For UI changes, someone other than the author ticks the ui-spec §8
-   checklist.
+4. For UI changes, the fair reviewer, who is not the author, verifies and
+   ticks the ui-spec §8 checklist in the PR.
 5. The diff contains no secrets.
 
 ## 6. Session rules
@@ -148,5 +179,7 @@ Specify → review runs as a supervised loop in one Herdr session:
    - your role;
    - the layers the work touches.
 3. Work within the roadmap order and your role.
-4. When the spec is silent or contradictory, stop and ask. Record the answer
-   in the delta spec or the relevant doc.
+4. Outside autopilot, when the spec is silent or contradictory, stop and ask.
+   In autopilot, follow [the Autopilot rules](docs/agents/collaboration.md#autopilot):
+   decide reversible questions and record them in the human queue; stop only
+   for the listed architectural or irreversible decisions.

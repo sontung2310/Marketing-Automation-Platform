@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { check, parseDelta } from "./openspec-conflicts.mjs";
 
 const MODIFY = "## MODIFIED Requirements\n### Requirement: Topic recommendations\nnew text\n";
+const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function write(path, content) {
   mkdirSync(dirname(path), { recursive: true });
@@ -45,6 +47,13 @@ test("parseDelta reads every section", () => {
 test("a single valid change passes", () => {
   const root = repo();
   change(root, "strategy-topics", MODIFY);
+  assert.deepEqual(check(root), { errors: [], warnings: [] });
+});
+
+test("an end-of-line evidence hold preserves its roadmap id", () => {
+  const root = repo();
+  write(join(root, "docs/roadmap.md"), readFileSync(join(PROJECT_ROOT, "docs/roadmap.md"), "utf8"));
+  change(root, "evidence-hold", MODIFY, "Roadmap: 0.1\n");
   assert.deepEqual(check(root), { errors: [], warnings: [] });
 });
 
