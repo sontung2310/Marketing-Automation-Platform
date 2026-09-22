@@ -67,9 +67,9 @@ the seed, and the simulate trigger works.
 **Goal:** agents can retrieve every kind of evidence through semantic,
 read-only tools.
 
-- [ ] 2.1 An MCP SDK 2.x `MCPServer` with the tools in [agents-spec.md §3](agents-spec.md#3-marketing-intelligence-mcp), reading only through repositories.
-- [ ] 2.2 Argument validation, error objects, the empty-result note and the limit cap.
-- [ ] 2.3 Add the MCP service to compose, plus a smoke script that lists the tools and calls each one.
+- [x] 2.1 An MCP SDK 2.x `MCPServer` with the tools in [agents-spec.md §3](agents-spec.md#3-marketing-intelligence-mcp), reading only through repositories. Evidence: real-HTTP MCP integration tests and import-linter.
+- [x] 2.2 Argument validation, error objects, the empty-result note and the limit cap. Evidence: real-HTTP MCP integration tests.
+- [x] 2.3 Add the MCP service to compose, plus a smoke script that lists the tools and calls each one. Evidence: running-service smoke CLI and API-container MCP check.
 
 **Success criteria**
 
@@ -79,7 +79,7 @@ read-only tools.
 | 2-B | **Given** a query that matches nothing (`query="quantum knitting"`), **then** the result is `{results: [], note: …}`, and no error is raised. | Same |
 | 2-C | **Given** `limit=500`, **then** at most 25 records return. **Given** `activity_types=["BOGUS"]`, **then** a `VALIDATION_ERROR` object returns. | Same |
 | 2-D | **When** a static check runs over `mcp_server/`, **then** there are no `pymongo` imports and no write calls. | `backend/tests/unit/test_mcp_layering.py` + import-linter |
-| 2-E | **Given** the OpenAI Agents SDK's `MCPServerStreamableHttp`, **when** a real client lists the tools, **then** all 9 tools appear with descriptions. | `backend/tests/integration/test_mcp_server.py` + `backend/scripts/mcp_smoke.py` |
+| 2-E | **Given** the OpenAI Agents SDK's `MCPServerStreamableHttp`, **when** a throwaway agent lists the tools, **then** all 9 tools appear with descriptions. | `backend/tests/integration/test_mcp_server.py` + `backend/scripts/mcp_smoke.py` |
 
 ## Step 3 — Marketing Skills library
 

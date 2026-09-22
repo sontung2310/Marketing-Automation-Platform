@@ -93,6 +93,15 @@ get-by-ID record returns `{error: {code: "NOT_FOUND", message: ...}}`.
 The server has no Mongo query construction or business logic. It translates
 typed input and repository models only, retaining the import-linter boundary.
 
+A value that violates its advertised JSON type is rejected by the MCP SDK
+before the handler as an `is_error` result; the recoverable envelope covers
+only type-valid values that fail domain validation. Typed boundary projection
+models keep bulk results compact. Competitor lists contain only `id`, `name`,
+`website`, `is_fictional`, and channels derived from populated social-profile
+keys. Activity search results and the activity items within summaries contain
+only the documented compact activity fields; direct get tools continue to
+return their full typed records.
+
 ### Exercise a real streamable-HTTP service with isolated data
 
 The MCP integration fixture creates all of its own typed records with dates

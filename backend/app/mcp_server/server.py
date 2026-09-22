@@ -41,6 +41,9 @@ from app.mcp_server.contracts import (
     TrendResults,
     TrendSearchArguments,
     capped_limit,
+    compact_activity,
+    compact_activity_summary,
+    compact_competitor,
     not_found,
     parse_tool_arguments,
     record_response,
@@ -111,7 +114,7 @@ def build_mcp_server(
     )
     async def list_competitors() -> CompetitorResults:
         competitors = await repositories.competitors.list_for_company(company_id)
-        return _results_or_note(competitors)
+        return _results_or_note([compact_competitor(competitor) for competitor in competitors])
 
     @server.tool(
         description="Search recent competitor activity with optional raw JSON filters.",
@@ -147,7 +150,7 @@ def build_mcp_server(
             activity_types=parsed.activity_types,
             channels=parsed.channels,
         )
-        return _results_or_note(activities)
+        return _results_or_note([compact_activity(activity) for activity in activities])
 
     @server.tool(
         description="Return one configured-company competitor activity by its act_ ID.",
@@ -180,7 +183,7 @@ def build_mcp_server(
         )
         if not summary.counts and not summary.recent_items:
             summary = summary.model_copy(update={"note": NO_RECORDS_MATCHED_NOTE})
-        return record_response(summary)
+        return record_response(compact_activity_summary(summary))
 
     @server.tool(
         description="Search configured-company trends with optional raw JSON filters.",

@@ -17,6 +17,7 @@ from mcp.types import CallToolResult, TextContent
 from pymongo import ASCENDING
 from pymongo.asynchronous.database import AsyncDatabase
 
+from agents import Agent, RunContextWrapper
 from app.core import db
 from app.core.config import get_settings
 from app.intelligence.models import (
@@ -61,6 +62,19 @@ PRIMARY_INFLUENCER_ID = "inf_tech_voices"
 PRIMARY_RECOMMENDATION_ID = "rec_price_response"
 OTHER_RECOMMENDATION_ID = "rec_other_company"
 MCP_ALLOWED_HOSTS = ("localhost:*", "127.0.0.1:*", "[::1]:*", "mcp:8001")
+_COMPACT_ACTIVITY_KEYS = {
+    "id",
+    "competitor_name",
+    "activity_type",
+    "channel",
+    "title",
+    "summary",
+    "url",
+    "detected_at",
+    "is_mock",
+    "is_simulated",
+}
+_COMPACT_COMPETITOR_KEYS = {"id", "name", "website", "is_fictional", "channels"}
 
 
 @dataclass(frozen=True)
@@ -113,7 +127,8 @@ async def mcp_service() -> AsyncIterator[McpService]:
 
 async def test_real_http_client_lists_the_nine_described_tools(mcp_service: McpService) -> None:
     async with _client(mcp_service) as client:
-        tools = await client.list_tools()
+        agent = Agent[None](name="MCP discovery", mcp_servers=[client])
+        tools = await agent.get_mcp_tools(RunContextWrapper(context=None))
 
     assert [tool.name for tool in tools] == [
         "get_company_context",
@@ -171,10 +186,11 @@ async def test_activity_search_is_tenant_scoped_filtered_and_newest_first(
     assert isinstance(activities, list)
     assert activities
     assert all(activity["id"].startswith("act_") for activity in activities)
+    assert all(set(activity) == _COMPACT_ACTIVITY_KEYS for activity in activities)
     assert all(
         activity["activity_type"] == ActivityType.PRICE_CHANGE.value for activity in activities
     )
-    assert all(activity["competitor_id"] != OTHER_COMPETITOR_ID for activity in activities)
+    assert all(activity["competitor_name"] == "Brightlane" for activity in activities)
     assert [activity["detected_at"] for activity in activities] == sorted(
         (activity["detected_at"] for activity in activities), reverse=True
     )
@@ -187,6 +203,8 @@ async def test_list_and_search_tools_exclude_other_company_records(mcp_service: 
         influencers = _tool_json(await client.call_tool("search_influencers", {}))
 
     assert [item["id"] for item in competitors["results"]] == [PRIMARY_COMPETITOR_ID]
+    assert all(set(item) == _COMPACT_COMPETITOR_KEYS for item in competitors["results"])
+    assert competitors["results"][0]["channels"] == [Channel.LINKEDIN.value]
     assert [item["id"] for item in trends["results"]] == ["trd_ai_marketing"]
     assert [item["id"] for item in influencers["results"]] == [PRIMARY_INFLUENCER_ID]
 
@@ -268,6 +286,31 @@ async def test_empty_activity_summary_remains_a_noted_summary(mcp_service: McpSe
         "recent_items": [],
         "note": NO_RECORDS_MATCHED_NOTE,
     }
+
+
+async def test_activity_summary_embeds_compact_recent_items(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("summarize_competitor_activity", {})
+
+    recent_items = _tool_json(result)["recent_items"]
+    assert isinstance(recent_items, list)
+    assert recent_items
+    first_recent = recent_items[0]
+    assert isinstance(first_recent, dict)
+    items = first_recent["items"]
+    assert isinstance(items, list)
+    assert items
+    assert all(isinstance(item, dict) and set(item) == _COMPACT_ACTIVITY_KEYS for item in items)
+
+
+async def test_json_type_mismatch_is_rejected_by_the_mcp_sdk(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("search_competitor_activity", {"since_days": "abc"})
+
+    assert result.is_error is True
+    assert len(result.content) == 1
+    assert isinstance(result.content[0], TextContent)
+    assert "since_days" in result.content[0].text
 
 
 async def test_all_tools_leave_owned_collections_unchanged(mcp_service: McpService) -> None:
@@ -387,6 +430,7 @@ def _competitor(company_id: str, competitor_id: str, name: str) -> Competitor:
         name=name,
         website=f"https://{competitor_id}.example",
         is_fictional=True,
+        social={Channel.LINKEDIN: f"https://linkedin.example/{competitor_id}", Channel.X: None},
         source=_source(competitor_id),
         is_mock=True,
     )

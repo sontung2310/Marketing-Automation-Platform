@@ -81,9 +81,12 @@ its prefixed `id`, which the agents cite as evidence.
 
 Rules:
 
-- Validation errors return `{error: {code, message}}` rather than raising, so
-  the agent can recover. Unknown get-by-ID values return `NOT_FOUND` in the
-  same envelope; `limit < 1` and `since_days < 1` return `VALIDATION_ERROR`.
+- Arguments whose values fit their advertised JSON types but violate a domain
+  rule return `{error: {code, message}}`, so the agent can recover. Unknown
+  get-by-ID values return `NOT_FOUND` in the same envelope; unknown enum
+  values, `limit < 1`, and `since_days < 1` return `VALIDATION_ERROR`.
+  Arguments that violate their advertised JSON types are rejected by the MCP
+  SDK before the tool handler and are reported as an MCP `is_error` result.
 - Every list/search response is `{results: [...]}`. `limit` defaults to 10 and
   is capped at 25; an empty search also includes the no-match note below.
 - An empty result returns `{results: [], note: "No records matched …"}`. It

@@ -53,9 +53,7 @@ async def run() -> int:
 
 async def _call_every_tool(client: MCPServerStreamableHttp) -> dict[str, str]:
     calls: dict[str, str] = {}
-    calls["get_company_context"] = _record_or_not_found(
-        await _call(client, "get_company_context", {})
-    )
+    calls["get_company_context"] = _record(await _call(client, "get_company_context", {}))
 
     competitors = await _call(client, "list_competitors", {})
     calls["list_competitors"] = _results(competitors)
@@ -67,8 +65,9 @@ async def _call_every_tool(client: MCPServerStreamableHttp) -> dict[str, str]:
     )
     calls["search_competitor_activity"] = _results(activities)
     activity_id = _first_result_id(activities, "act_smoke_missing")
-    calls["get_competitor_activity"] = _record_or_not_found(
-        await _call(client, "get_competitor_activity", {"activity_id": activity_id})
+    calls["get_competitor_activity"] = _record_or_expected_not_found(
+        await _call(client, "get_competitor_activity", {"activity_id": activity_id}),
+        has_source_record=_has_results(activities),
     )
 
     summary = await _call(client, "summarize_competitor_activity", {})
@@ -80,12 +79,14 @@ async def _call_every_tool(client: MCPServerStreamableHttp) -> dict[str, str]:
     influencers = await _call(client, "search_influencers", {"limit": 1})
     calls["search_influencers"] = _results(influencers)
     influencer_id = _first_result_id(influencers, "inf_smoke_missing")
-    calls["get_influencer"] = _record_or_not_found(
-        await _call(client, "get_influencer", {"influencer_id": influencer_id})
+    calls["get_influencer"] = _record_or_expected_not_found(
+        await _call(client, "get_influencer", {"influencer_id": influencer_id}),
+        has_source_record=_has_results(influencers),
     )
 
-    calls["get_recommendation"] = _record_or_not_found(
-        await _call(client, "get_recommendation", {"recommendation_id": "rec_smoke_missing"})
+    calls["get_recommendation"] = _record_or_expected_not_found(
+        await _call(client, "get_recommendation", {"recommendation_id": "rec_smoke_missing"}),
+        has_source_record=False,
     )
     return calls
 
@@ -133,15 +134,26 @@ def _first_result_id(payload: dict[str, object], fallback: str) -> str:
     return first["id"]
 
 
-def _record_or_not_found(payload: dict[str, object]) -> str:
+def _has_results(payload: dict[str, object]) -> bool:
+    results = payload.get("results")
+    return isinstance(results, list) and bool(results)
+
+
+def _record(payload: dict[str, object]) -> str:
+    if not isinstance(payload.get("id"), str):
+        raise ValueError("a required get tool did not return a record id")
+    return "record"
+
+
+def _record_or_expected_not_found(payload: dict[str, object], *, has_source_record: bool) -> str:
     error = payload.get("error")
     if error is not None:
         if not isinstance(error, dict) or error.get("code") != "NOT_FOUND":
             raise ValueError("a get tool returned an unexpected error envelope")
+        if has_source_record:
+            raise ValueError("a get tool did not return the record selected from its list result")
         return "not_found"
-    if not isinstance(payload.get("id"), str):
-        raise ValueError("a get tool did not return a record id")
-    return "record"
+    return _record(payload)
 
 
 def _summary(payload: dict[str, object]) -> str:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Generic, TypeVar
 
 from pydantic import Field, ValidationError, model_serializer
@@ -10,6 +11,7 @@ from app.core.errors import NotFoundError
 from app.core.errors import ValidationError as DomainValidationError
 from app.intelligence.models import (
     ActivitySummary,
+    ActivitySummaryCount,
     ActivityType,
     Channel,
     Company,
@@ -61,6 +63,47 @@ class RecordResponse(ModelBase, Generic[ResultT]):
     @model_serializer
     def serialize(self) -> dict[str, object]:
         return self.record.model_dump(mode="json")
+
+
+class CompactCompetitor(ModelBase):
+    """The documented low-token competitor list representation."""
+
+    id: str
+    name: str
+    website: str
+    is_fictional: bool
+    channels: list[Channel]
+
+
+class CompactCompetitorActivity(ModelBase):
+    """The documented low-token activity list representation."""
+
+    id: str
+    competitor_name: str
+    activity_type: ActivityType
+    channel: Channel
+    title: str
+    summary: str
+    url: str | None
+    detected_at: datetime
+    is_mock: bool
+    is_simulated: bool
+
+
+class CompactActivitySummaryRecent(ModelBase):
+    """A competitor's cheap recent-activity overview."""
+
+    competitor_id: str
+    competitor_name: str
+    items: list[CompactCompetitorActivity]
+
+
+class CompactActivitySummary(ModelBase):
+    """A summary whose embedded activity records retain the compact contract."""
+
+    counts: list[ActivitySummaryCount]
+    recent_items: list[CompactActivitySummaryRecent]
+    note: str | None = None
 
 
 class ActivitySearchArguments(ModelBase):
@@ -132,6 +175,41 @@ def record_response(record: ResultT) -> RecordResponse[ResultT]:
     return RecordResponse[ResultT](record=record)
 
 
+def compact_competitor(competitor: Competitor) -> CompactCompetitor:
+    """Project one competitor into the documented list representation."""
+
+    return CompactCompetitor(
+        id=competitor.id,
+        name=competitor.name,
+        website=competitor.website,
+        is_fictional=competitor.is_fictional,
+        channels=[channel for channel, url in competitor.social.items() if url],
+    )
+
+
+def compact_activity(activity: CompetitorActivity) -> CompactCompetitorActivity:
+    """Project one activity through its typed model, omitting bulk-only fields."""
+
+    return CompactCompetitorActivity.model_validate(activity, from_attributes=True)
+
+
+def compact_activity_summary(summary: ActivitySummary) -> CompactActivitySummary:
+    """Project summary activity items with the same compact activity contract."""
+
+    return CompactActivitySummary(
+        counts=summary.counts,
+        recent_items=[
+            CompactActivitySummaryRecent(
+                competitor_id=recent.competitor_id,
+                competitor_name=recent.competitor_name,
+                items=[compact_activity(activity) for activity in recent.items],
+            )
+            for recent in summary.recent_items
+        ],
+        note=summary.note,
+    )
+
+
 def capped_limit(limit: int) -> int:
     """Apply the one documented upper bound after typed lower-bound validation."""
 
@@ -146,10 +224,10 @@ def _validation_message(error: ValidationError) -> str:
 
 
 CompanyResult = RecordResponse[Company] | ToolErrorEnvelope
-CompetitorResults = ResultsResponse[Competitor] | ToolErrorEnvelope
-ActivityResults = ResultsResponse[CompetitorActivity] | ToolErrorEnvelope
+CompetitorResults = ResultsResponse[CompactCompetitor] | ToolErrorEnvelope
+ActivityResults = ResultsResponse[CompactCompetitorActivity] | ToolErrorEnvelope
 ActivityResult = RecordResponse[CompetitorActivity] | ToolErrorEnvelope
-ActivitySummaryResult = RecordResponse[ActivitySummary] | ToolErrorEnvelope
+ActivitySummaryResult = RecordResponse[CompactActivitySummary] | ToolErrorEnvelope
 TrendResults = ResultsResponse[Trend] | ToolErrorEnvelope
 InfluencerResults = ResultsResponse[Influencer] | ToolErrorEnvelope
 InfluencerResult = RecordResponse[Influencer] | ToolErrorEnvelope

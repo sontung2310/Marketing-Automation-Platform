@@ -25,8 +25,8 @@ advertised in the tool input schema.
 #### Scenario: A real MCP client lists the semantic tools
 
 - **GIVEN** the service is running on its streamable-HTTP endpoint
-- **WHEN** an Agents SDK `MCPServerStreamableHttp` client initializes and lists
-  available tools
+- **WHEN** a throwaway Agents SDK `Agent` uses an
+  `MCPServerStreamableHttp` client to list available tools without a model call
 - **THEN** it receives exactly the nine documented tool names, each with a
   non-empty description
 
@@ -74,9 +74,12 @@ unless the joined session belongs to the configured company.
 ### Requirement: MCP result and error envelopes are recoverable
 
 The service SHALL parse raw tool arguments through one shared typed validation
-helper. Invalid arguments MUST return `{error: {code, message}}` with
-`VALIDATION_ERROR`, not an MCP `is_error` result, and an unknown ID to a
-get-by-ID tool MUST return that envelope with `NOT_FOUND`. Every tool's
+helper. Arguments whose values fit their advertised JSON types but violate a
+domain rule MUST return `{error: {code, message}}` with `VALIDATION_ERROR`,
+not an MCP `is_error` result, and an unknown ID to a get-by-ID tool MUST return
+that envelope with `NOT_FOUND`. Arguments that violate their advertised JSON
+types SHALL be rejected by the MCP SDK before the handler as an `is_error`
+result. Every tool's
 declared return type MUST admit both its success response and this error
 envelope. List/search tools SHALL use a default `limit` of 10, return no more
 than 25 results when a larger limit is requested, and return `VALIDATION_ERROR`
@@ -94,6 +97,12 @@ window, it SHALL return its normal JSON summary with empty `counts` and
   `search_competitor_activity(activity_types=["BOGUS"])`
 - **THEN** the response is an error object with code `VALIDATION_ERROR` and a
   user-readable message, and the real HTTP client's result is not `is_error`
+
+#### Scenario: A JSON type mismatch is rejected by the SDK
+
+- **GIVEN** the service is running
+- **WHEN** a client calls `search_competitor_activity(since_days="abc")`
+- **THEN** the MCP SDK returns an `is_error` result before the tool handler
 
 #### Scenario: An unknown record ID returns a missing-record envelope
 
