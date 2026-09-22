@@ -15,4 +15,4 @@
 
 - [x] 3.1 Add `backend/tests/integration/test_competitor_pipeline.py` using a seeded copy of the verified source document shape; verify eligible Lyfe changes normalize once, reruns insert zero new records, and source collections remain unchanged.
 - [x] 3.2 Run `npm run check` and the scoped integration suite against MongoDB; verify all checks are green.
-- [ ] 3.3 Update `docs/roadmap.md` with the merged PR evidence and update `docs/data-contract.md` only if implementation reveals a mapping correction; verify OpenSpec validation and the roadmap conflict check pass.
+- [x] 3.3 Update `docs/roadmap.md` with the merged PR evidence and update `docs/data-contract.md` only if implementation reveals a mapping correction; verify OpenSpec validation and the roadmap conflict check pass.
