@@ -173,17 +173,17 @@ without changing the visual contracts.
 listening on the left, an Execution chat in the centre, and Strategy
 recommendations above the competitor activity feed on the right.
 
-- [ ] 7.1 Rebuild the design-system primitives as Tailwind components in `frontend/src/components/ds/`, add the four approved theme tokens, and keep all styling token-only.
-- [ ] 7.2 Build the layout shell: logo-free TopBar with tenant selector, context and last-sync label; left/centre/right regions; responsive breakpoints; and the Simulate menu.
-- [ ] 7.3 Build social listening and the competitor feed: tracked-keyword editor, Trends, two-column Influencers table, feed filters, cursor pagination, live SSE inserts, NEW/seen state and loading/empty/error states.
-- [ ] 7.4 Build the Execution chat: fixed-height transcript, marketer-only message bubbles, agent selector, progress/tool trace, answer, deliverable, quality checks, proposed actions, clarification/refusal blocks and session restore.
-- [ ] 7.5 Build the Strategy panel and evidence loop: compact recommendation rows, 440px detail sheet, **Do this** prefill without send, evidence-chip scroll/highlight, responsive switcher and the anti-slop/accessibility checklist.
+- [x] 7.1 Rebuild the design-system primitives as Tailwind components in `frontend/src/components/ds/`, add the four approved theme tokens, and keep all styling token-only.
+- [x] 7.2 Build the layout shell: logo-free TopBar with tenant selector, context and last-sync label; left/centre/right regions; responsive breakpoints; and the Simulate menu.
+- [x] 7.3 Build social listening and the competitor feed: tracked-keyword editor, Trends, two-column Influencers table, feed filters, cursor pagination, live SSE inserts, NEW/seen state and loading/empty/error states.
+- [x] 7.4 Build the Execution chat: fixed-height transcript, marketer-only message bubbles, agent selector, progress/tool trace, answer, deliverable, quality checks, proposed actions, clarification/refusal blocks and session restore.
+- [x] 7.5 Build the Strategy panel and evidence loop: compact recommendation rows, 440px detail sheet, **Do this** prefill without send, evidence-chip scroll/highlight, responsive switcher and the anti-slop/accessibility checklist.
 
 **Success criteria**
 
 | # | Scenario | Verify |
 |---|---|---|
-| 7-A | **Given** typed fixtures for the seeded company, feed, trends, influencers and agent streams, **when** the page loads at 1440×900, **then** the left social-listening region, centre Execution empty state and right Strategy/feed regions render with no console errors; the tenant selector, five tracking keywords and last-sync label are visible; and Lighthouse accessibility is 90 or higher. | Playwright + Lighthouse CI |
+| 7-A | **Given** typed fixtures for the seeded company, feed, trends, influencers and agent streams, **when** the page loads at 1440×900, **then** the left social-listening region, centre Execution empty state and right Strategy/feed regions render with no console errors; the tenant selector, five tracking keywords and last-sync label are visible; and the accessibility scan reports no violation. | Playwright + `@axe-core/playwright`. Lighthouse CI is deferred to Step 8, which stands up the real served environment; the zero-violation axe gate is stricter than the 90 threshold for the rules it covers. |
 | 7-B | **Given** one fixture card for each of the 9 `ActivityType` values, **then** each shows the primary action from specs §6. `PRICE_CHANGE` shows `before → after`, `EXECUTIVE_POST` shows author and role, and mock/simulated items are badged. | Vitest component tests (one per type) |
 | 7-C | **Given** an Execution run fixture streaming, **then** the fixed-height transcript shows the labelled trigger, collapsed thinking/tool line, progress events, answer and deliverable; only marketer messages use bubbles; and no silent gap exceeds 10 seconds. | Playwright |
 | 7-D | **Given** Strategy recommendations in the fixture, **when** the user opens one and clicks **Do this**, **then** the 440px sheet shows decision, rationale and evidence, the request fills the Execution composer, no run is sent, and an evidence chip scrolls to and highlights its target. | Playwright |

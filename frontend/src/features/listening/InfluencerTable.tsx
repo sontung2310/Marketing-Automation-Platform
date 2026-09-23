@@ -1,0 +1,119 @@
+import { ApiError } from "../../api";
+import { Button } from "../../components/ds/Button";
+import { EmptyState } from "../../components/ds/EmptyState";
+import { ErrorState } from "../../components/ds/ErrorState";
+import { Panel } from "../../components/ds/Panel";
+import { SkeletonList } from "../../components/ds/Skeleton";
+import { useInfluencers } from "../../hooks/queries";
+import { compactNumber, initials } from "../../lib/format";
+import { useWorkspace } from "../workspace/workspaceContext";
+
+/** Exactly two visible columns, monograms instead of avatars (ui-spec §3). */
+export function InfluencerTable() {
+  const influencers = useInfluencers();
+  const { startRun } = useWorkspace();
+  const items = influencers.data?.items ?? [];
+
+  return (
+    <Panel
+      className="flex-none"
+      title="Influencers"
+      meta={
+        influencers.isSuccess ? (
+          <span className="text-small text-text-muted">{items.length} ranked</span>
+        ) : null
+      }
+    >
+      {influencers.isPending ? <SkeletonList rows={5} label="Loading influencers" /> : null}
+
+      {influencers.isError ? (
+        <ErrorState
+          message={
+            influencers.error instanceof ApiError
+              ? influencers.error.message
+              : "Influencers unavailable."
+          }
+          onRetry={() => void influencers.refetch()}
+        />
+      ) : null}
+
+      {influencers.isSuccess && items.length === 0 ? (
+        <EmptyState message="No influencers matched these keywords." />
+      ) : null}
+
+      {items.length > 0 ? (
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <th
+                scope="col"
+                className="border-b border-border-strong px-2 py-1 text-left text-small font-semibold text-text-muted"
+              >
+                Influencer
+              </th>
+              <th
+                scope="col"
+                className="border-b border-border-strong px-2 py-1 text-right text-small font-semibold text-text-muted"
+              >
+                Followers
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((influencer) => (
+              <tr key={influencer.id} className="group">
+                <td className="border-b border-border px-2 py-1">
+                  <span className="flex min-w-0 items-center gap-1">
+                    <span
+                      aria-hidden="true"
+                      className="grid h-3.5 w-3.5 flex-none place-items-center rounded-full border border-border text-small font-semibold text-text-muted"
+                    >
+                      {initials(influencer.name)}
+                    </span>
+                    <span className="flex min-w-0 flex-col">
+                      <a
+                        href={influencer.profile_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="truncate text-body font-semibold text-text"
+                      >
+                        {influencer.handle}
+                      </a>
+                      <span className="flex items-center gap-1 text-small text-text-muted">
+                        {influencer.channel}
+                        {influencer.actions.map((action) => (
+                          <Button
+                            key={action.action}
+                            variant="quiet"
+                            className="text-small opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                            onClick={() =>
+                              startRun(
+                                {
+                                  trigger: {
+                                    kind: "INFLUENCER",
+                                    ref_id: influencer.id,
+                                    action: action.action,
+                                  },
+                                },
+                                `${action.action} · ${influencer.handle}`,
+                              )
+                            }
+                          >
+                            {action.label}
+                          </Button>
+                        ))}
+                      </span>
+                    </span>
+                  </span>
+                </td>
+                <td className="border-b border-border px-2 py-1 text-right text-body font-semibold text-text tabular-nums">
+                  {compactNumber(influencer.followers)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+    </Panel>
+  );
+}

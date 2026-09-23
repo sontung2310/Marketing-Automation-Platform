@@ -41,6 +41,10 @@ jobs:
       - name: Install dependencies
         run: npm ci && uv sync --frozen --directory backend
 
+      # The workspace's end-to-end specs run in Chromium as part of npm run check.
+      - name: Install Playwright browser
+        run: npx --workspace frontend playwright install --with-deps chromium
+
       - name: Check committed secrets
         shell: bash
         run: |

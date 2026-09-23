@@ -12,5 +12,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    // The e2e directory belongs to Playwright, not Vitest.
+    exclude: ["e2e/**", "node_modules/**", "dist/**"],
   },
 });
