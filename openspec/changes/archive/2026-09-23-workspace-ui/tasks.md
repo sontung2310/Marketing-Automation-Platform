@@ -122,6 +122,6 @@
   changed, in this PR.
 - [x] 7.2 Tick the Step 7 sub-step boxes in `docs/roadmap.md` with their
   evidence.
-- [ ] 7.3 Run `npm run check`, open the Step PR with the evidence for 7-A
+- [x] 7.3 Run `npm run check`, open the Step PR with the evidence for 7-A
   through 7-E and the ui-spec §8 checklist for the fair reviewer, and
   archive this change in the same PR.
