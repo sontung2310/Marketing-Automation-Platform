@@ -161,27 +161,34 @@ actions that can be approved. Its golden dataset is authored and passing.
 | 6-E | **Given** the message "LinkedIn", **then** `200` returns with `NEEDS_CLARIFICATION` and 2–3 options, and no run is created. **Given** "What's the weather in Sydney?", **then** `OUT_OF_SCOPE` returns. | `RT-AMB-*`, `RT-OOS-*` |
 | 6-F | The Router thresholds in evaluation-spec §6 are met at 3 repeats. | Eval report |
 
-## Step 7 — Single-page UI
+## Step 7 — Single-page UI (brought forward)
 
-**Goal:** the one-page workspace per [ui-spec.md](ui-spec.md), with no
-design-system violations.
+At the owner's request, Step 7 is brought forward ahead of Steps 3–6. The
+specification half lands first in Issue #26; implementation is written against
+these updated specs. Until Steps 3–6 exist, UI tests use typed fixtures for the
+API, MCP and agent streams; they must be replaceable by the real services
+without changing the visual contracts.
 
-- [ ] 7.1 Rebuild the DS components as Tailwind components in `frontend/src/components/ds/` on the token theme (`src/styles/theme.css`, already set up in 0.1).
-- [ ] 7.2 The layout shell: TopBar, the three columns, responsive breakpoints and the Simulate menu.
-- [ ] 7.3 The Activity feed: cards, filters, infinite scroll, live SSE insert, NEW and seen state, and all region states.
-- [ ] 7.4 The Workspace: RunBlock, progress and trace, recommendation, deliverable, quality check, proposed-action, clarification and refusal cards, and session restore.
-- [ ] 7.5 The chat composer with the agent selector. The Insights rail tabs (Trends, Influencers, Topics). Evidence chip scroll-and-highlight.
+**Goal:** the one-page workspace per [ui-spec.md](ui-spec.md), with social
+listening on the left, an Execution chat in the centre, and Strategy
+recommendations above the competitor activity feed on the right.
+
+- [ ] 7.1 Rebuild the design-system primitives as Tailwind components in `frontend/src/components/ds/`, add the four approved theme tokens, and keep all styling token-only.
+- [ ] 7.2 Build the layout shell: logo-free TopBar with tenant selector, context and last-sync label; left/centre/right regions; responsive breakpoints; and the Simulate menu.
+- [ ] 7.3 Build social listening and the competitor feed: tracked-keyword editor, Trends, two-column Influencers table, feed filters, cursor pagination, live SSE inserts, NEW/seen state and loading/empty/error states.
+- [ ] 7.4 Build the Execution chat: fixed-height transcript, marketer-only message bubbles, agent selector, progress/tool trace, answer, deliverable, quality checks, proposed actions, clarification/refusal blocks and session restore.
+- [ ] 7.5 Build the Strategy panel and evidence loop: compact recommendation rows, 440px detail sheet, **Do this** prefill without send, evidence-chip scroll/highlight, responsive switcher and the anti-slop/accessibility checklist.
 
 **Success criteria**
 
 | # | Scenario | Verify |
 |---|---|---|
-| 7-A | **Given** the seeded backend, **when** the page loads at 1440×900, **then** the feed, workspace empty state and Trends tab render with no console errors, and Lighthouse accessibility scores 90 or higher. | Playwright + Lighthouse CI |
-| 7-B | **Given** a feed card of each of the 9 types, **then** each shows the correct primary button label from specs §6. `PRICE_CHANGE` shows the `before → after` price. `EXECUTIVE_POST` shows the author and role. Mock and simulated items are badged. | Vitest component tests (one per type) |
-| 7-C | **Given** a Strategy run streaming, **then** the progress steps appear as they arrive, with no silent gap longer than 10 s. The recommendation cards render when `output.final` arrives. Clicking an evidence chip scrolls to and highlights its feed item. | Playwright |
-| 7-D | **Given** the API returns `503` with a message, **then** the affected region shows that message verbatim with a Retry control. The rest of the page stays usable. | Playwright with a route intercept |
-| 7-E | At 900px wide, the page shows the `Feed | Workspace | Insights` switcher, and the body never scrolls horizontally. | Playwright viewport test |
-| 7-F | A reviewer who didn't build the UI signs off the anti-slop checklist in ui-spec §8 in the PR. | PR checklist |
+| 7-A | **Given** typed fixtures for the seeded company, feed, trends, influencers and agent streams, **when** the page loads at 1440×900, **then** the left social-listening region, centre Execution empty state and right Strategy/feed regions render with no console errors; the tenant selector, five tracking keywords and last-sync label are visible; and Lighthouse accessibility is 90 or higher. | Playwright + Lighthouse CI |
+| 7-B | **Given** one fixture card for each of the 9 `ActivityType` values, **then** each shows the primary action from specs §6. `PRICE_CHANGE` shows `before → after`, `EXECUTIVE_POST` shows author and role, and mock/simulated items are badged. | Vitest component tests (one per type) |
+| 7-C | **Given** an Execution run fixture streaming, **then** the fixed-height transcript shows the labelled trigger, collapsed thinking/tool line, progress events, answer and deliverable; only marketer messages use bubbles; and no silent gap exceeds 10 seconds. | Playwright |
+| 7-D | **Given** Strategy recommendations in the fixture, **when** the user opens one and clicks **Do this**, **then** the 440px sheet shows decision, rationale and evidence, the request fills the Execution composer, no run is sent, and an evidence chip scrolls to and highlights its target. | Playwright |
+| 7-E | **Given** a `503` response in any region, **then** its message appears verbatim with **Retry** while other regions remain usable; at 900px the `Feed | Workspace | Insights` switcher appears and the body never scrolls horizontally. | Playwright with route intercepts and viewport tests |
+| 7-F | A reviewer who did not build the UI signs off the anti-slop checklist in ui-spec §8, including keyboard focus, live-region announcements and token-only styling. | PR checklist |
 
 ## Step 8 — End-to-end demo and hardening
 

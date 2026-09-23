@@ -32,7 +32,23 @@ Returns `200 {status: "ok", mongo: "ok|down", mcp: "ok|down", openai: "configure
 
 ### `GET /company`
 Returns `200` with the company context (see data-contract §3.1), plus
-`last_sync_at` (the newest `ingested_at` across the intelligence collections).
+`tracked_keywords` and `last_sync_at` (the newest `ingested_at` across the
+intelligence collections).
+
+### `PUT /company/tracked-keywords`
+Replaces the configured company's social-listening keywords.
+
+Request:
+
+```json
+{ "tracked_keywords": ["AI search", "content strategy", "B2B growth"] }
+```
+
+The list must contain 1–20 non-empty terms. Terms are trimmed and must be
+unique case-insensitively; the first trimmed spelling is preserved. A valid
+request returns `200 { "tracked_keywords": [...] }`. Invalid input returns
+the standard `VALIDATION_ERROR` envelope; a missing configured company returns
+`NOT_FOUND`. Updating these terms does not change competitor-feed filters.
 
 ## Competitor activity feed
 
@@ -92,7 +108,7 @@ by `relevance_score` desc. Each item has `actions: [{action: "DRAFT_OUTREACH", l
 
 ### `GET /recommendations`
 Query: `status` (default `OPEN`), `limit`. Returns the persisted Strategy
-recommendations, newest run first, for the Topics tab. Each item includes
+recommendations, newest run first, for the Strategy panel. Each item includes
 `run_id`, `ordinal` and `next_action`, plus `actions: [{action: "DO_THIS", label: "Do this", agent: "EXECUTION"}]`.
 
 ## Agent runs

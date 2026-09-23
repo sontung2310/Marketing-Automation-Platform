@@ -71,11 +71,18 @@ The tenant's own context. The agents read it through `get_company_context`.
   "services": [{ "name": "string", "description": "string", "price_from": 0 }],
   "brand_voice": { "tone": ["string"], "do": ["string"], "dont": ["string"], "sample_copy": ["string"] },
   "channels": ["LINKEDIN", "X", "WEBSITE"],
+  "tracked_keywords": ["AI search", "content strategy", "B2B growth", "brand clarity", "demand generation"],
   "content_pillars": ["string"],
   "is_mock": true,
   "updated_at": "ISODate"
 }
 ```
+
+`tracked_keywords` configures social listening. It contains 1–20 non-empty
+terms, each trimmed and unique case-insensitively; validation preserves the
+first trimmed spelling. The seed uses `AI search`, `content strategy`, `B2B
+growth`, `brand clarity` and `demand generation`. These terms scope the Trends
+and Influencers panels only; they never filter the competitor activity feed.
 
 ### 3.2 `competitors`
 
@@ -188,7 +195,7 @@ Indexes:
 |---|---|---|
 | `sessions` | One chat thread in the workspace | `_id ses_`, `company_id`, `created_at`, `last_run_id` |
 | `runs` | One agent run | `_id run_`, `session_id`, `agent` (`STRATEGY`/`EXECUTION`), `intent`, `trigger`, `route` (method, reason, confidence), `status` (`RUNNING`/`SUCCEEDED`/`FAILED`/`NEEDS_CLARIFICATION`/`REFUSED`), `events[]` (the SSE log), `tool_calls[]`, `skills_loaded[]`, `output` (structured), `usage`, `error`, `started_at`, `finished_at` |
-| `recommendations` | Persisted Strategy recommendations. Used by the Topics tab and the "#2" references. | `_id rec_`, `run_id`, `session_id`, `ordinal` (1-based within the run), recommendation fields from agents-spec §6.2, `status` (`OPEN`/`IN_PROGRESS`/`DONE`) |
+| `recommendations` | Persisted Strategy recommendations. Used by the Strategy panel and the "#2" references. | `_id rec_`, `run_id`, `session_id`, `ordinal` (1-based within the run), recommendation fields from agents-spec §6.2, `status` (`OPEN`/`IN_PROGRESS`/`DONE`) |
 | `deliverables` | Execution outputs | `_id del_`, `run_id`, deliverable fields from agents-spec §7.2 |
 | `proposed_actions` | Actions awaiting approval, plus their outcome | `_id pac_`, `deliverable_id`, `action_type`, `payload`, `status` (`PROPOSED`/`APPROVED`/`EXECUTED`/`DISCARDED`/`FAILED`), `receipt`, timestamps |
 

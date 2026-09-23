@@ -16,9 +16,10 @@
 
 The PoC shows a client, in one browser page, that the platform can:
 
-1. **Watch the market.** It surfaces competitor activity, trending topics and
-   relevant influencers from an Intelligence DB. Background pipelines fill the
-   DB from existing MongoDB sources, plus mock data where no source exists yet.
+1. **Watch the market.** It surfaces competitor activity, tracked-keyword
+   trends and relevant influencers from an Intelligence DB. Background
+   pipelines fill the DB from existing MongoDB sources, plus mock data where no
+   source exists yet.
 2. **Decide.** A **Marketing Strategy Agent** answers *"what should we do?"*.
    It recommends topics, competitor responses and influencer plays, and grounds
    every recommendation in evidence it retrieved itself.
@@ -46,7 +47,7 @@ demo:
 | Execution Agent | Deliverable drafts and proposed mock actions (schedule post, create CMS draft, add to content calendar, create email draft). |
 | Request routing | Feed/insight buttons route deterministically. Free-text chat is routed by a classifier. |
 | Marketing skills | A curated, vendored subset of `coreyhaines31/marketingskills`, shared by both agents through per-agent allowlists. |
-| UI | **One page.** A three-column workspace with a chat composer, following the CompetitorScope Design System. |
+| UI | **One page.** Social listening on the left, an Execution chat in the centre, and Strategy recommendations above the competitor feed on the right, following the CompetitorScope Design System. |
 | Evaluation | A golden dataset and eval harness for the Router, Strategy Agent and Execution Agent. |
 
 ### Out of scope (PoC)
@@ -165,7 +166,7 @@ cases can reference it.
 | CAP-EXE-05 | Proposed actions, approval and mock execution | Execution + API | agents-spec.md §8 |
 | CAP-UI-01 | Competitor activity feed with live updates | UI | [ui-spec.md](ui-spec.md) |
 | CAP-UI-02 | Agent workspace and chat composer | UI | ui-spec.md |
-| CAP-UI-03 | Insights rail (Trends / Influencers / Topics) | UI | ui-spec.md |
+| CAP-UI-03 | Social listening (tracked keywords, Trends and Influencers) | UI | ui-spec.md |
 | CAP-EVAL-01..03 | Golden datasets and harness for Router, Strategy and Execution | Evals | [evaluation-spec.md](evaluation-spec.md) |
 
 ## 6. Feed actions (type-mapped routing)
@@ -204,7 +205,8 @@ without manual intervention. It is also the Playwright E2E test (roadmap Step
 
 1. **Open the page.** The feed shows Marketing Eye's competitor activity,
    newest first, with type badges, titles, links and relative times. The
-   Trends tab lists rising topics. The page header shows the last sync time.
+   The left listening panel shows the five seeded tracking keywords and rising
+   trends. The page header shows the tenant selector and last sync time.
 2. **A new signal arrives.** The presenter clicks **🎭 Simulate a signal** and
    chooses `EXECUTIVE_POST`. Within 3 seconds a new card appears at the top of
    the feed with a `NEW` marker and a 🧪 SIMULATED badge.
@@ -225,11 +227,11 @@ without manual intervention. It is also the Playwright E2E test (roadmap Step
    clicks **Do this** on recommendation #2, and Execution drafts the
    deliverable.
 7. **Chat.** The presenter types *"What should we post about next week?"* The
-   router picks Strategy, which returns topic recommendations; they also
-   appear in the Topics tab. The presenter then types *"Write the LinkedIn
-   post for recommendation #2"*. The router picks Execution and resolves the
-   reference.
-8. **Influencers.** In the Influencers tab, the presenter clicks **Draft
+   router picks Strategy, which returns recommendations in the Strategy panel.
+   The presenter clicks **Do this**, which fills the Execution composer without
+   sending it, then types *"Write the LinkedIn post for recommendation #2"*.
+   The router picks Execution and resolves the reference in the chat transcript.
+8. **Influencers.** In the Influencers panel, the presenter clicks **Draft
    outreach** on an influencer. Execution returns an outreach email draft and
    a `create_email_draft` action.
 

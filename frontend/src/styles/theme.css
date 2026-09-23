@@ -19,6 +19,10 @@
   --color-text: #1a1a1a;
   --color-text-muted: #6b7280;
   --color-border: #e5e7eb;
+  --color-surface-ink: #16171a;
+  --color-text-inverse: #f2f3f5;
+  --color-text-inverse-muted: #9aa0a8;
+  --color-border-strong: #d1d5db;
   --color-success: #16a34a;
   --color-warning: #d97706;
   --color-error: #dc2626;
