@@ -132,12 +132,22 @@ body. It exposes two function tools to each agent:
 - `list_skills()` returns the allowlisted `[{name, description}]`. The same
   catalogue is also embedded in the instructions.
 - `load_skill(name: str, reference?: str)` returns the SKILL.md body, or one
-  file from `references/`. It rejects names outside the allowlist with an
-  error, and the call counts toward the limit of 3 per run.
+  file from `references/`. It rejects names outside the allowlist with
+  `{error: {code: "NOT_AVAILABLE", message}}`, rejects missing or escaping
+  references with `INVALID_REFERENCE`, and returns `NOT_FOUND` for an unknown
+  catalogue entry. Every call counts toward the limit of 3 per run; the
+  fourth call returns `{error: {code: "LIMIT_REACHED", message}}` without
+  reading another file. Tool failures are returned as typed error envelopes,
+  never raised into the agent.
 
 Skill text references `.agents/product-marketing.md` as the product-context
 file. The loader appends one note: *"In this platform, product context comes
 from the `get_company_context` tool."* The upstream file is not edited.
+
+The committed catalogue is pinned to one upstream commit in
+`backend/app/skills/library/skills.lock.json`, with one SHA-256 hash per
+skill. `backend/scripts/update_skills.py --check` is the offline CI integrity
+gate; only its explicit update mode may fetch the upstream repository.
 
 ## 5. Request Router
 
