@@ -13,14 +13,17 @@ const AGENT_COPY: Record<AgentHint, { label: string; description: string }> = {
 };
 
 const MAX_ROWS = 6;
-const LINE_HEIGHT_PX = 24;
+/** The body token: 15px at line-height 1.5 (theme.css). */
+const LINE_HEIGHT_PX = 22.5;
 
 /** Docked beneath the transcript and always reachable (ui-spec §7). */
 export function Composer() {
   const { draft, setDraft, agentHint, setAgentHint, startRun } = useWorkspace();
   const textarea = useRef<HTMLTextAreaElement>(null);
 
-  // Grow with the content up to six lines, then scroll inside the field.
+  // Grow with the content up to six lines, then scroll inside the field. This
+  // is a measurement, not styling: the height depends on the rendered content,
+  // so it cannot be a token class. Recorded in ui-spec §7.
   useEffect(() => {
     const element = textarea.current;
     if (!element) return;

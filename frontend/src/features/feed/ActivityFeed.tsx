@@ -35,7 +35,7 @@ export function ActivityFeed() {
   const activities = useActivities(query);
   const markSeen = useMarkSeen();
   const { startRun, highlightedId, highlight } = useWorkspace();
-  const { inserted, announcement } = useActivityStream();
+  const { inserted, announcement, paused } = useActivityStream();
 
   const items: Activity[] = useMemo(() => {
     const pages = activities.data?.pages.flatMap((page) => page.items) ?? [];
@@ -83,6 +83,16 @@ export function ActivityFeed() {
       meta={unseenCount > 0 ? <Badge tone="brand">{unseenCount} new</Badge> : null}
     >
       <LiveRegion message={announcement} />
+
+      {paused ? (
+        <p
+          role="status"
+          className="border-b border-border bg-surface-page px-2 py-1 text-small text-text-attention"
+        >
+          Live updates paused — reconnecting…
+        </p>
+      ) : null}
+
       <FeedFilters competitors={competitors} value={filters} onChange={setFilters} />
 
       {activities.isPending ? <SkeletonList rows={4} label="Loading competitor activity" /> : null}

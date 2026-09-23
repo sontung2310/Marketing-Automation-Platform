@@ -11,7 +11,14 @@ import type {
   Run,
   Session,
 } from "../../api/types";
-import { RUN_SCRIPTS, recommendations, runs, session, type ScriptedEvent } from "./agents";
+import {
+  failedRunScript,
+  RUN_SCRIPTS,
+  recommendations,
+  runs,
+  session,
+  type ScriptedEvent,
+} from "./agents";
 import { activities, company } from "./records";
 
 export interface SimulationTemplate {
@@ -120,47 +127,65 @@ const WHY_IT_MATTERS: ItemAction = {
   primary: false,
 };
 
-/** docs/specs.md §6. The real API computes this; the UI never does. */
+const CREATE_SIMILAR_LABEL = {
+  NEW_BLOG: "Create a similar blog",
+  SOCIAL_POST: "Create a similar post",
+  EXECUTIVE_POST: "Draft a CEO post",
+} as const;
+
+const PLAN_A_RESPONSE: ItemAction = {
+  action: "RESPONSE_PLAN",
+  label: "Plan a response",
+  agent: "STRATEGY",
+  primary: true,
+};
+
+/**
+ * docs/specs.md §6, keyed by activity type so a tenth type is a compile error
+ * rather than a silent "Plan a response". The real API computes this; the UI
+ * never does.
+ */
+const PRIMARY_ACTION: Record<ActivityType, (channel: Activity["channel"]) => ItemAction[]> = {
+  NEW_BLOG: () => [
+    {
+      action: "CREATE_SIMILAR",
+      label: CREATE_SIMILAR_LABEL.NEW_BLOG,
+      agent: "EXECUTION",
+      deliverable_type: "BLOG_DRAFT",
+      primary: true,
+    },
+    WHY_IT_MATTERS,
+  ],
+  SOCIAL_POST: (channel) => [
+    {
+      action: "CREATE_SIMILAR",
+      label: CREATE_SIMILAR_LABEL.SOCIAL_POST,
+      agent: "EXECUTION",
+      deliverable_type: SOCIAL_DELIVERABLE[channel] ?? "LINKEDIN_POST",
+      primary: true,
+    },
+    WHY_IT_MATTERS,
+  ],
+  EXECUTIVE_POST: () => [
+    {
+      action: "CREATE_SIMILAR",
+      label: CREATE_SIMILAR_LABEL.EXECUTIVE_POST,
+      agent: "EXECUTION",
+      deliverable_type: "CEO_POST",
+      primary: true,
+    },
+    WHY_IT_MATTERS,
+  ],
+  NEW_PRODUCT: () => [PLAN_A_RESPONSE],
+  PRODUCT_REMOVED: () => [PLAN_A_RESPONSE],
+  PRICE_CHANGE: () => [PLAN_A_RESPONSE],
+  PROMOTION: () => [PLAN_A_RESPONSE],
+  CAMPAIGN_LAUNCH: () => [PLAN_A_RESPONSE],
+  PAGE_UPDATE: () => [PLAN_A_RESPONSE],
+};
+
 function actionsFor(activity_type: ActivityType, channel: Activity["channel"]): ItemAction[] {
-  switch (activity_type) {
-    case "NEW_BLOG":
-      return [
-        {
-          action: "CREATE_SIMILAR",
-          label: "Create a similar blog",
-          agent: "EXECUTION",
-          deliverable_type: "BLOG_DRAFT",
-          primary: true,
-        },
-        WHY_IT_MATTERS,
-      ];
-    case "SOCIAL_POST":
-      return [
-        {
-          action: "CREATE_SIMILAR",
-          label: "Create a similar post",
-          agent: "EXECUTION",
-          deliverable_type: SOCIAL_DELIVERABLE[channel] ?? "LINKEDIN_POST",
-          primary: true,
-        },
-        WHY_IT_MATTERS,
-      ];
-    case "EXECUTIVE_POST":
-      return [
-        {
-          action: "CREATE_SIMILAR",
-          label: "Draft a CEO post",
-          agent: "EXECUTION",
-          deliverable_type: "CEO_POST",
-          primary: true,
-        },
-        WHY_IT_MATTERS,
-      ];
-    default:
-      return [
-        { action: "RESPONSE_PLAN", label: "Plan a response", agent: "STRATEGY", primary: true },
-      ];
-  }
+  return PRIMARY_ACTION[activity_type](channel);
 }
 
 /** Which agent a deterministic trigger routes to (docs/agents-spec.md §5). */
@@ -195,6 +220,7 @@ class FixtureStore {
   readonly actions = new Map<string, ProposedAction>();
   readonly tickets = new Map<string, RunTicket>();
   private readonly listeners = new Set<(activity: Activity) => void>();
+  private nextRunFailure: { code: string; message: string } | null = null;
 
   constructor() {
     for (const run of runs) {
@@ -295,12 +321,19 @@ class FixtureStore {
       message,
       trigger_label: triggerLabel,
     };
+    const failure = this.nextRunFailure;
+    this.nextRunFailure = null;
     const ticket: RunTicket = {
       run: RUN_SCRIPTS[agent].start(seed),
-      script: RUN_SCRIPTS[agent].events(runId),
+      script: failure ? failedRunScript(runId, failure) : RUN_SCRIPTS[agent].events(runId),
     };
     this.tickets.set(runId, ticket);
     return ticket;
+  }
+
+  /** Makes the next started run stream `run.failed` (e2e only). */
+  failNextRun(error: { code: string; message: string }): void {
+    this.nextRunFailure = error;
   }
 
   approve(actionId: string, overrides?: Record<string, unknown>): ProposedAction {

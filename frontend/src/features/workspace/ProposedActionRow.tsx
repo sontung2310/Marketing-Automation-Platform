@@ -1,14 +1,19 @@
 import { useState } from "react";
 
-import { ApiError, type ProposedAction } from "../../api";
+import { ApiError, type ActionType, type ProposedAction } from "../../api";
 import { Badge } from "../../components/ds/Badge";
 import { Button } from "../../components/ds/Button";
 import { Spinner } from "../../components/ds/Spinner";
 import { TextInput } from "../../components/ds/TextInput";
 import { useApproveAction, useDiscardAction } from "../../hooks/queries";
 
-/** Actions with a schedule the marketer may edit before approving. */
-const SCHEDULABLE = new Set(["schedule_social_post", "add_to_content_calendar"]);
+/** Which actions carry a schedule the marketer may edit before approving. */
+const IS_SCHEDULABLE: Record<ActionType, boolean> = {
+  schedule_social_post: true,
+  add_to_content_calendar: true,
+  create_cms_draft: false,
+  create_email_draft: false,
+};
 
 export function ProposedActionRow({ action }: { action: ProposedAction }) {
   const approve = useApproveAction();
@@ -61,7 +66,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
           onClick={() =>
             approve.mutate({
               actionId: current.id,
-              overrides: SCHEDULABLE.has(current.action_type)
+              overrides: IS_SCHEDULABLE[current.action_type]
                 ? { scheduled_for: scheduledFor }
                 : undefined,
             })
@@ -71,7 +76,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
         </Button>
       </div>
 
-      {SCHEDULABLE.has(current.action_type) ? (
+      {IS_SCHEDULABLE[current.action_type] ? (
         <TextInput
           label="Scheduled for"
           value={scheduledFor}

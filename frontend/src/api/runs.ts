@@ -1,4 +1,4 @@
-import { getJson, postJson, streamUrl } from "./client";
+import { getJson, openStream, postJson } from "./client";
 import type { Run, RunRequest, RunResponse, Session } from "./types";
 
 export function startRun(body: RunRequest): Promise<RunResponse> {
@@ -13,6 +13,6 @@ export function fetchSession(sessionId: string): Promise<Session> {
   return getJson<Session>(`/sessions/${sessionId}`);
 }
 
-export function runStreamUrl(runId: string): string {
-  return streamUrl(`/runs/${runId}/events`);
+export function openRunStream(runId: string): EventSource {
+  return openStream(`/runs/${runId}/events`);
 }

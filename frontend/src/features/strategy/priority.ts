@@ -7,10 +7,3 @@ export const PRIORITY_TONE: Record<Priority, BadgeTone> = {
   MEDIUM: "neutral",
   LOW: "neutral",
 };
-
-/** The short label a compact row shows. */
-export const PRIORITY_SHORT: Record<Priority, string> = {
-  HIGH: "HIGH",
-  MEDIUM: "MED",
-  LOW: "LOW",
-};

@@ -9,7 +9,7 @@ import { Spinner } from "../../components/ds/Spinner";
 import { useRecommendations } from "../../hooks/queries";
 import { cn } from "../../lib/cn";
 import { useWorkspace } from "../workspace/workspaceContext";
-import { PRIORITY_SHORT } from "./priority";
+
 import { RecommendationSheet } from "./RecommendationSheet";
 
 const STATUS_COLOR: Record<Recommendation["status"], string> = {
@@ -91,7 +91,7 @@ export function StrategyPanel() {
                 openId === recommendation.id ? "bg-surface-selected" : "bg-surface-card",
               )}
             >
-              <span className="row-span-2 text-small font-semibold text-primary">
+              <span className="row-span-2 text-small font-semibold text-primary-hover">
                 {recommendation.ordinal}
               </span>
               <span className="flex min-w-0 items-center gap-1">
@@ -101,7 +101,7 @@ export function StrategyPanel() {
                     PRIORITY_CLASS[recommendation.priority],
                   )}
                 >
-                  {PRIORITY_SHORT[recommendation.priority]}
+                  {recommendation.priority}
                 </span>
                 <span className="truncate text-body font-semibold text-text">
                   {recommendation.title}

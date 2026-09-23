@@ -5,6 +5,7 @@ import { Button } from "../../components/ds/Button";
 import { Icon, type IconName } from "../../components/ds/Icon";
 import { Spinner } from "../../components/ds/Spinner";
 import { useElapsedSeconds } from "../../hooks/useElapsedSeconds";
+import { useWorkspace } from "./workspaceContext";
 import { cn } from "../../lib/cn";
 import { DeliverableCard } from "./DeliverableCard";
 import type { RunState } from "./workspaceContext";
@@ -33,6 +34,7 @@ function isExecutionOutput(output: RunState["output"]): output is ExecutionOutpu
  */
 export function ExecutionTurn({ run }: { run: RunState }) {
   const [open, setOpen] = useState(false);
+  const { startRun } = useWorkspace();
   const running = run.status === "RUNNING";
   const output = isExecutionOutput(run.output) ? run.output : null;
   const elapsedSeconds = useElapsedSeconds(run.started_at, run.finished_at);
@@ -116,7 +118,11 @@ export function ExecutionTurn({ run }: { run: RunState }) {
       {run.error ? (
         <div role="alert" className="flex items-center gap-1 text-small text-text">
           <span>{run.error.message}</span>
-          <Button variant="quiet" className="text-small">
+          <Button
+            variant="quiet"
+            className="text-small"
+            onClick={() => startRun(run.request, run.trigger_label)}
+          >
             Retry run
           </Button>
         </div>

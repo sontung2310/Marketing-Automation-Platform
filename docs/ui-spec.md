@@ -160,7 +160,8 @@ and useful: never apologize, and render enum values verbatim.
 | Fixed 240px left sidebar with company selector | No sidebar; the tenant selector is in the TopBar. | The PoC has one tenant and needs the space for social listening. |
 | Nothing is sticky except the sidebar and TopBar | The Execution composer is docked at the bottom of its fixed-height transcript. | It must remain reachable while a long turn is visible. |
 | Max content width ~1100px, single column | Full-width three-region workspace, capped at 320/flex/360. | Watching, deciding and acting are simultaneous jobs. |
-| `--color-primary` fills the primary button | Filled buttons use `--color-primary-hover` and press to `--color-primary-strong`. | White on `--color-primary` is 4.32:1, below the AA 4.5:1 that §6 requires. `--color-primary` is unchanged and still carries every accent that is not type on a fill. |
+| `--color-primary` fills the primary button | Filled buttons use `--color-primary-hover` and press to `--color-primary-strong`. | White on `--color-primary` is 4.32:1, below the AA 4.5:1 that §6 requires. `--color-primary` is unchanged and still carries every accent that is not type on a fill, and no longer sets 13px type. |
+| No inline `style` | The composer sets its own `height` imperatively. | The auto-growing textarea's height depends on rendered content, so it is a measurement rather than a style. It is capped at six lines of the `body` token, and it is the only inline style the page renders. |
 
 ## 8. Anti-slop checklist
 

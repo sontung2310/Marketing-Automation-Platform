@@ -33,10 +33,15 @@ export function DeliverableCard({
   proposedActions,
 }: DeliverableCardProps) {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
 
-  const copy = () => {
-    void navigator.clipboard?.writeText(deliverable.body_markdown).then(() => setCopied(true));
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(deliverable.body_markdown);
+      setCopied("Copied");
+    } catch {
+      setCopied("Copy failed");
+    }
   };
 
   return (
@@ -59,7 +64,7 @@ export function DeliverableCard({
         <Button className="ml-auto" onClick={() => setOpen((value) => !value)}>
           {open ? "Hide" : "Open"}
         </Button>
-        <Button onClick={copy}>{copied ? "Copied" : "Copy"}</Button>
+        <Button onClick={() => void copy()}>{copied ?? "Copy"}</Button>
       </div>
 
       {open ? (

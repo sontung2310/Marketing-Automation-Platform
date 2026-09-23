@@ -37,10 +37,13 @@ export function buildQuery(params: Record<string, QueryValue>): string {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, init);
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
+    // A body that is not the documented envelope (a proxy's `{}`, an HTML error
+    // page) must still become an ApiError: every region narrows on that type.
+    const body = (await response.json().catch(() => null)) as Partial<ApiErrorBody> | null;
+    const error = body?.error;
     throw new ApiError(
-      body?.error.code ?? "INTERNAL",
-      body?.error.message ?? `Request failed with status ${response.status}`,
+      error?.code ?? "INTERNAL",
+      error?.message ?? `Request failed with status ${response.status}`,
       response.status,
     );
   }
@@ -67,7 +70,7 @@ export function putJson<T>(path: string, body?: unknown): Promise<T> {
   return withBody<T>("PUT", path, body);
 }
 
-/** Absolute URL for an SSE endpoint, which EventSource opens rather than fetch. */
-export function streamUrl(path: string): string {
-  return `${BASE_URL}${path}`;
+/** Opens an SSE stream. Like fetch, this call belongs to the api layer alone. */
+export function openStream(path: string): EventSource {
+  return new EventSource(`${BASE_URL}${path}`);
 }

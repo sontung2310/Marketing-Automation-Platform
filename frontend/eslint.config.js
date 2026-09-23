@@ -28,10 +28,12 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-explicit-any": "error",
-      // Only src/api/ may call the backend (AGENTS.md §2).
+      // Only src/api/ may call the backend (AGENTS.md §2). Opening an SSE
+      // stream is a backend call too, so EventSource is restricted with fetch.
       "no-restricted-globals": [
         "error",
         { name: "fetch", message: "Call the backend through src/api/." },
+        { name: "EventSource", message: "Open backend streams through src/api/." },
       ],
       // Design tokens only: no Tailwind arbitrary values such as p-[13px] or bg-[#f00]
       // (docs/coding-conventions.md §6). Add a token or @utility in src/styles/theme.css instead.

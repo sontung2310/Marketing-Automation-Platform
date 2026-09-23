@@ -33,6 +33,7 @@ export function ExecutionChat() {
       }
     >
       <div
+        role="log"
         aria-live="polite"
         aria-label="Execution transcript"
         className="min-h-0 flex-1 scrollbar-thin overflow-y-auto px-3 pt-3 pb-2"

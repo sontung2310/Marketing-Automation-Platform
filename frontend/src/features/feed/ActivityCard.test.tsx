@@ -6,6 +6,18 @@ import { activities } from "../../test/fixtures/records";
 import { ActivityCard } from "./ActivityCard";
 
 /** docs/specs.md §6. The card must render whatever the API computed. */
+const PRIMARY_AGENT: Record<ActivityType, "STRATEGY" | "EXECUTION"> = {
+  NEW_BLOG: "EXECUTION",
+  SOCIAL_POST: "EXECUTION",
+  EXECUTIVE_POST: "EXECUTION",
+  NEW_PRODUCT: "STRATEGY",
+  PRODUCT_REMOVED: "STRATEGY",
+  PRICE_CHANGE: "STRATEGY",
+  PROMOTION: "STRATEGY",
+  CAMPAIGN_LAUNCH: "STRATEGY",
+  PAGE_UPDATE: "STRATEGY",
+};
+
 const PRIMARY_LABEL: Record<ActivityType, string> = {
   NEW_BLOG: "Create a similar blog",
   SOCIAL_POST: "Create a similar post",
@@ -27,10 +39,25 @@ function fixtureOf(activityType: ActivityType) {
 describe("ActivityCard", () => {
   it.each(ACTIVITY_TYPES)("renders %s with its mapped primary action", (activityType) => {
     const activity = fixtureOf(activityType);
-    render(<ActivityCard activity={activity} onAction={vi.fn()} />);
+    const onAction = vi.fn();
+    render(<ActivityCard activity={activity} onAction={onAction} />);
 
     expect(screen.getByText(activityType)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: PRIMARY_LABEL[activityType] })).toBeInTheDocument();
+
+    const primary = screen.getByRole("button", { name: PRIMARY_LABEL[activityType] });
+    expect(primary).toBeInTheDocument();
+
+    // ui-spec §8: one primary button per card. The filled variant is the
+    // only one carrying the brand background.
+    const filled = screen
+      .getAllByRole("button")
+      .filter((button) => button.className.includes("bg-primary"));
+    expect(filled).toEqual([primary]);
+
+    primary.click();
+    expect(onAction).toHaveBeenCalledWith(
+      expect.objectContaining({ agent: PRIMARY_AGENT[activityType], primary: true }),
+    );
   });
 
   it("offers Why it matters only where Execution owns the primary action", () => {

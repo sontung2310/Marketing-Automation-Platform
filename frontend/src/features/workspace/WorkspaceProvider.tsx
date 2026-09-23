@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { runStreamUrl, type AgentHint, type RunEvent, type RunRequest } from "../../api";
+import { ApiError, openRunStream, type AgentHint, type RunEvent, type RunRequest } from "../../api";
 import { queryKeys, useSession, useStartRun } from "../../hooks/queries";
 import {
   evidenceTargetId,
@@ -12,9 +12,12 @@ import {
 } from "./workspaceContext";
 
 const SESSION_STORAGE_KEY = "session_id";
-const HIGHLIGHT_MS = 1200;
-/** How long a highlight waits for its target while the feed pages towards it. */
-const SCROLL_WAIT_MS = 4000;
+/**
+ * How long a highlight stays lit. It also bounds the wait for a target the feed
+ * is still paging towards, so the two can never disagree: a shorter highlight
+ * would cancel the pending scroll before it resolved.
+ */
+const HIGHLIGHT_MS = 4000;
 
 function readStoredSession(): string | null {
   try {
@@ -81,7 +84,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!highlightedId) return;
     let frame = 0;
-    const deadline = performance.now() + SCROLL_WAIT_MS;
+    const deadline = performance.now() + HIGHLIGHT_MS;
     const find = () => {
       const target = document.getElementById(evidenceTargetId(highlightedId));
       if (target) {
@@ -96,7 +99,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const listen = useCallback(
     (runId: string) => {
-      const source = new EventSource(runStreamUrl(runId));
+      const source = openRunStream(runId);
       streams.current.set(runId, source);
 
       const onEvent = (raw: MessageEvent<string>) => {
@@ -163,7 +166,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const restoredRuns: Record<string, RunState> = {};
     const entries: TranscriptEntry[] = [];
     for (const run of session.runs) {
-      restoredRuns[run.id] = { ...run };
+      restoredRuns[run.id] = {
+        ...run,
+        request: run.message ? { message: run.message } : { trigger: run.trigger ?? undefined },
+      };
       if (run.agent !== "EXECUTION") continue;
       if (run.message) {
         entries.push({ kind: "marketer", id: `${run.id}-message`, text: run.message });
@@ -172,10 +178,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
     setRuns((current) => ({ ...restoredRuns, ...current }));
     setTranscript((current) => [...entries, ...current]);
-    for (const run of session.runs) {
-      if (run.status === "RUNNING") listen(run.id);
+  }, [restored.data]);
+
+  // Every RUNNING run has exactly one open stream. Keeping this separate from
+  // the run-once restore makes it idempotent, so a remount reattaches.
+  useEffect(() => {
+    for (const run of Object.values(runs)) {
+      if (run.status === "RUNNING" && !streams.current.has(run.id)) listen(run.id);
     }
-  }, [restored.data, listen]);
+  }, [runs, listen]);
 
   const startRun = useCallback(
     (request: RunRequest, label?: string) => {
@@ -188,6 +199,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       startRunMutation.mutate(
         { ...request, session_id: sessionId },
         {
+          onError: (cause) => {
+            setTranscript((current) => [
+              ...current,
+              {
+                kind: "router",
+                id: `error-${Date.now()}`,
+                message:
+                  cause instanceof ApiError ? cause.message : "The run could not be started.",
+                options: [],
+                pointsAtFeed: false,
+              },
+            ]);
+          },
           onSuccess: (response) => {
             setSessionId(response.session_id);
             try {
@@ -213,6 +237,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
             const run: RunState = {
               id: response.run_id,
+              request,
               agent: response.agent,
               intent: response.intent,
               trigger_label: label ?? response.intent,
@@ -231,12 +256,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             } else {
               setActiveStrategyRunId(run.id);
             }
-            listen(run.id);
           },
         },
       );
     },
-    [listen, sessionId, startRunMutation],
+    [sessionId, startRunMutation],
   );
 
   const value = useMemo<WorkspaceValue>(

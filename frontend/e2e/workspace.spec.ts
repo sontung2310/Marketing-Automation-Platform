@@ -53,6 +53,16 @@ test.describe("7-A the workspace loads at the design target", () => {
       .analyze();
 
     expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+
+    // axe files short text and unlabelled generics under `incomplete` rather
+    // than `violations`, which is where a real 4.32:1 contrast miss hid. The
+    // rules ui-spec §6 turns on must come back clean from that bucket too.
+    const GATED = ["color-contrast", "aria-prohibited-attr"];
+    expect(
+      results.incomplete
+        .filter((item) => GATED.includes(item.id))
+        .flatMap((item) => item.nodes.map((node) => `${item.id}: ${node.target.join(" ")}`)),
+    ).toEqual([]);
   });
 });
 
@@ -117,17 +127,58 @@ test.describe("7-C an Execution run streams into the transcript", () => {
   });
 });
 
+test.describe("7-C a failed run", () => {
+  test("shows the run.failed message verbatim and retries from the transcript", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__fixtureRunFailure = {
+        code: "UPSTREAM_UNAVAILABLE",
+        message: "OpenAI request failed: the model is unavailable.",
+      };
+    });
+    await openWorkspace(page);
+
+    const transcript = page.getByLabel("Execution transcript");
+    const feed = page.getByRole("region", { name: "Competitor activity" });
+    await feed
+      .getByRole("article")
+      .filter({ hasText: "NEW_BLOG" })
+      .first()
+      .getByRole("button", { name: "Create a similar blog" })
+      .click();
+
+    await expect(
+      transcript.getByText("OpenAI request failed: the model is unavailable."),
+    ).toBeVisible();
+
+    // Retry re-dispatches the same trigger; the fixture failure was one-shot,
+    // so the second run completes.
+    await transcript.getByRole("button", { name: "Retry run" }).click();
+    await expect(transcript.getByText("CEO_POST · LINKEDIN · 218 words")).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+});
+
 test.describe("7-D the evidence loop", () => {
   test("Do this prefills the composer without sending, and evidence scrolls to its target", async ({
     page,
   }) => {
-    await openWorkspace(page);
-
-    let runsCreated = 0;
-    await page.route("**/api/runs", async (route) => {
-      runsCreated += 1;
-      await route.continue();
+    await page.addInitScript(() => {
+      // MSW's service worker answers inside the page, so Playwright's routing
+      // never sees this request. Count it where it is actually made.
+      window.__runPosts = 0;
+      const original = window.fetch;
+      window.fetch = (input, init) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.includes("/api/runs") && (init?.method ?? "GET") === "POST") {
+          window.__runPosts = (window.__runPosts ?? 0) + 1;
+        }
+        return original(input, init);
+      };
     });
+    await openWorkspace(page);
 
     await page.getByRole("button", { name: /Hold price, publish the reasoning/ }).click();
 
@@ -153,7 +204,7 @@ test.describe("7-D the evidence loop", () => {
     await expect(page.getByLabel("Message the Execution agent")).toHaveValue(
       "Write the LinkedIn post for recommendation #1",
     );
-    expect(runsCreated).toBe(0);
+    expect(await page.evaluate(() => window.__runPosts)).toBe(0);
   });
 });
 
@@ -203,10 +254,17 @@ test.describe("7-E degraded regions and narrow viewports", () => {
     for (const width of [1440, 1280, 900, 760]) {
       await page.setViewportSize({ width, height: 800 });
       await page.waitForTimeout(150);
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      );
-      expect(overflow, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(0);
+      // The body is clipped by design, so also check the content itself fits:
+      // a region wider than its column would be hidden rather than reported.
+      const overflow = await page.evaluate(() => {
+        const main = document.querySelector("main");
+        return {
+          body: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          content: main ? main.scrollWidth - main.clientWidth : 0,
+        };
+      });
+      expect(overflow.body, `body overflow at ${width}px`).toBeLessThanOrEqual(0);
+      expect(overflow.content, `content overflow at ${width}px`).toBeLessThanOrEqual(0);
     }
   });
 });

@@ -3,6 +3,7 @@ import { HttpResponse, http } from "msw";
 import { setupWorker } from "msw/browser";
 
 import { handlers } from "./handlers";
+import { store } from "./store";
 
 /** An endpoint an e2e spec wants to answer with the documented error envelope. */
 export interface FixtureFailure {
@@ -19,6 +20,8 @@ declare global {
      * before the app's first request and survives a reload.
      */
     __fixtureFailures?: FixtureFailure[];
+    /** Makes the next run stream `run.failed` instead of completing. */
+    __fixtureRunFailure?: { code: string; message: string };
   }
 }
 
@@ -33,6 +36,8 @@ declare global {
 export async function startFixtureWorker(): Promise<void> {
   const worker = setupWorker(...handlers);
   await worker.start({ quiet: true, onUnhandledRequest: "bypass" });
+
+  if (window.__fixtureRunFailure) store.failNextRun(window.__fixtureRunFailure);
 
   for (const { path, status, code, message } of window.__fixtureFailures ?? []) {
     worker.use(

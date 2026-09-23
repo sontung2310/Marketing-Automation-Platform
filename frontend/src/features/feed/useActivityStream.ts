@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { activityStreamUrl, type Activity } from "../../api";
+import { openActivityStream, type Activity } from "../../api";
 
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30_000;
@@ -30,7 +30,7 @@ export function useActivityStream(): ActivityStream {
     let closed = false;
 
     const connect = () => {
-      source = new EventSource(activityStreamUrl());
+      source = openActivityStream();
 
       source.addEventListener("activity.created", (raw) => {
         const activity = JSON.parse((raw as MessageEvent<string>).data) as Activity;

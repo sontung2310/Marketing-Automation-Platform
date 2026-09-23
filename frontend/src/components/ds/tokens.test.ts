@@ -12,8 +12,23 @@ const SOURCES = readdirSync(DS_DIR).filter(
 );
 
 describe("design-system primitives", () => {
-  it("ships at least the primitives the workspace composes from", () => {
-    expect(SOURCES.length).toBeGreaterThanOrEqual(12);
+  it("ships every primitive the workspace composes from", () => {
+    expect([...SOURCES].sort()).toEqual([
+      "Badge.tsx",
+      "Button.tsx",
+      "EmptyState.tsx",
+      "ErrorState.tsx",
+      "Icon.tsx",
+      "LiveRegion.tsx",
+      "Menu.tsx",
+      "Panel.tsx",
+      "SegmentedSwitcher.tsx",
+      "Sheet.tsx",
+      "Skeleton.tsx",
+      "Spinner.tsx",
+      "Tabs.tsx",
+      "TextInput.tsx",
+    ]);
   });
 
   it.each(SOURCES)("%s uses no inline style attribute", (file) => {

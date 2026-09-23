@@ -16,9 +16,10 @@ interface ActivityCardProps {
 export function ActivityCard({ activity, onAction, highlighted }: ActivityCardProps) {
   const primary = activity.actions.find((action) => action.primary) ?? activity.actions[0];
   const secondary = activity.actions.filter((action) => action !== primary);
-  const delta = activity.price
-    ? ((activity.price.after - activity.price.before) / activity.price.before) * 100
-    : null;
+  const delta =
+    activity.price && activity.price.before !== 0
+      ? ((activity.price.after - activity.price.before) / activity.price.before) * 100
+      : null;
 
   return (
     <article

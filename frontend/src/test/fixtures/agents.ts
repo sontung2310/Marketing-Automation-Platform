@@ -387,3 +387,42 @@ export const RUN_SCRIPTS: {
     events: strategyRunScript,
   },
 };
+
+/** A run that gets partway and then fails, for the §5 Execution error state. */
+export function failedRunScript(
+  runId: string,
+  error: { code: string; message: string },
+  startedAt = new Date(),
+): ScriptedEvent[] {
+  const at = (offset: number) => new Date(startedAt.getTime() + offset).toISOString();
+  return [
+    {
+      delay_ms: 150,
+      event: {
+        run_id: runId,
+        seq: 1,
+        ts: at(150),
+        type: "run.started",
+        data: {
+          agent: "EXECUTION",
+          intent: "CREATE_SIMILAR",
+          route: { method: "DETERMINISTIC", reason: "Feed action", confidence: 1 },
+        },
+      },
+    },
+    {
+      delay_ms: 500,
+      event: {
+        run_id: runId,
+        seq: 2,
+        ts: at(500),
+        type: "agent.step",
+        data: { label: "Loading company context" },
+      },
+    },
+    {
+      delay_ms: 900,
+      event: { run_id: runId, seq: 3, ts: at(900), type: "run.failed", data: error },
+    },
+  ];
+}

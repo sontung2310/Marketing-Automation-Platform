@@ -15,6 +15,8 @@ import type {
 /** One agent run as the transcript and the Strategy panel see it. */
 export interface RunState {
   id: string;
+  /** What started this run, so a failed run can be retried unchanged. */
+  request: RunRequest;
   agent: AgentName;
   intent: string;
   trigger_label: string;

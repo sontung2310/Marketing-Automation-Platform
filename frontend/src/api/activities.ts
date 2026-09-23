@@ -1,4 +1,4 @@
-import { buildQuery, getJson, postJson, streamUrl } from "./client";
+import { buildQuery, getJson, openStream, postJson } from "./client";
 import type { Activity, ActivityPage, ActivityQuery, SimulateBody } from "./types";
 
 export function fetchActivities(query: ActivityQuery): Promise<ActivityPage> {
@@ -22,6 +22,6 @@ export function simulateActivity(body: SimulateBody): Promise<Activity> {
   return postJson<Activity>("/activities/simulate", body);
 }
 
-export function activityStreamUrl(): string {
-  return streamUrl("/activities/stream");
+export function openActivityStream(): EventSource {
+  return openStream("/activities/stream");
 }

@@ -11,12 +11,14 @@ export function renderMarkdown(source: string): ReactNode[] {
     .map((block) => block.trim())
     .filter(Boolean)
     .map((block, index) => {
-      const heading = /^(#{1,3})\s+(.*)$/.exec(block);
+      const [firstLine, ...rest] = block.split("\n");
+      const heading = /^#{1,3}\s+(.*)$/.exec(firstLine ?? "");
       if (heading) {
         return (
-          <h4 key={index} className="text-h3 text-text">
-            {heading[2]}
-          </h4>
+          <div key={index} className="flex flex-col gap-1">
+            <h4 className="text-h3 text-text">{heading[1]}</h4>
+            {rest.length > 0 ? <p className="text-body text-text">{rest.join(" ")}</p> : null}
+          </div>
         );
       }
       if (/^[-*]\s+/.test(block)) {
