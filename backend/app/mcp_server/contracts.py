@@ -29,6 +29,9 @@ ArgumentsT = TypeVar("ArgumentsT", bound=ModelBase)
 DEFAULT_LOOKBACK_DAYS = 30
 DEFAULT_TOOL_LIMIT = 10
 MAX_TOOL_LIMIT = 25
+MAX_LOOKBACK_DAYS = 365
+MAX_SEARCH_TEXT_LENGTH = 200
+MAX_COMPETITOR_IDS = 25
 NO_RECORDS_MATCHED_NOTE = "No records matched the request."
 
 
@@ -105,31 +108,41 @@ class CompactActivitySummary(ModelBase):
     recent_items: list[CompactActivitySummaryRecent]
     note: str | None = None
 
+    @model_serializer
+    def serialize(self) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "counts": [count.model_dump(mode="json") for count in self.counts],
+            "recent_items": [item.model_dump(mode="json") for item in self.recent_items],
+        }
+        if self.note is not None:
+            payload["note"] = self.note
+        return payload
+
 
 class ActivitySearchArguments(ModelBase):
-    query: str | None = None
-    competitor_ids: list[str] | None = None
+    query: str | None = Field(default=None, max_length=MAX_SEARCH_TEXT_LENGTH)
+    competitor_ids: list[str] | None = Field(default=None, max_length=MAX_COMPETITOR_IDS)
     activity_types: list[ActivityType] | None = None
     channels: list[Channel] | None = None
-    since_days: int = Field(default=DEFAULT_LOOKBACK_DAYS, ge=1)
+    since_days: int = Field(default=DEFAULT_LOOKBACK_DAYS, ge=1, le=MAX_LOOKBACK_DAYS)
     limit: int = Field(default=DEFAULT_TOOL_LIMIT, ge=1)
 
 
 class ActivitySummaryArguments(ModelBase):
-    since_days: int = Field(default=DEFAULT_LOOKBACK_DAYS, ge=1)
+    since_days: int = Field(default=DEFAULT_LOOKBACK_DAYS, ge=1, le=MAX_LOOKBACK_DAYS)
 
 
 class TrendSearchArguments(ModelBase):
-    query: str | None = None
+    query: str | None = Field(default=None, max_length=MAX_SEARCH_TEXT_LENGTH)
     channels: list[Channel] | None = None
     direction: TrendDirection | None = None
     limit: int = Field(default=DEFAULT_TOOL_LIMIT, ge=1)
 
 
 class InfluencerSearchArguments(ModelBase):
-    topic: str | None = None
+    topic: str | None = Field(default=None, max_length=MAX_SEARCH_TEXT_LENGTH)
     channels: list[Channel] | None = None
-    region: str | None = None
+    region: str | None = Field(default=None, max_length=MAX_SEARCH_TEXT_LENGTH)
     min_followers: int | None = Field(default=None, ge=0)
     limit: int = Field(default=DEFAULT_TOOL_LIMIT, ge=1)
 

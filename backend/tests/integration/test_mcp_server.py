@@ -199,7 +199,7 @@ async def test_activity_search_is_tenant_scoped_filtered_and_newest_first(
     assert isinstance(activities, list)
     assert activities
     assert [activity["id"] for activity in activities] == [
-        f"act_price_{index:03d}" for index in range(1, 26)
+        f"act_price_{index:03d}" for index in range(1, 25)
     ]
     assert all(activity["id"].startswith("act_") for activity in activities)
     assert all(set(activity) == _COMPACT_ACTIVITY_KEYS for activity in activities)
@@ -238,12 +238,14 @@ async def test_cross_tenant_influencer_get_returns_not_found(mcp_service: McpSer
 async def test_list_and_search_tools_exclude_other_company_records(mcp_service: McpService) -> None:
     async with _client(mcp_service) as client:
         competitors = _tool_json(await client.call_tool("list_competitors", {}))
+        activities = _tool_json(await client.call_tool("search_competitor_activity", {"limit": 25}))
         trends = _tool_json(await client.call_tool("search_trends", {}))
         influencers = _tool_json(await client.call_tool("search_influencers", {}))
 
     assert [item["id"] for item in competitors["results"]] == [PRIMARY_COMPETITOR_ID]
     assert all(set(item) == _COMPACT_COMPETITOR_KEYS for item in competitors["results"])
     assert competitors["results"][0]["channels"] == [Channel.LINKEDIN.value]
+    assert all(activity["id"] != "act_price_099" for activity in activities["results"])
     assert [item["id"] for item in trends["results"]] == ["trd_ai_marketing"]
     assert [item["id"] for item in influencers["results"]] == [PRIMARY_INFLUENCER_ID]
 
@@ -316,6 +318,61 @@ async def test_invalid_activity_search_lower_bound_uses_validation_envelope(
     assert _tool_json(result)["error"]["code"] == "VALIDATION_ERROR"
 
 
+@pytest.mark.parametrize(
+    ("tool_name", "arguments"),
+    [
+        ("search_competitor_activity", {"since_days": 366}),
+        ("summarize_competitor_activity", {"since_days": 366}),
+    ],
+)
+async def test_since_days_upper_bound_uses_validation_envelope(
+    mcp_service: McpService,
+    tool_name: str,
+    arguments: dict[str, int],
+) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool(tool_name, arguments)
+
+    assert result.is_error is False
+    assert _tool_json(result)["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "arguments"),
+    [
+        ("search_competitor_activity", {"query": "x" * 201}),
+        ("search_competitor_activity", {"competitor_ids": ["cpt_brightlane"] * 26}),
+        ("search_trends", {"query": "x" * 201}),
+        ("search_influencers", {"topic": "x" * 201}),
+        ("search_influencers", {"region": "x" * 201}),
+    ],
+)
+async def test_text_and_list_bounds_use_validation_envelopes(
+    mcp_service: McpService,
+    tool_name: str,
+    arguments: dict[str, object],
+) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool(tool_name, arguments)
+
+    assert result.is_error is False
+    assert _tool_json(result)["error"]["code"] == "VALIDATION_ERROR"
+
+
+async def test_trend_text_search_hits_indexed_records(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("search_trends", {"query": "AI"})
+
+    assert [item["id"] for item in _tool_json(result)["results"]] == ["trd_ai_marketing"]
+
+
+async def test_influencer_text_search_hits_indexed_records(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("search_influencers", {"topic": "AI"})
+
+    assert [item["id"] for item in _tool_json(result)["results"]] == [PRIMARY_INFLUENCER_ID]
+
+
 async def test_empty_activity_summary_remains_a_noted_summary(mcp_service: McpService) -> None:
     async with _client(mcp_service) as client:
         result = await client.call_tool("summarize_competitor_activity", {"since_days": 1})
@@ -331,7 +388,9 @@ async def test_activity_summary_embeds_compact_recent_items(mcp_service: McpServ
     async with _client(mcp_service) as client:
         result = await client.call_tool("summarize_competitor_activity", {})
 
-    recent_items = _tool_json(result)["recent_items"]
+    payload = _tool_json(result)
+    assert "note" not in payload
+    recent_items = payload["recent_items"]
     assert isinstance(recent_items, list)
     assert recent_items
     first_recent = recent_items[0]
@@ -424,12 +483,18 @@ async def _load_records(repositories: McpRepositories, now: datetime) -> None:
     await companies.upsert(_company(OTHER_COMPANY_ID, "Other Company", now))
     await competitors.upsert(_competitor(COMPANY_ID, PRIMARY_COMPETITOR_ID, "Brightlane"))
     await competitors.upsert(_competitor(OTHER_COMPANY_ID, OTHER_COMPETITOR_ID, "Other Competitor"))
-    for index in range(1, 31):
+    for index in range(1, 25):
         await activities.upsert(_price_activity(index, now))
     await activities.upsert(_social_activity("act_social_recent", now))
     await activities.upsert(_price_activity(90, now, detected_at=now - timedelta(days=90)))
     await activities.upsert(
-        _price_activity(99, now, company_id=OTHER_COMPANY_ID, competitor_id=OTHER_COMPETITOR_ID)
+        _price_activity(
+            99,
+            now,
+            company_id=OTHER_COMPANY_ID,
+            competitor_id=OTHER_COMPETITOR_ID,
+            detected_at=now - timedelta(hours=1),
+        )
     )
     await trends.upsert(_trend(COMPANY_ID, "trd_ai_marketing", now))
     await trends.upsert(_trend(OTHER_COMPANY_ID, "trd_other_company", now))
@@ -506,7 +571,7 @@ def _price_activity(
 
 
 def _social_activity(activity_id: str, now: datetime) -> CompetitorActivity:
-    detected_at = now - timedelta(days=5)
+    detected_at = now - timedelta(hours=25)
     return CompetitorActivity(
         _id=activity_id,
         company_id=COMPANY_ID,

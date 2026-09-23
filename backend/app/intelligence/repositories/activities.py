@@ -92,7 +92,7 @@ class CompetitorActivitiesRepository(Repository[CompetitorActivity]):
                                     "competitor_id": "$competitor_id",
                                     "competitor_name": "$competitor_name",
                                 },
-                                "items": {"$push": "$$ROOT"},
+                                "items": {"$firstN": {"input": "$$ROOT", "n": 3}},
                             }
                         },
                         {
@@ -100,7 +100,7 @@ class CompetitorActivitiesRepository(Repository[CompetitorActivity]):
                                 "_id": 0,
                                 "competitor_id": "$_id.competitor_id",
                                 "competitor_name": "$_id.competitor_name",
-                                "items": {"$slice": ["$items", 3]},
+                                "items": 1,
                             }
                         },
                     ],

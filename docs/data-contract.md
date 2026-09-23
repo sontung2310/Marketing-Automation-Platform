@@ -151,6 +151,12 @@ Indexes:
 }
 ```
 
+Indexes:
+
+- `{company_id:1, momentum_pct:-1}`
+- unique `{"source.system":1, "source.ref_id":1}`
+- text index `{topic, keywords}`
+
 ### 3.5 `influencers`
 
 ```jsonc
@@ -169,6 +175,12 @@ Indexes:
   "is_mock": false
 }
 ```
+
+Indexes:
+
+- `{company_id:1, relevance_score:-1}`
+- unique `{"source.system":1, "source.ref_id":1}`
+- text index `{name, topics}`
 
 ### 3.6 App-state collections
 

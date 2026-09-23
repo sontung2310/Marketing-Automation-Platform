@@ -5,6 +5,7 @@ from pymongo.asynchronous.database import AsyncDatabase
 
 from app.intelligence.models import Recommendation
 from app.intelligence.repositories.base import Document, Repository
+from app.intelligence.repositories.sessions import SessionsRepository
 
 
 class RecommendationsRepository(Repository[Recommendation]):
@@ -29,7 +30,7 @@ class RecommendationsRepository(Repository[Recommendation]):
             {"$match": {"_id": recommendation_id}},
             {
                 "$lookup": {
-                    "from": "sessions",
+                    "from": SessionsRepository.collection_name,
                     "localField": "session_id",
                     "foreignField": "_id",
                     "as": "session",

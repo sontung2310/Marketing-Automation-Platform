@@ -1,9 +1,11 @@
 """Pure tests for the MCP boundary contracts and projections."""
 
+import logging
 from datetime import UTC, datetime
 
 import pytest
 
+from app.core.errors import UpstreamUnavailableError
 from app.intelligence.models import (
     ActivitySummary,
     ActivitySummaryCount,
@@ -25,7 +27,7 @@ from app.mcp_server.contracts import (
     compact_competitor,
     parse_tool_arguments,
 )
-from app.mcp_server.server import _results_or_note
+from app.mcp_server.server import _results_or_note, _tool_boundary
 
 
 @pytest.mark.parametrize("value, expected", [(10, 10), (25, 25), (500, 25)])
@@ -116,6 +118,29 @@ def test_compact_projections_keep_the_documented_fields() -> None:
     assert set(compact_summary_result.recent_items[0].items[0].model_dump()) == set(
         compact_activity_result.model_dump()
     )
+    assert "note" not in compact_summary_result.model_dump()
+
+
+@pytest.mark.asyncio
+async def test_tool_boundary_maps_repository_failure_and_logs_tool_name(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class FailingRepository:
+        async def read(self) -> None:
+            raise UpstreamUnavailableError("database unavailable")
+
+    repository = FailingRepository()
+
+    @_tool_boundary("stub_tool")
+    async def handler() -> None:
+        await repository.read()
+
+    with caplog.at_level(logging.ERROR, logger="app.mcp_server.server"):
+        result = await handler()
+
+    assert isinstance(result, ToolErrorEnvelope)
+    assert result.error.code == "UPSTREAM_UNAVAILABLE"
+    assert "stub_tool" in caplog.text
 
 
 def _activity(now: datetime) -> CompetitorActivity:

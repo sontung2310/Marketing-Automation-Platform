@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+import logging
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, TypeVar
+from functools import wraps
+from typing import Annotated, ParamSpec, TypeVar, cast
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import Field
 from starlette.applications import Starlette
 
+from app.core.errors import DomainError, UpstreamUnavailableError
 from app.intelligence.models import ActivityType, Channel, ModelBase, TrendDirection
 from app.intelligence.repositories.activities import CompetitorActivitiesRepository
 from app.intelligence.repositories.companies import CompaniesRepository
@@ -37,6 +40,7 @@ from app.mcp_server.contracts import (
     RecommendationIdArguments,
     RecommendationResult,
     ResultsResponse,
+    ToolError,
     ToolErrorEnvelope,
     TrendResults,
     TrendSearchArguments,
@@ -62,6 +66,9 @@ TrendDirectionValue = Annotated[
     Field(json_schema_extra={"enum": [direction.value for direction in TrendDirection]}),
 ]
 ResponseItemT = TypeVar("ResponseItemT", bound=ModelBase)
+HandlerParams = ParamSpec("HandlerParams")
+HandlerResult = TypeVar("HandlerResult")
+logger = logging.getLogger(__name__)
 
 
 class McpRepositories:
@@ -103,6 +110,7 @@ def build_mcp_server(
     @server.tool(
         description="Return the configured company's marketing context.", structured_output=False
     )
+    @_tool_boundary("get_company_context")
     async def get_company_context() -> CompanyResult:
         company = await repositories.companies.get_for_company(company_id)
         if company is None:
@@ -112,6 +120,7 @@ def build_mcp_server(
     @server.tool(
         description="List competitors owned by the configured company.", structured_output=False
     )
+    @_tool_boundary("list_competitors")
     async def list_competitors() -> CompetitorResults:
         competitors = await repositories.competitors.list_for_company(company_id)
         return _results_or_note([compact_competitor(competitor) for competitor in competitors])
@@ -120,6 +129,7 @@ def build_mcp_server(
         description="Search recent competitor activity with optional raw JSON filters.",
         structured_output=False,
     )
+    @_tool_boundary("search_competitor_activity")
     async def search_competitor_activity(
         query: str | None = None,
         competitor_ids: list[str] | None = None,
@@ -156,6 +166,7 @@ def build_mcp_server(
         description="Return one configured-company competitor activity by its act_ ID.",
         structured_output=False,
     )
+    @_tool_boundary("get_competitor_activity")
     async def get_competitor_activity(activity_id: str) -> ActivityResult:
         parsed = parse_tool_arguments(ActivityIdArguments, {"activity_id": activity_id})
         if isinstance(parsed, ToolErrorEnvelope):
@@ -171,6 +182,7 @@ def build_mcp_server(
         ),
         structured_output=False,
     )
+    @_tool_boundary("summarize_competitor_activity")
     async def summarize_competitor_activity(
         since_days: int | None = DEFAULT_LOOKBACK_DAYS,
     ) -> ActivitySummaryResult:
@@ -189,6 +201,7 @@ def build_mcp_server(
         description="Search configured-company trends with optional raw JSON filters.",
         structured_output=False,
     )
+    @_tool_boundary("search_trends")
     async def search_trends(
         query: str | None = None,
         channels: list[ChannelValue] | None = None,
@@ -214,6 +227,7 @@ def build_mcp_server(
         description="Search configured-company influencers with optional raw JSON filters.",
         structured_output=False,
     )
+    @_tool_boundary("search_influencers")
     async def search_influencers(
         topic: str | None = None,
         channels: list[ChannelValue] | None = None,
@@ -247,6 +261,7 @@ def build_mcp_server(
         description="Return one configured-company influencer by its inf_ ID.",
         structured_output=False,
     )
+    @_tool_boundary("get_influencer")
     async def get_influencer(influencer_id: str) -> InfluencerResult:
         parsed = parse_tool_arguments(InfluencerIdArguments, {"influencer_id": influencer_id})
         if isinstance(parsed, ToolErrorEnvelope):
@@ -262,6 +277,7 @@ def build_mcp_server(
         description="Return one recommendation when its session belongs to the configured company.",
         structured_output=False,
     )
+    @_tool_boundary("get_recommendation")
     async def get_recommendation(recommendation_id: str) -> RecommendationResult:
         parsed = parse_tool_arguments(
             RecommendationIdArguments, {"recommendation_id": recommendation_id}
@@ -283,18 +299,53 @@ def build_mcp_app(
     *,
     company_id: str,
     now: Callable[[], datetime] | None = None,
-    allowed_hosts: Sequence[str] | None = None,
+    allowed_hosts: Sequence[str],
 ) -> Starlette:
     """Build the streamable-HTTP ASGI application without a database dependency."""
 
     server = build_mcp_server(repositories, company_id=company_id, now=now)
-    security = None
-    if allowed_hosts is not None:
-        security = TransportSecuritySettings(
-            enable_dns_rebinding_protection=True,
-            allowed_hosts=list(allowed_hosts),
-        )
+    security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=list(allowed_hosts),
+    )
     return server.streamable_http_app(streamable_http_path="/mcp", transport_security=security)
+
+
+def _tool_boundary(
+    tool_name: str,
+) -> Callable[
+    [Callable[HandlerParams, Awaitable[HandlerResult]]],
+    Callable[HandlerParams, Awaitable[HandlerResult | ToolErrorEnvelope]],
+]:
+    """Turn repository failures into recoverable MCP envelopes at one boundary."""
+
+    def decorate(
+        handler: Callable[HandlerParams, Awaitable[HandlerResult]],
+    ) -> Callable[HandlerParams, Awaitable[HandlerResult | ToolErrorEnvelope]]:
+        @wraps(handler)
+        async def wrapped(
+            *args: HandlerParams.args, **kwargs: HandlerParams.kwargs
+        ) -> HandlerResult | ToolErrorEnvelope:
+            try:
+                return await handler(*args, **kwargs)
+            except DomainError as error:
+                return _upstream_unavailable(tool_name, error)
+            except Exception as error:
+                return _upstream_unavailable(tool_name, error)
+
+        return cast(Callable[HandlerParams, Awaitable[HandlerResult | ToolErrorEnvelope]], wrapped)
+
+    return decorate
+
+
+def _upstream_unavailable(tool_name: str, error: Exception) -> ToolErrorEnvelope:
+    logger.exception("MCP tool failed: %s", tool_name, extra={"ctx": {"tool": tool_name}})
+    return ToolErrorEnvelope(
+        error=ToolError(
+            code=UpstreamUnavailableError.code,
+            message=f"{tool_name} failed: {error}",
+        )
+    )
 
 
 def _results_or_note(items: list[ResponseItemT]) -> ResultsResponse[ResponseItemT]:
