@@ -119,12 +119,17 @@ including tool discovery and calls, rather than invoking an ASGI app in process.
 
 ### Run the service through Compose and a bounded smoke CLI
 
-The MCP Uvicorn process and `streamable_http_app()` both receive `0.0.0.0:8001`
-in Compose. Transport-security allowed hosts come from a typed setting rather
-than SDK localhost defaults; its values include localhost loopback hosts for
+The MCP Uvicorn process listens on `0.0.0.0:8001` in Compose. The
+`streamable_http_app()` receives the typed transport-security allowlist rather
+than a separate host setting; its values include localhost loopback hosts for
 host tools and `mcp:8001` for Compose traffic. The server explicitly enables
 that allowlist, so a Host header for the service name is accepted without
 opening arbitrary-host access.
+
+The shared Mongo client uses `tz_aware=True`, so repository, pipeline and
+health consumers all receive timezone-aware datetimes. This is a runtime
+client-configuration change only; it does not alter the source database or
+owned collection schemas.
 
 Compose adds the MCP service while the API service overrides `MCP_URL` to
 `http://mcp:8001/mcp`; host tools retain `.env`'s

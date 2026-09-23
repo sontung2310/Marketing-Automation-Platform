@@ -30,13 +30,13 @@
   one shared typed Pydantic parser that returns the `VALIDATION_ERROR` envelope,
   declare each return as a success/error union, and register every tool with
   `structured_output=False` so parsed text content has only the documented JSON
-  shape; verify unit tests cover each representative result shape and
-  repository-only delegation.
+  shape; verify the real-HTTP integration tests cover representative result
+  and error shapes.
 - [x] 1.5 Build the MCP integration fixture with its own typed, time-relative
   records, UUID-suffixed disposable Mongo database, second-company session and
   recommendation, ephemeral `127.0.0.1` Uvicorn server, and
-  `MCPServerStreamableHttp` URL client; verify teardown drops the database and
-  parallel runs do not share names.
+  `MCPServerStreamableHttp` URL client; verify fixture teardown drops the
+  database and generated UUID names isolate test runs.
 - [x] 1.6 Add real-HTTP integration tests that prove 2-A's filtered,
   newest-first `PRICE_CHANGE` results and 2-E's nine described tools through
   an Agents SDK client; prove `activity_types=["BOGUS"]` returns the JSON

@@ -11,8 +11,6 @@ services:
     build: ./backend
     env_file: .env
     command: uvicorn app.mcp_server.main:app --host 0.0.0.0 --port 8001
-    environment:
-      MCP_HOST: 0.0.0.0
     ports: ["8001:8001"]
 
   # Bounded local scheduler for the read-only source pipelines (15 minutes).

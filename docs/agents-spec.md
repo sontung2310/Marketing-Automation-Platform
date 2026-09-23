@@ -71,7 +71,7 @@ its prefixed `id`, which the agents cite as evidence.
 |---|---|---|
 | `get_company_context` | — | The `companies` document: summary, ICP, positioning, services, brand voice, pillars, channels |
 | `list_competitors` | — | `{results: [{id, name, website, is_fictional, channels}]}` |
-| `search_competitor_activity` | `query?: str`, `competitor_ids?: [str]`, `activity_types?: [ActivityType]`, `channels?: [Channel]`, `since_days?: int = 30`, `limit?: int = 10 (max 25)` | `{results: [activities]}`, newest first. `query` uses the Mongo text index. Records include `id, competitor_name, activity_type, channel, title, summary, url, detected_at, `is_mock`, `is_simulated`. |
+| `search_competitor_activity` | `query?: str`, `competitor_ids?: [str]`, `activity_types?: [ActivityType]`, `channels?: [Channel]`, `since_days?: int = 30`, `limit?: int = 10 (max 25)` | `{results: [activities]}`, newest first. `query` uses the Mongo text index. Records include `id, competitor_name, activity_type, channel, title, summary, url, detected_at, is_mock, is_simulated`. |
 | `get_competitor_activity` | `activity_id: str` | Full record, including `content_excerpt`, `price`, `author` and `engagement` |
 | `summarize_competitor_activity` | `since_days?: int = 30` | Counts by competitor × type, plus the 3 most recent items per competitor (cheap overview) |
 | `search_trends` | `query?: str`, `channels?: [Channel]`, `direction?: TrendDirection`, `limit?: int = 10 (max 25)` | `{results: [trends]}`, sorted by `momentum_pct` desc |

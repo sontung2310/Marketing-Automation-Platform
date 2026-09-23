@@ -283,7 +283,6 @@ def build_mcp_app(
     *,
     company_id: str,
     now: Callable[[], datetime] | None = None,
-    host: str = "127.0.0.1",
     allowed_hosts: Sequence[str] | None = None,
 ) -> Starlette:
     """Build the streamable-HTTP ASGI application without a database dependency."""
@@ -295,9 +294,7 @@ def build_mcp_app(
             enable_dns_rebinding_protection=True,
             allowed_hosts=list(allowed_hosts),
         )
-    return server.streamable_http_app(
-        streamable_http_path="/mcp", host=host, transport_security=security
-    )
+    return server.streamable_http_app(streamable_http_path="/mcp", transport_security=security)
 
 
 def _results_or_note(items: list[ResponseItemT]) -> ResultsResponse[ResponseItemT]:

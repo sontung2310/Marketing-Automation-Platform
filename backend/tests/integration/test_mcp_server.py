@@ -94,34 +94,43 @@ async def mcp_service() -> AsyncIterator[McpService]:
     database_name = f"ma_mcp_{uuid4().hex[:16]}"
     database = db.get_client()[database_name]
     now = datetime.now(UTC)
-    await db.get_client().drop_database(database_name)
-    await ensure_indexes(database)
-    repositories = _repositories(database)
-    await _load_records(repositories, now)
-
-    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    listener.bind(("127.0.0.1", 0))
-    listener.listen()
-    port = listener.getsockname()[1]
-    app = build_mcp_app(
-        repositories,
-        company_id=COMPANY_ID,
-        now=lambda: now,
-        host="0.0.0.0",
-        allowed_hosts=MCP_ALLOWED_HOSTS,
-    )
-    server = uvicorn.Server(
-        uvicorn.Config(app, host="127.0.0.1", port=port, access_log=False, log_level="warning")
-    )
-    task = asyncio.create_task(server.serve(sockets=[listener]))
-    await _wait_for_server(server)
+    listener: socket.socket | None = None
+    server: uvicorn.Server | None = None
+    task: asyncio.Task[None] | None = None
 
     try:
+        await db.get_client().drop_database(database_name)
+        await ensure_indexes(database)
+        repositories = _repositories(database)
+        await _load_records(repositories, now)
+
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        port = listener.getsockname()[1]
+        app = build_mcp_app(
+            repositories,
+            company_id=COMPANY_ID,
+            now=lambda: now,
+            allowed_hosts=MCP_ALLOWED_HOSTS,
+        )
+        server = uvicorn.Server(
+            uvicorn.Config(app, host="127.0.0.1", port=port, access_log=False, log_level="warning")
+        )
+        task = asyncio.create_task(server.serve(sockets=[listener]))
+        await _wait_for_server(server)
         yield McpService(database=database, endpoint=f"http://127.0.0.1:{port}/mcp", now=now)
     finally:
-        server.should_exit = True
-        await asyncio.wait_for(task, timeout=5)
-        listener.close()
+        if server is not None:
+            server.should_exit = True
+        if task is not None:
+            try:
+                await asyncio.wait_for(task, timeout=5)
+            finally:
+                if listener is not None:
+                    listener.close()
+        elif listener is not None:
+            listener.close()
         await db.get_client().drop_database(database_name)
 
 
@@ -178,13 +187,20 @@ async def test_activity_search_is_tenant_scoped_filtered_and_newest_first(
     async with _client(mcp_service) as client:
         result = await client.call_tool(
             "search_competitor_activity",
-            {"activity_types": [ActivityType.PRICE_CHANGE.value], "since_days": 30},
+            {
+                "activity_types": [ActivityType.PRICE_CHANGE.value],
+                "since_days": 30,
+                "limit": 25,
+            },
         )
 
     payload = _tool_json(result)
     activities = payload["results"]
     assert isinstance(activities, list)
     assert activities
+    assert [activity["id"] for activity in activities] == [
+        f"act_price_{index:03d}" for index in range(1, 26)
+    ]
     assert all(activity["id"].startswith("act_") for activity in activities)
     assert all(set(activity) == _COMPACT_ACTIVITY_KEYS for activity in activities)
     assert all(
@@ -194,6 +210,29 @@ async def test_activity_search_is_tenant_scoped_filtered_and_newest_first(
     assert [activity["detected_at"] for activity in activities] == sorted(
         (activity["detected_at"] for activity in activities), reverse=True
     )
+
+
+async def test_company_context_is_tenant_specific(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        context = _tool_json(await client.call_tool("get_company_context", {}))
+
+    assert context["id"] == COMPANY_ID
+    assert context["name"] == "Marketing Eye"
+    assert context["id"] != OTHER_COMPANY_ID
+
+
+async def test_cross_tenant_activity_get_returns_not_found(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("get_competitor_activity", {"activity_id": "act_price_099"})
+
+    assert _tool_json(result)["error"]["code"] == "NOT_FOUND"
+
+
+async def test_cross_tenant_influencer_get_returns_not_found(mcp_service: McpService) -> None:
+    async with _client(mcp_service) as client:
+        result = await client.call_tool("get_influencer", {"influencer_id": "inf_other_company"})
+
+    assert _tool_json(result)["error"]["code"] == "NOT_FOUND"
 
 
 async def test_list_and_search_tools_exclude_other_company_records(mcp_service: McpService) -> None:
@@ -387,6 +426,8 @@ async def _load_records(repositories: McpRepositories, now: datetime) -> None:
     await competitors.upsert(_competitor(OTHER_COMPANY_ID, OTHER_COMPETITOR_ID, "Other Competitor"))
     for index in range(1, 31):
         await activities.upsert(_price_activity(index, now))
+    await activities.upsert(_social_activity("act_social_recent", now))
+    await activities.upsert(_price_activity(90, now, detected_at=now - timedelta(days=90)))
     await activities.upsert(
         _price_activity(99, now, company_id=OTHER_COMPANY_ID, competitor_id=OTHER_COMPETITOR_ID)
     )
@@ -442,8 +483,9 @@ def _price_activity(
     *,
     company_id: str = COMPANY_ID,
     competitor_id: str = PRIMARY_COMPETITOR_ID,
+    detected_at: datetime | None = None,
 ) -> CompetitorActivity:
-    detected_at = now - timedelta(days=2, hours=index)
+    detected_at = detected_at or now - timedelta(days=2, hours=index)
     return CompetitorActivity(
         _id=f"act_price_{index:03d}",
         company_id=company_id,
@@ -457,6 +499,27 @@ def _price_activity(
         occurred_at=detected_at - timedelta(hours=1),
         detected_at=detected_at,
         source=_source(f"activity-{company_id}-{index}"),
+        is_mock=True,
+        is_simulated=False,
+        ingested_at=now,
+    )
+
+
+def _social_activity(activity_id: str, now: datetime) -> CompetitorActivity:
+    detected_at = now - timedelta(days=5)
+    return CompetitorActivity(
+        _id=activity_id,
+        company_id=COMPANY_ID,
+        competitor_id=PRIMARY_COMPETITOR_ID,
+        competitor_name="Brightlane",
+        activity_type=ActivityType.SOCIAL_POST,
+        channel=Channel.LINKEDIN,
+        title="Recent social post",
+        summary="A recent non-price activity.",
+        url="https://brightlane.example/social-recent",
+        occurred_at=detected_at - timedelta(hours=1),
+        detected_at=detected_at,
+        source=_source(f"activity-{activity_id}"),
         is_mock=True,
         is_simulated=False,
         ingested_at=now,

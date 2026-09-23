@@ -29,7 +29,6 @@ def create_app() -> Starlette:
     return build_mcp_app(
         repositories,
         company_id=settings.default_company_id,
-        host=settings.mcp_host,
         allowed_hosts=settings.mcp_allowed_hosts,
     )
 
