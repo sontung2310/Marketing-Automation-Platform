@@ -259,6 +259,25 @@ class CompetitorActivity(TenantModel):
         return self
 
 
+class ActivitySummaryCount(ModelBase):
+    competitor_id: str
+    competitor_name: str
+    activity_type: ActivityType
+    count: int = Field(ge=0)
+
+
+class ActivitySummaryRecent(ModelBase):
+    competitor_id: str
+    competitor_name: str
+    items: list[CompetitorActivity] = Field(default_factory=list)
+
+
+class ActivitySummary(ModelBase):
+    counts: list[ActivitySummaryCount] = Field(default_factory=list)
+    recent_items: list[ActivitySummaryRecent] = Field(default_factory=list)
+    note: str | None = None
+
+
 class SamplePost(ModelBase):
     title: str = Field(min_length=1)
     url: str = Field(min_length=1)

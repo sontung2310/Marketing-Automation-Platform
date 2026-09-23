@@ -131,7 +131,7 @@ specs.
 | API | FastAPI, Pydantic v2, SSE via `sse-starlette` |
 | Agents | **OpenAI Agents SDK** (`openai-agents`), with structured outputs (`output_type`) |
 | Models | Set by env: `OPENAI_MODEL_AGENT`, `OPENAI_MODEL_ROUTER`, `OPENAI_MODEL_JUDGE`. No model names hard-coded. |
-| Intelligence MCP | Official `mcp` Python SDK (FastMCP) over streamable HTTP. Agents connect with `MCPServerStreamableHttp`. |
+| Intelligence MCP | Official `mcp` Python SDK 2.x (`MCPServer`) over streamable HTTP. Agents connect with `MCPServerStreamableHttp`. |
 | Database | Existing MongoDB cluster (URI in `.env`), accessed with the PyMongo async API |
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS v4. The Tailwind theme (`src/styles/theme.css`) holds the CompetitorScope Design System tokens, and its components are rebuilt as Tailwind components. |
 | Testing | pytest (backend), Vitest (frontend units), Playwright (one E2E demo script), eval harness (`backend/evals/`, data in `evaluation/`) |

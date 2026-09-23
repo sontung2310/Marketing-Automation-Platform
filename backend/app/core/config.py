@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     openai_model_judge: str | None = None
 
     mcp_url: str = "http://localhost:8001/mcp"
+    mcp_allowed_hosts: list[str] = ["localhost:*", "127.0.0.1:*", "[::1]:*", "mcp:8001"]
     default_company_id: str = "cmp_marketing_eye"
     cors_origins: list[str] = ["http://localhost:5173"]
 

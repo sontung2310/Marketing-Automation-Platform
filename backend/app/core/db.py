@@ -1,4 +1,4 @@
-"""Shared async MongoDB client. Imported only by repositories, pipeline sources and health."""
+"""Shared async MongoDB client with timezone-aware datetimes for every consumer."""
 
 from functools import lru_cache
 
@@ -16,7 +16,12 @@ def get_client() -> AsyncMongoClient[Document]:
     settings = get_settings()
     if settings.mongodb_uri is None:
         raise UpstreamUnavailableError("MONGODB_URI is not configured")
-    return AsyncMongoClient(settings.mongodb_uri.get_secret_value(), serverSelectionTimeoutMS=5000)
+    return AsyncMongoClient(
+        # Keep datetimes aware across repositories, pipelines and health checks.
+        settings.mongodb_uri.get_secret_value(),
+        serverSelectionTimeoutMS=5000,
+        tz_aware=True,
+    )
 
 
 def get_database() -> AsyncDatabase[Document]:

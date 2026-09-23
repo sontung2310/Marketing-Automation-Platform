@@ -11,3 +11,6 @@ class CompaniesRepository(Repository[Company]):
 
     def __init__(self, database: AsyncDatabase[Document]) -> None:
         super().__init__(database, Company)
+
+    async def get_for_company(self, company_id: str) -> Company | None:
+        return await self.get(company_id)
