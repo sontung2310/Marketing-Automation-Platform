@@ -179,6 +179,8 @@ recommendations above the competitor activity feed on the right.
 - [x] 7.4 Build the Execution chat: fixed-height transcript, marketer-only message bubbles, agent selector, progress/tool trace, answer, deliverable, quality checks, proposed actions, clarification/refusal blocks and session restore.
 - [x] 7.5 Build the Strategy panel and evidence loop: compact recommendation rows, 440px detail sheet, **Do this** prefill without send, evidence-chip scroll/highlight, responsive switcher and the anti-slop/accessibility checklist.
 
+_(7.1–7.5 implemented and evidenced in [#30](https://github.com/sontung2310/Marketing-Automation-Platform/pull/30); the specification half landed in [#27](https://github.com/sontung2310/Marketing-Automation-Platform/pull/27).)_
+
 **Success criteria**
 
 | # | Scenario | Verify |
