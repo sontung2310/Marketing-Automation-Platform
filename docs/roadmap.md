@@ -85,8 +85,8 @@ read-only tools.
 
 **Goal:** the vendored skills load safely, with per-agent allowlists.
 
-- [ ] 3.1 Vendor the 12 skills listed in agents-spec §4.1 into `backend/app/skills/library/`, with `skills.lock.json` (upstream commit and per-skill hash) and `backend/scripts/update_skills.py`.
-- [ ] 3.2 `app/skills/loader.py` (frontmatter parsing, references, the product-context note) plus the `list_skills`/`load_skill` function tools with allowlists and a per-run limit.
+- [x] 3.1 Vendor the 12 skills listed in agents-spec §4.1 into `backend/app/skills/library/`, with `skills.lock.json` (upstream commit and per-skill hash) and `backend/scripts/update_skills.py`. Evidence: `backend/tests/unit/test_skills.py` and `backend/scripts/update_skills.py --check`.
+- [x] 3.2 `app/skills/loader.py` (frontmatter parsing, references, the product-context note) plus the `list_skills`/`load_skill` function tools with allowlists and a per-run limit. Evidence: `backend/tests/unit/test_skills.py`.
 
 **Success criteria**
 

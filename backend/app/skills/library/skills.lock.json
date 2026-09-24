@@ -1,0 +1,56 @@
+{
+  "source": {
+    "repository": "https://github.com/coreyhaines31/marketingskills",
+    "commit": "5b2c0007766c6a1cf1d53fd8fc73e979e0821022"
+  },
+  "skills": {
+    "product-marketing": {
+      "path": "product-marketing",
+      "sha256": "3dff4ef8ffafc22e3cf904fac69eda71a4e4dd5bac9ad224730b77ce22e821e1"
+    },
+    "content-strategy": {
+      "path": "content-strategy",
+      "sha256": "bcd6fd9b95151bdc1eba40c0912303e67ab25e0a95fabdd917ccf19873089401"
+    },
+    "competitor-profiling": {
+      "path": "competitor-profiling",
+      "sha256": "adbca3fa881f2a727317056812129af0886334491e7be51d06e964401387c06d"
+    },
+    "competitors": {
+      "path": "competitors",
+      "sha256": "fb6a8a7b84d126de97d7c796b714bed23a78896d78208f3547768b25f3678a82"
+    },
+    "marketing-ideas": {
+      "path": "marketing-ideas",
+      "sha256": "b7e608aa0929d6c0221c62d259b4024f7aaa05e27685b1119d0f6e63c64a32a0"
+    },
+    "influencer-marketing": {
+      "path": "influencer-marketing",
+      "sha256": "8f91eac1274f9f15dac581c12d47ead223ed9100559390c607122ab416f17083"
+    },
+    "pricing": {
+      "path": "pricing",
+      "sha256": "77d3061719d5253b8ab892983ffbbd3fcefd25e9b246398f7b3bba551e05084d"
+    },
+    "copywriting": {
+      "path": "copywriting",
+      "sha256": "eacaf835e37d9516cf56b4901eb0fc455911dacca1a44772d50f0f360b2f4e09"
+    },
+    "social": {
+      "path": "social",
+      "sha256": "b61b4990e1a70a111339029e25275a5446242f1b0c512684ad968d808233948c"
+    },
+    "emails": {
+      "path": "emails",
+      "sha256": "dab1ebcbdf332c35dfc5630bea9c77a320098bedaf25a7d2a252fd8a4bcba929"
+    },
+    "ad-creative": {
+      "path": "ad-creative",
+      "sha256": "19600535a637a1944ccf37062a3f0cfc1abc52c15c200d08ce3d7c6dca038c83"
+    },
+    "copy-editing": {
+      "path": "copy-editing",
+      "sha256": "4cec09c868f0de4449bd73b5aad7a0f4dc65759720eb47c965af50aa3af0bab1"
+    }
+  }
+}
