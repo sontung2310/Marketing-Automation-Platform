@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "../../lib/cn";
 
@@ -19,9 +19,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /** The only button in the workspace. One primary per card (ui-spec §8). */
-export function Button({ variant = "secondary", className, children, ...rest }: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant = "secondary", className, children, ...rest },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       type="button"
       {...rest}
       className={cn(
@@ -33,4 +37,4 @@ export function Button({ variant = "secondary", className, children, ...rest }: 
       {children}
     </button>
   );
-}
+});

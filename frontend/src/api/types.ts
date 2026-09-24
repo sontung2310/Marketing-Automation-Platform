@@ -210,8 +210,12 @@ export interface Recommendation {
   next_action: NextAction | null;
   status: RecommendationStatus;
   created_at: string;
-  /** How the run that produced this recommendation was triggered, for grouping. */
-  run_label: string;
+  /**
+   * How the run that produced this recommendation was triggered, for the
+   * grouping header (api-contract, `GET /recommendations`). Optional so an
+   * older payload groups under its run id rather than "undefined".
+   */
+  run_label?: string;
   actions: ItemAction[];
 }
 
@@ -343,7 +347,6 @@ interface RunBase {
   /** The marketer's message, when the run came from the composer. */
   message: string | null;
   trigger: RunTrigger | null;
-  trigger_label: string;
   route: RouteDecision;
   status: RunStatus;
   steps: RunStep[];

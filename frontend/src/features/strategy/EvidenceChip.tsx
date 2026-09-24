@@ -1,5 +1,6 @@
 import type { Evidence, EvidenceKind } from "../../api";
-import { useWorkspace } from "../workspace/workspaceContext";
+import { cn } from "../../lib/cn";
+import { EVIDENCE_HAS_TARGET, useWorkspace } from "../workspace/workspaceContext";
 
 /** The short prefix a chip shows, keyed by evidence kind (agents-spec §6.2). */
 const PREFIX: Record<EvidenceKind, string> = {
@@ -9,6 +10,9 @@ const PREFIX: Record<EvidenceKind, string> = {
   company: "co",
 };
 
+const CHIP =
+  "inline-flex h-3 items-center gap-1 rounded-sm border border-border bg-surface-card px-1 text-small text-text";
+
 interface EvidenceChipProps {
   evidence: Evidence;
   /** Following a chip navigates to the item, so the sheet gets out of the way. */
@@ -17,6 +21,22 @@ interface EvidenceChipProps {
 
 export function EvidenceChip({ evidence, onNavigate }: EvidenceChipProps) {
   const { highlight } = useWorkspace();
+  const prefix = (
+    <span className="font-semibold tracking-label text-text-muted uppercase">
+      {PREFIX[evidence.kind]}
+    </span>
+  );
+
+  // Company context has no row on the page. A chip for it stays a label rather
+  // than a button that would close the sheet and then find nothing.
+  if (!EVIDENCE_HAS_TARGET[evidence.kind]) {
+    return (
+      <span title={evidence.id} className={cn(CHIP, "text-text-muted")}>
+        {prefix}
+        {evidence.note}
+      </span>
+    );
+  }
 
   return (
     <button
@@ -24,13 +44,11 @@ export function EvidenceChip({ evidence, onNavigate }: EvidenceChipProps) {
       title={evidence.id}
       onClick={() => {
         onNavigate?.();
-        highlight(evidence.id);
+        highlight(evidence.id, evidence.kind);
       }}
-      className="inline-flex h-3 cursor-pointer items-center gap-1 rounded-sm border border-border bg-surface-card px-1 text-small text-text"
+      className={cn(CHIP, "cursor-pointer")}
     >
-      <span className="font-semibold tracking-label text-text-muted uppercase">
-        {PREFIX[evidence.kind]}
-      </span>
+      {prefix}
       {evidence.note}
     </button>
   );

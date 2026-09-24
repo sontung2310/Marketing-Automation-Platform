@@ -144,7 +144,7 @@ actions that can be approved. Its golden dataset is authored and passing.
 **Goal:** everything the UI needs is exposed per [api-contract.md](api-contract.md), including classifier routing with its own golden dataset.
 
 - [ ] 6.1 Feed, insight and company endpoints, with `actions[]` computed from specs §6.
-- [ ] 6.2 `POST /runs`, the run SSE (with replay via `Last-Event-ID`) and the sessions endpoint.
+- [ ] 6.2 `POST /runs`, the run SSE (with replay via `Last-Event-ID`) and the sessions endpoint. The frontend side lands here too: the run stream reconnects with bounded backoff and resumes from `Last-Event-ID`, which Step 7 did not build (the activity stream's backoff is in place; the run stream ends the run on error).
 - [ ] 6.3 The activity SSE (change stream with a polling fallback), `simulate` and `mark-seen`.
 - [ ] 6.4 The classifier router (`RouteDecision`), the clarify and out-of-scope paths.
 - [ ] 6.5 **Golden dataset `evaluation/golden/router.jsonl`** (≥ 36 cases covering evaluation-spec §3.1) and baseline.
@@ -176,7 +176,7 @@ recommendations above the competitor activity feed on the right.
 - [x] 7.1 Rebuild the design-system primitives as Tailwind components in `frontend/src/components/ds/`, add the four approved theme tokens, and keep all styling token-only.
 - [x] 7.2 Build the layout shell: logo-free TopBar with tenant selector, context and last-sync label; left/centre/right regions; responsive breakpoints; and the Simulate menu.
 - [x] 7.3 Build social listening and the competitor feed: tracked-keyword editor, Trends, two-column Influencers table, feed filters, cursor pagination, live SSE inserts, NEW/seen state and loading/empty/error states.
-- [x] 7.4 Build the Execution chat: fixed-height transcript, marketer-only message bubbles, agent selector, progress/tool trace, answer, deliverable, quality checks, proposed actions, clarification/refusal blocks and session restore.
+- [x] 7.4 Build the Execution chat: fixed-height transcript, marketer-only message bubbles, progress/tool trace, answer, deliverable, quality checks, proposed actions, clarification/refusal blocks and session restore. The composer has no agent selector; the centre is Execution's alone.
 - [x] 7.5 Build the Strategy panel and evidence loop: compact recommendation rows, 440px detail sheet, **Do this** prefill without send, evidence-chip scroll/highlight, responsive switcher and the anti-slop/accessibility checklist.
 
 _(7.1–7.5 implemented and evidenced in [#30](https://github.com/sontung2310/Marketing-Automation-Platform/pull/30); the specification half landed in [#27](https://github.com/sontung2310/Marketing-Automation-Platform/pull/27).)_
@@ -185,7 +185,7 @@ _(7.1–7.5 implemented and evidenced in [#30](https://github.com/sontung2310/Ma
 
 | # | Scenario | Verify |
 |---|---|---|
-| 7-A | **Given** typed fixtures for the seeded company, feed, trends, influencers and agent streams, **when** the page loads at 1440×900, **then** the left social-listening region, centre Execution empty state and right Strategy/feed regions render with no console errors; the tenant selector, five tracking keywords and last-sync label are visible; and the accessibility scan reports no violation. | Playwright + `@axe-core/playwright`. Lighthouse CI is deferred to Step 8, which stands up the real served environment; the zero-violation axe gate is stricter than the 90 threshold for the rules it covers. |
+| 7-A | **Given** typed fixtures for the seeded company, feed, trends, influencers and agent streams, **when** the page loads at 1440×900, **then** the left social-listening region, centre Execution empty state and right Strategy/feed regions render with no console errors; the tenant selector, five tracking keywords and last-sync label are visible; and the accessibility scan reports no violation. | Playwright + `@axe-core/playwright`. Lighthouse CI moves to Step 8.5/8-F, which stands up the real served environment; the zero-violation axe gate is stricter than the 90 threshold for the rules it covers, so the bar moves rather than disappears. |
 | 7-B | **Given** one fixture card for each of the 9 `ActivityType` values, **then** each shows the primary action from specs §6. `PRICE_CHANGE` shows `before → after`, `EXECUTIVE_POST` shows author and role, and mock/simulated items are badged. | Vitest component tests (one per type) |
 | 7-C | **Given** an Execution run fixture streaming, **then** the fixed-height transcript shows the labelled trigger, collapsed thinking/tool line, progress events, answer and deliverable; only marketer messages use bubbles; and no silent gap exceeds 10 seconds. | Playwright |
 | 7-D | **Given** Strategy recommendations in the fixture, **when** the user opens one and clicks **Do this**, **then** the 440px sheet shows decision, rationale and evidence, the request fills the Execution composer, no run is sent, and an evidence chip scrolls to and highlights its target. | Playwright |
@@ -200,6 +200,7 @@ _(7.1–7.5 implemented and evidenced in [#30](https://github.com/sontung2310/Ma
 - [ ] 8.2 `backend/scripts/reset_demo.py`: re-seeds, clears sessions, runs, actions and simulated items. Also a demo runbook in the README.
 - [ ] 8.3 Hardening: OpenAI and MCP timeouts or retries surfaced as clear run errors, a token/cost log per run, and the cost guard.
 - [ ] 8.4 Final eval run of all three suites. Attach the reports to the release PR.
+- [ ] 8.5 Add Lighthouse CI against the running demo environment, wired into the Check job, and record the accessibility score in the release PR. Step 7 verified accessibility with `@axe-core/playwright` against fixtures; this is where the Lighthouse threshold that 7-A originally carried is met.
 
 **Success criteria**
 
@@ -210,3 +211,4 @@ _(7.1–7.5 implemented and evidenced in [#30](https://github.com/sontung2310/Ma
 | 8-C | **Given** the MCP server is stopped, **then** `/health` reports `mcp: down`, and a run fails with the code `UPSTREAM_UNAVAILABLE` instead of hanging. | Integration |
 | 8-D | All three suites meet their evaluation-spec §6 thresholds on the release commit. | Attached reports |
 | 8-E | A dry-run of the demo with someone outside the team completes the 8-step story in 5 minutes or less, with no presenter workaround. | Demo log in the PR |
+| 8-F | **Given** the demo environment is running, **when** Lighthouse CI runs against the workspace, **then** the accessibility category scores 90 or higher, and the axe suite from Step 7 still reports no violation. | Lighthouse CI report in the release PR |

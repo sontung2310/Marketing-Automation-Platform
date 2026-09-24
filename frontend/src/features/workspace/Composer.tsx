@@ -1,24 +1,21 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 
-import { AGENT_HINTS, type AgentHint } from "../../api";
 import { Button } from "../../components/ds/Button";
 import { Icon } from "../../components/ds/Icon";
-import { Menu, MenuItem } from "../../components/ds/Menu";
 import { useWorkspace } from "./workspaceContext";
-
-const AGENT_COPY: Record<AgentHint, { label: string; description: string }> = {
-  AUTO: { label: "Auto", description: "The router picks the agent" },
-  STRATEGY: { label: "Strategy", description: "Decide what to do next" },
-  EXECUTION: { label: "Execution", description: "Make the deliverable" },
-};
 
 const MAX_ROWS = 6;
 /** The body token: 15px at line-height 1.5 (theme.css). */
 const LINE_HEIGHT_PX = 22.5;
 
-/** Docked beneath the transcript and always reachable (ui-spec §7). */
+/**
+ * Docked beneath the transcript and always reachable (ui-spec §7). The centre
+ * belongs to Execution alone, so there is no agent to choose: Strategy is
+ * reached from a feed item, and a strategy-shaped message comes back as one
+ * clarification line pointing at the feed.
+ */
 export function Composer() {
-  const { draft, setDraft, agentHint, setAgentHint, startRun } = useWorkspace();
+  const { draft, setDraft, startRun } = useWorkspace();
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   // Grow with the content up to six lines, then scroll inside the field. This
@@ -35,7 +32,7 @@ export function Composer() {
     const message = draft.trim();
     if (!message) return;
     setDraft("");
-    startRun({ message, agent_hint: agentHint });
+    startRun({ message });
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -46,7 +43,10 @@ export function Composer() {
   };
 
   return (
-    <div className="flex flex-col rounded-lg border border-border-strong bg-surface-card">
+    // The field's own outline is suppressed so the ring can follow the rounded
+    // wrapper. `focus-within` keeps it visible whenever the textarea has focus,
+    // which the global :focus-visible rule cannot do from the base layer.
+    <div className="flex flex-col rounded-lg border border-border-strong bg-surface-card focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary">
       <label htmlFor="composer" className="sr-only">
         Message the Execution agent
       </label>
@@ -61,31 +61,6 @@ export function Composer() {
         className="resize-none bg-transparent px-2 pt-2 pb-1 text-body text-text outline-none"
       />
       <div className="flex items-center gap-1 px-1 pb-1">
-        <Menu
-          label="Choose the agent"
-          placement="up"
-          trigger={AGENT_COPY[agentHint].label}
-          triggerClassName="text-text"
-        >
-          {(close) => (
-            <>
-              {AGENT_HINTS.map((hint) => (
-                <MenuItem
-                  key={hint}
-                  role="menuitemradio"
-                  checked={agentHint === hint}
-                  description={AGENT_COPY[hint].description}
-                  onSelect={() => {
-                    setAgentHint(hint);
-                    close();
-                  }}
-                >
-                  {AGENT_COPY[hint].label}
-                </MenuItem>
-              ))}
-            </>
-          )}
-        </Menu>
         <span className="ml-auto text-small text-text-muted">Shift+Enter for a new line</span>
         <Button
           variant="primary"

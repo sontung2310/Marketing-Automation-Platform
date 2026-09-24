@@ -13,8 +13,10 @@
    is in the centre, and Strategy plus competitor evidence is on the right.
    There is no route change for these jobs.
 2. **Execution owns the conversation.** The centre transcript belongs to the
-   Execution agent. Strategy recommendations stay in their own panel and are
-   handed to Execution through an explicit user action.
+   Execution agent, and there is nothing in it to route elsewhere: the
+   composer has no agent selector. Strategy recommendations stay in their own
+   panel and are handed to Execution through an explicit user action, and
+   Strategy runs are started from a feed item, a trend or an influencer.
 3. **Evidence is clickable.** Every evidence chip scrolls to and highlights
    its feed item or insight row. A chip may cite an item further down the feed
    than the pages loaded so far, so following one closes the sheet and the feed
@@ -44,7 +46,7 @@ The design target is 1440×900.
 │ Influencer          Followers │ │ PASS PASS FIXED PASS  │        │ Competitor activity    │
 │ @handle · LINKEDIN     48.2K │ │ [Discard] [Approve]   │        │ [All types ▾][All comps]│
 │                              │ └───────────────────────┘        │ ┌ Activity card ──────┐ │
-│                              │ [Auto|Strategy|Execution]         │ │ NEW_BLOG             │ │
+│                              │ Ask for a deliverable…            │ │ NEW_BLOG             │ │
 │                              │ Ask for a deliverable… [Send]      │ │ Brightlane · Web     │ │
 │                              │                                    │ │ [Create similar]     │ │
 └──────────────────────────────┴──────────────────────────────────┴────────────────────────┘
@@ -85,7 +87,7 @@ Components are rebuilt as Tailwind components in
 | `TrackedKeywordEditor` | DS `Input` + quiet controls | Shows five seeded terms, trims on save, rejects empty values, and enforces 1–20 case-insensitively unique terms. |
 | `TrendRow` | DS row primitives | Topic, channel, momentum with arrow and sign, mention count, sample-post links and a **Get topic ideas** quiet button. |
 | `InfluencerTable` | DS table | Exactly two visible columns: Influencer and Followers. Each row shows a monogram, linked handle, channel, compact followers, engagement and up to three topic labels, plus **Draft outreach**. No avatar images. |
-| `ExecutionChat` | DS `Card`, `SegmentedSwitcher`, `Input` | Fixed-height, independently scrolling transcript. The composer is docked beneath it and offers `Auto | Strategy | Execution`, an auto-growing textarea (max 6 lines) and **Send**. |
+| `ExecutionChat` | DS `Card`, `Input` | Fixed-height, independently scrolling transcript. The composer is docked beneath it and offers an auto-growing textarea (max 6 lines) and **Send**. There is no agent selector: the centre belongs to the Execution agent alone, Strategy is reached from a feed item, and a strategy-shaped message comes back as one clarification line pointing at the feed. |
 | `ExecutionTurn` | Structured blocks | Shows the `EXECUTION` label and trigger, one collapsed line for thinking/tool calls that expands to reasoning and one row per tool, then the answer and deliverable block. Only marketer messages may use a quiet bubble. |
 | `DeliverableCard` | DS `Card` | Type, channel, title, sanitized markdown body, word/character count, **Copy**, variants, four quality statuses and proposed-action controls. |
 | `ProposedActionRow` | DS buttons | Editable `scheduled_for` for social posts, **Discard** and **Approve**. Approval ends with `EXECUTED`, receipt ID and `mock`. |
@@ -107,7 +109,7 @@ Playwright. Removing that layer is the whole migration; no component changes.
 | Trigger | Request | Immediate UI response |
 |---|---|---|
 | Feed primary/secondary button | `POST /runs {trigger: {kind: FEED_ACTION, ref_id, action}}` | A new run appears in the Execution transcript; the source card briefly shows `Sent to workspace`. |
-| Chat send | `POST /runs {message, agent_hint}` | The marketer's message appears above a new Execution turn. A `200` clarification or out-of-scope response renders without creating a run. |
+| Chat send | `POST /runs {message}` | The marketer's message appears above a new Execution turn. The UI sends no `agent_hint`: everything typed here is for Execution. A `200` clarification or out-of-scope response renders without creating a run. |
 | **Get topic ideas** | `POST /runs` with the trend trigger | Strategy recommendations appear in the Strategy panel. |
 | **Draft outreach** | `POST /runs` with the influencer trigger | Execution returns an outreach deliverable in the transcript. |
 | **Do this** | none | The recommendation's request is written into the Execution composer and is not sent automatically. No run is created until the marketer presses **Send**. |

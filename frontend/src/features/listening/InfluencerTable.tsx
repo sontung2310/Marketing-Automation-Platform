@@ -1,17 +1,19 @@
 import { ApiError } from "../../api";
+import { Badge } from "../../components/ds/Badge";
 import { Button } from "../../components/ds/Button";
 import { EmptyState } from "../../components/ds/EmptyState";
 import { ErrorState } from "../../components/ds/ErrorState";
 import { Panel } from "../../components/ds/Panel";
 import { SkeletonList } from "../../components/ds/Skeleton";
 import { useInfluencers } from "../../hooks/queries";
+import { cn } from "../../lib/cn";
 import { compactNumber, initials } from "../../lib/format";
-import { useWorkspace } from "../workspace/workspaceContext";
+import { evidenceTargetId, useWorkspace } from "../workspace/workspaceContext";
 
 /** Exactly two visible columns, monograms instead of avatars (ui-spec §3). */
 export function InfluencerTable() {
   const influencers = useInfluencers();
-  const { startRun } = useWorkspace();
+  const { startRun, highlightedId } = useWorkspace();
   const items = influencers.data?.items ?? [];
 
   return (
@@ -61,7 +63,14 @@ export function InfluencerTable() {
           </thead>
           <tbody>
             {items.map((influencer) => (
-              <tr key={influencer.id} className="group">
+              <tr
+                key={influencer.id}
+                id={evidenceTargetId(influencer.id)}
+                className={cn(
+                  "group transition-colors duration-300",
+                  highlightedId === influencer.id ? "bg-surface-selected" : "bg-surface-card",
+                )}
+              >
                 <td className="border-b border-border px-2 py-1">
                   <span className="flex min-w-0 items-center gap-1">
                     <span
@@ -81,6 +90,9 @@ export function InfluencerTable() {
                       </a>
                       <span className="flex items-center gap-1 text-small text-text-muted">
                         {influencer.channel}
+                        {influencer.is_mock ? (
+                          <Badge title="Demo data, not a discovered profile">MOCK</Badge>
+                        ) : null}
                         {influencer.actions.map((action) => (
                           <Button
                             key={action.action}

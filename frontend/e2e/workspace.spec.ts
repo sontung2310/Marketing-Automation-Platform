@@ -30,11 +30,11 @@ test.describe("7-A the workspace loads at the design target", () => {
     );
     await expect(page.getByText(/^Last sync /)).toBeVisible();
     for (const keyword of [
-      "AI search",
-      "content strategy",
-      "B2B growth",
-      "brand clarity",
-      "demand generation",
+      "Marketing Strategy",
+      "Digital Marketing Trends",
+      "AI in Marketing",
+      "Marketing Automation",
+      "Social Media Marketing",
     ]) {
       await expect(page.getByRole("listitem").filter({ hasText: keyword })).toBeVisible();
     }
@@ -66,6 +66,31 @@ test.describe("7-A the workspace loads at the design target", () => {
   });
 });
 
+test.describe("7-A keyboard focus is visible on every control", () => {
+  test("the composer shows a focus ring", async ({ page }) => {
+    await openWorkspace(page);
+
+    const composer = page.getByLabel("Message the Execution agent");
+    await composer.focus();
+    // The ring follows the rounded wrapper rather than the bare field.
+    const ringTarget = page.locator("div:has(> #composer)").last();
+
+    // ui-spec §6: a visible 2px focus ring using --border-focus. An
+    // `outline-none` utility beats the global :focus-visible rule, because
+    // Tailwind's utilities layer wins over the base layer.
+    const ring = await ringTarget.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        style: style.outlineStyle,
+        width: style.outlineWidth,
+        color: style.outlineColor,
+      };
+    });
+    expect(ring.style).not.toBe("none");
+    expect(parseFloat(ring.width)).toBeGreaterThanOrEqual(2);
+  });
+});
+
 test.describe("7-C an Execution run streams into the transcript", () => {
   test("shows the trigger, the thinking line, progress, the answer and the deliverable", async ({
     page,
@@ -76,15 +101,33 @@ test.describe("7-C an Execution run streams into the transcript", () => {
     const blogCard = feed.getByRole("article").filter({ hasText: "NEW_BLOG" }).first();
     await blogCard.scrollIntoViewIfNeeded();
 
-    const transcript = page.getByLabel("Execution transcript");
-    // Sample the transcript while the run streams: it must never sit
-    // unchanged for 10 seconds (docs/specs.md §8).
+    const transcript = page.getByRole("log", { name: "Execution transcript" });
+
+    // docs/specs.md §8: a run never goes more than 10 s without a UI update.
+    // The elapsed counter ticks every second on its own, so it is stripped
+    // out: what is measured is agent-driven change — steps, tool rows, the
+    // answer and the deliverable. Sampling runs until the run finishes or the
+    // window closes, and the window is wider than the budget so a stall is
+    // actually reachable.
+    const AGENT_UPDATE_BUDGET_MS = 10_000;
+    const SAMPLE_WINDOW_MS = 15_000;
+    const structure = (text: string) =>
+      text.replace(/Thought for \d+s/g, "").replace(/\b\d+s\b/g, "");
+
     const samples: { at: number; text: string }[] = [];
     const started = Date.now();
     await blogCard.getByRole("button", { name: "Create a similar blog" }).click();
 
-    while (Date.now() - started < 6000) {
-      samples.push({ at: Date.now() - started, text: await transcript.innerText() });
+    // Scope to this run's own turn: the session restore brings an older,
+    // already-finished turn into the same transcript.
+    const turn = transcript.getByRole("article", {
+      name: "EXECUTION CREATE_SIMILAR · BLOG_DRAFT",
+    });
+    const finished = turn.getByText("CEO_POST · LINKEDIN · 218 words");
+    while (Date.now() - started < SAMPLE_WINDOW_MS) {
+      const text = await turn.innerText().catch(() => "");
+      samples.push({ at: Date.now() - started, text: structure(text) });
+      if (await finished.isVisible().catch(() => false)) break;
       await page.waitForTimeout(400);
     }
 
@@ -98,21 +141,19 @@ test.describe("7-C an Execution run streams into the transcript", () => {
       previous = sample.text;
     }
     longestGap = Math.max(longestGap, (samples.at(-1)?.at ?? 0) - lastChangeAt);
-    expect(longestGap).toBeLessThan(10_000);
+    expect(longestGap).toBeLessThan(AGENT_UPDATE_BUDGET_MS);
 
-    await expect(transcript.getByText("CREATE_SIMILAR · BLOG_DRAFT")).toBeVisible();
+    await expect(turn).toBeVisible();
 
-    const thinking = transcript
-      .getByRole("button", { name: /Thought for \d+s, used \d+ tools/ })
-      .last();
+    const thinking = turn.getByRole("button", { name: /Thought for \d+s, used \d+ tools/ });
     await expect(thinking).toBeVisible();
-    await expect(transcript.getByText(/Drafted in first person/).last()).toBeVisible();
-    await expect(transcript.getByText("CEO_POST · LINKEDIN · 218 words").last()).toBeVisible();
+    await expect(turn.getByText(/Drafted in first person/)).toBeVisible();
+    await expect(turn.getByText("CEO_POST · LINKEDIN · 218 words")).toBeVisible();
 
     // Expanding the collapsed line reveals the reasoning steps and one row per tool.
     await thinking.click();
-    await expect(transcript.getByText("Loading company context").last()).toBeVisible();
-    await expect(transcript.getByText("search_competitor_activity").last()).toBeVisible();
+    await expect(turn.getByText("Loading company context")).toBeVisible();
+    await expect(turn.getByText("search_competitor_activity")).toBeVisible();
 
     // Only the marketer's own messages use a bubble.
     await page.getByLabel("Message the Execution agent").fill("Make it shorter");
@@ -139,7 +180,7 @@ test.describe("7-C a failed run", () => {
     });
     await openWorkspace(page);
 
-    const transcript = page.getByLabel("Execution transcript");
+    const transcript = page.getByRole("log", { name: "Execution transcript" });
     const feed = page.getByRole("region", { name: "Competitor activity" });
     await feed
       .getByRole("article")

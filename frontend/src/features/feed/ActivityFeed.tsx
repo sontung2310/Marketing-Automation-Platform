@@ -34,7 +34,7 @@ export function ActivityFeed() {
 
   const activities = useActivities(query);
   const markSeen = useMarkSeen();
-  const { startRun, highlightedId, highlight } = useWorkspace();
+  const { startRun, highlightedId, highlightedKind, highlight } = useWorkspace();
   const { inserted, announcement, paused } = useActivityStream();
 
   const items: Activity[] = useMemo(() => {
@@ -58,10 +58,11 @@ export function ActivityFeed() {
   // An evidence chip can cite an item further down the feed than the pages
   // loaded so far. Page towards it so the highlight has something to land on.
   useEffect(() => {
-    if (!highlightedId || items.some((item) => item.id === highlightedId)) return;
+    if (!highlightedId || highlightedKind !== "activity") return;
+    if (items.some((item) => item.id === highlightedId)) return;
     if (!activities.hasNextPage || activities.isFetchingNextPage) return;
     void activities.fetchNextPage();
-  }, [highlightedId, items, activities]);
+  }, [highlightedId, highlightedKind, items, activities]);
 
   const competitors = useMemo(() => {
     const byId = new Map(items.map((item) => [item.competitor_id, item.competitor_name]));
@@ -69,7 +70,7 @@ export function ActivityFeed() {
   }, [items]);
 
   const onAction = (activity: Activity, action: ItemAction) => {
-    highlight(activity.id);
+    highlight(activity.id, "activity");
     startRun(
       { trigger: { kind: "FEED_ACTION", ref_id: activity.id, action: action.action } },
       [action.action, action.deliverable_type ?? activity.activity_type].join(" · "),

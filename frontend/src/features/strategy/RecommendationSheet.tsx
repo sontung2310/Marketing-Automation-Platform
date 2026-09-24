@@ -2,7 +2,7 @@ import type { Recommendation } from "../../api";
 import { Badge, type BadgeTone } from "../../components/ds/Badge";
 import { Button } from "../../components/ds/Button";
 import { Sheet } from "../../components/ds/Sheet";
-import { useWorkspace } from "../workspace/workspaceContext";
+import { EVIDENCE_HAS_TARGET, useWorkspace } from "../workspace/workspaceContext";
 import { EvidenceChip } from "./EvidenceChip";
 import { PRIORITY_TONE } from "./priority";
 
@@ -22,7 +22,7 @@ const STATUS_TONE: Record<Recommendation["status"], BadgeTone> = {
  * composer and sends nothing (ui-spec §4).
  */
 export function RecommendationSheet({ recommendation, onClose }: RecommendationSheetProps) {
-  const { setDraft, setAgentHint } = useWorkspace();
+  const { setDraft } = useWorkspace();
   const next = recommendation.next_action;
 
   return (
@@ -49,7 +49,6 @@ export function RecommendationSheet({ recommendation, onClose }: RecommendationS
               variant="primary"
               onClick={() => {
                 setDraft(next.brief);
-                setAgentHint("EXECUTION");
                 onClose();
               }}
             >
@@ -81,6 +80,11 @@ export function RecommendationSheet({ recommendation, onClose }: RecommendationS
             <EvidenceChip key={evidence.id} evidence={evidence} onNavigate={onClose} />
           ))}
         </div>
+        {recommendation.evidence.some((evidence) => !EVIDENCE_HAS_TARGET[evidence.kind]) ? (
+          <span className="text-small text-text-muted">
+            Greyed evidence is the company context, which has no row to open.
+          </span>
+        ) : null}
       </div>
 
       <span className="text-small text-text-muted">

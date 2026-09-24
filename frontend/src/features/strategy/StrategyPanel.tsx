@@ -78,7 +78,7 @@ export function StrategyPanel() {
       {grouped.map((group) => (
         <div key={group[0]?.run_id}>
           <p className="border-b border-border bg-surface-page px-2 py-1 text-small text-text-muted">
-            From: {group[0]?.run_label}
+            From: {group[0]?.run_label ?? group[0]?.run_id}
           </p>
           {group.map((recommendation) => (
             <button

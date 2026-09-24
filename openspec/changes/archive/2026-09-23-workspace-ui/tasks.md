@@ -87,9 +87,10 @@
 - [x] 4.5 Build `ClarificationBlock` and the refusal block, including the
   Strategy-shaped question that points at the feed instead of entering the
   transcript.
-- [x] 4.6 Add `useRunStream` with `Last-Event-ID` replay, and restore the
-  session from `localStorage` through `GET /sessions/{id}` on load,
-  reattaching any `RUNNING` run.
+- [ ] 4.6 Restore the session from `localStorage` through `GET /sessions/{id}`
+  on load and reattach any `RUNNING` run. **Done.** The `Last-Event-ID` replay
+  and bounded-backoff reconnect for the run stream were not built and move to
+  roadmap Step 6.2; the run stream currently ends the run on a stream error.
 
 ## 7.5 — Strategy panel and the evidence loop
 

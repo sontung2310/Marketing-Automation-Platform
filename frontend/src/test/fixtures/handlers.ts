@@ -171,13 +171,7 @@ export const handlers = [
         : body.agent_hint && body.agent_hint !== "AUTO"
           ? body.agent_hint
           : "EXECUTION";
-    const label = body.trigger ? `${body.trigger.action} · ${body.trigger.ref_id}` : "Chat request";
-    const ticket = store.startRun(
-      agent,
-      body.trigger?.action ?? "FREEFORM",
-      body.message ?? null,
-      label,
-    );
+    const ticket = store.startRun(agent, body.trigger?.action ?? "FREEFORM", body.message ?? null);
 
     return HttpResponse.json<RunResponse>(
       {
@@ -217,11 +211,16 @@ export const handlers = [
       : envelope("NOT_FOUND", `Run ${String(params.runId)} not found`, 404);
   }),
 
-  http.get(`${BASE}/sessions/:sessionId`, ({ params }) =>
-    String(params.sessionId) === session.id
-      ? HttpResponse.json(store.session)
-      : envelope("NOT_FOUND", `Session ${String(params.sessionId)} not found`, 404),
-  ),
+  http.get(`${BASE}/sessions/:sessionId`, ({ params }) => {
+    if (String(params.sessionId) !== session.id) {
+      return envelope("NOT_FOUND", `Session ${String(params.sessionId)} not found`, 404);
+    }
+    // Runs started in this session belong to it, exactly as they would
+    // server-side. Returning only the seeded run would hide the case where a
+    // restore overlaps a run the client already holds.
+    const started = [...store.tickets.values()].map((ticket) => ticket.run);
+    return HttpResponse.json({ ...store.session, runs: [...store.session.runs, ...started] });
+  }),
 
   http.post(
     `${BASE}/actions/:actionId/approve`,

@@ -37,8 +37,14 @@ describe("design-system primitives", () => {
 
   it.each(SOURCES)("%s uses no arbitrary Tailwind value", (file) => {
     const source = readFileSync(join(DS_DIR, file), "utf8");
-    for (const [, classes] of source.matchAll(/className=(?:"([^"]*)"|\{[^}]*\})/g)) {
-      expect(classes ?? "").not.toMatch(/[a-z-]\[/);
-    }
+
+    // Every double-quoted string, not just a literal className attribute: the
+    // variants these primitives are built from live in Record constants and in
+    // cn() calls, which an attribute-only match silently skipped.
+    const offenders = [...source.matchAll(/"([^"\n]*)"/g)]
+      .map(([, value]) => value ?? "")
+      .filter((value) => /[a-z-]\[/.test(value));
+
+    expect(offenders).toEqual([]);
   });
 });

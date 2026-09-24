@@ -1,10 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { ApiError, openRunStream, type AgentHint, type RunEvent, type RunRequest } from "../../api";
+import {
+  ApiError,
+  openRunStream,
+  type EvidenceKind,
+  type RunEvent,
+  type RunRequest,
+} from "../../api";
 import { queryKeys, useSession, useStartRun } from "../../hooks/queries";
 import {
   evidenceTargetId,
+  runLabel,
   WorkspaceContext,
   type RunState,
   type TranscriptEntry,
@@ -59,11 +66,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [sessionId, setSessionId] = useState<string | null>(readStoredSession);
   const [draft, setDraft] = useState("");
-  const [agentHint, setAgentHint] = useState<AgentHint>("AUTO");
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [runs, setRuns] = useState<Record<string, RunState>>({});
   const [activeStrategyRunId, setActiveStrategyRunId] = useState<string | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [highlightedKind, setHighlightedKind] = useState<EvidenceKind | null>(null);
   const highlightTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const streams = useRef(new Map<string, EventSource>());
   const restoredSessionId = useRef<string | null>(null);
@@ -71,10 +78,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const restored = useSession(sessionId);
   const startRunMutation = useStartRun();
 
-  const highlight = useCallback((id: string) => {
+  const highlight = useCallback((id: string, kind: EvidenceKind) => {
     setHighlightedId(id);
+    setHighlightedKind(kind);
     clearTimeout(highlightTimer.current);
-    highlightTimer.current = setTimeout(() => setHighlightedId(null), HIGHLIGHT_MS);
+    highlightTimer.current = setTimeout(() => {
+      setHighlightedId(null);
+      setHighlightedKind(null);
+    }, HIGHLIGHT_MS);
   }, []);
 
   useEffect(() => () => clearTimeout(highlightTimer.current), []);
@@ -156,28 +167,41 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Session restore: rebuild the transcript from the persisted runs, oldest
-  // first, and reattach any run still RUNNING (ui-spec §4). It runs once per
-  // session and prepends, so a run started meanwhile is never discarded.
+  // first. It runs once per session, prepends so a run started meanwhile is
+  // kept, and skips runs the transcript already holds — the session a live run
+  // adopts comes back containing that very run.
   useEffect(() => {
     const session = restored.data;
     if (!session || restoredSessionId.current === session.id) return;
     restoredSessionId.current = session.id;
 
-    const restoredRuns: Record<string, RunState> = {};
-    const entries: TranscriptEntry[] = [];
-    for (const run of session.runs) {
-      restoredRuns[run.id] = {
-        ...run,
-        request: run.message ? { message: run.message } : { trigger: run.trigger ?? undefined },
-      };
-      if (run.agent !== "EXECUTION") continue;
-      if (run.message) {
-        entries.push({ kind: "marketer", id: `${run.id}-message`, text: run.message });
+    setRuns((current) => {
+      const restoredRuns: Record<string, RunState> = {};
+      for (const run of session.runs) {
+        if (current[run.id]) continue;
+        restoredRuns[run.id] = {
+          ...run,
+          trigger_label: runLabel(run),
+          request: run.message ? { message: run.message } : { trigger: run.trigger ?? undefined },
+        };
       }
-      entries.push({ kind: "run", id: run.id });
-    }
-    setRuns((current) => ({ ...restoredRuns, ...current }));
-    setTranscript((current) => [...entries, ...current]);
+      return { ...restoredRuns, ...current };
+    });
+
+    setTranscript((current) => {
+      const known = new Set(
+        current.filter((entry) => entry.kind === "run").map((entry) => entry.id),
+      );
+      const entries: TranscriptEntry[] = [];
+      for (const run of session.runs) {
+        if (run.agent !== "EXECUTION" || known.has(run.id)) continue;
+        if (run.message) {
+          entries.push({ kind: "marketer", id: `${run.id}-message`, text: run.message });
+        }
+        entries.push({ kind: "run", id: run.id });
+      }
+      return entries.length > 0 ? [...entries, ...current] : current;
+    });
   }, [restored.data]);
 
   // Every RUNNING run has exactly one open stream. Keeping this separate from
@@ -267,16 +291,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     () => ({
       draft,
       setDraft,
-      agentHint,
-      setAgentHint,
       transcript,
       runs,
       activeStrategyRunId,
       startRun,
       highlightedId,
+      highlightedKind,
       highlight,
     }),
-    [draft, agentHint, transcript, runs, activeStrategyRunId, startRun, highlightedId, highlight],
+    [
+      draft,
+      transcript,
+      runs,
+      activeStrategyRunId,
+      startRun,
+      highlightedId,
+      highlightedKind,
+      highlight,
+    ],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

@@ -307,20 +307,9 @@ class FixtureStore {
     return activity;
   }
 
-  startRun(
-    agent: Run["agent"],
-    intent: string,
-    message: string | null,
-    triggerLabel: string,
-  ): RunTicket {
+  startRun(agent: Run["agent"], intent: string, message: string | null): RunTicket {
     const runId = nextId("run");
-    const seed = {
-      id: runId,
-      session_id: this.session.id,
-      intent,
-      message,
-      trigger_label: triggerLabel,
-    };
+    const seed = { id: runId, session_id: this.session.id, intent, message };
     const failure = this.nextRunFailure;
     this.nextRunFailure = null;
     const ticket: RunTicket = {

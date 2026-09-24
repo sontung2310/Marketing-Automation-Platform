@@ -26,17 +26,28 @@ uv sync --directory backend   # Python env for the backend service
 | Command | What it does |
 |---|---|
 | `npm run dev:api` / `npm run dev:web` | FastAPI on :8000 / Vite on :5173 |
-| `npm run check` | Everything CI checks: `typecheck`, `test`, `lint`, `format:check`, `openspec:check` |
+| `npm run dev:web:fixtures` | Vite on :5173 with the Platform API served from the typed MSW fixtures |
+| `npm run check` | Everything CI checks: `typecheck`, `test`, `lint`, `format:check`, `openspec:check`, `test:e2e` |
 | `npm run typecheck` | mypy (strict) + `tsc` |
 | `npm run test` | pytest unit tests + Vitest |
 | `npm run test:integration` | pytest `-m integration` against `MONGODB_URI` |
 | `npm run lint` / `lint:fix` | ruff + import-linter layering contracts + ESLint |
 | `npm run format` / `format:check` | ruff format + Prettier |
 | `npm run openspec:check` | `openspec validate --all --strict` + the cross-change conflict check |
+| `npm run test:e2e` | Playwright specs for the workspace, against the fixtures |
 | `npm run build` | Frontend production build |
 
 On commit, husky runs lint-staged, which fixes and formats **staged files
 only** (ruff for Python; ESLint and Prettier for the frontend).
+
+### Running the workspace without a backend
+
+The Platform API arrives in roadmap Step 6, so `npm run dev:web` alone shows a
+wall of 502s. Use `npm run dev:web:fixtures`, which sets `VITE_USE_FIXTURES=1`
+and serves every documented endpoint from the typed MSW handlers in
+`frontend/src/test/fixtures/`. The same handlers back Vitest and Playwright, so
+what you click is what CI checks. The flag is read only in a dev build; a
+production build never imports the worker.
 
 ## CI/CD
 

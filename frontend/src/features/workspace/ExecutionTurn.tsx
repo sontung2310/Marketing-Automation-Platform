@@ -41,7 +41,10 @@ export function ExecutionTurn({ run }: { run: RunState }) {
   const latestStep = run.steps.at(-1)?.label ?? "Starting the run";
 
   return (
-    <div className="flex flex-col gap-1">
+    <article
+      aria-label={`EXECUTION ${run.trigger_label}`}
+      className="flex flex-col gap-1 bg-surface-card"
+    >
       <div className="flex items-center gap-1 text-small text-text-muted">
         <span className="font-semibold text-text">EXECUTION</span>
         <span>{run.trigger_label}</span>
@@ -127,6 +130,6 @@ export function ExecutionTurn({ run }: { run: RunState }) {
           </Button>
         </div>
       ) : null}
-    </div>
+    </article>
   );
 }

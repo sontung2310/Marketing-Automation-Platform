@@ -162,7 +162,6 @@ const executionRun: ExecutionRun = {
   intent: "CREATE_SIMILAR",
   message: "Draft a CEO post about why our retainer did not move",
   trigger: { kind: "FEED_ACTION", ref_id: "act_seed_011", action: "CREATE_SIMILAR" },
-  trigger_label: "CREATE_SIMILAR · CEO_POST",
   route: { method: "DETERMINISTIC", reason: "Feed action on an EXECUTIVE_POST", confidence: 1 },
   status: "SUCCEEDED",
   steps: [
@@ -213,7 +212,6 @@ const strategyRun: StrategyRun = {
   intent: "RESPONSE_PLAN",
   message: null,
   trigger: { kind: "FEED_ACTION", ref_id: "act_seed_028", action: "RESPONSE_PLAN" },
-  trigger_label: "RESPONSE_PLAN · PRICE_CHANGE",
   route: { method: "DETERMINISTIC", reason: "Feed action on a PRICE_CHANGE", confidence: 1 },
   status: "SUCCEEDED",
   steps: [{ label: "Loading company context" }, { label: "Searching competitor activity" }],
@@ -348,7 +346,6 @@ export interface RunSeed {
   session_id: string;
   intent: string;
   message: string | null;
-  trigger_label: string;
 }
 
 interface RunScript<TRun extends Run> {

@@ -1,4 +1,4 @@
-import { useCallback, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 
 import { useDismissable } from "../../hooks/useDismissable";
 import { Button } from "./Button";
@@ -18,8 +18,18 @@ interface SheetProps {
  */
 export function Sheet({ label, onClose, header, footer, children }: SheetProps) {
   const ref = useRef<HTMLElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   const close = useCallback(() => onClose(), [onClose]);
   useDismissable(true, ref, close);
+
+  // Keyboard focus follows the sheet in, and returns to the row that opened it.
+  useEffect(() => {
+    const opener = document.activeElement;
+    closeButton.current?.focus();
+    return () => {
+      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+    };
+  }, []);
 
   return (
     <aside
@@ -31,7 +41,13 @@ export function Sheet({ label, onClose, header, footer, children }: SheetProps) 
     >
       <div className="flex items-center gap-1 border-b border-border-strong px-2 py-1">
         {header}
-        <Button variant="icon" aria-label="Close" onClick={onClose} className="ml-auto">
+        <Button
+          ref={closeButton}
+          variant="icon"
+          aria-label="Close"
+          onClick={onClose}
+          className="ml-auto"
+        >
           <Icon name="close" />
         </Button>
       </div>

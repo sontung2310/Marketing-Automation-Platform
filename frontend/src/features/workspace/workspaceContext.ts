@@ -1,8 +1,9 @@
 import { createContext, useContext } from "react";
 
 import type {
-  AgentHint,
   AgentName,
+  EvidenceKind,
+  Run,
   ExecutionOutput,
   RouteDecision,
   RunRequest,
@@ -39,8 +40,6 @@ export interface WorkspaceValue {
   /** The Execution composer's text. "Do this" writes here and sends nothing. */
   draft: string;
   setDraft: (draft: string) => void;
-  agentHint: AgentHint;
-  setAgentHint: (hint: AgentHint) => void;
   /** Execution-side conversation only; Strategy output never enters it. */
   transcript: TranscriptEntry[];
   runs: Record<string, RunState>;
@@ -50,7 +49,8 @@ export interface WorkspaceValue {
   startRun: (request: RunRequest, label?: string) => void;
   /** Scroll to and flash-highlight an evidence target anywhere on the page. */
   highlightedId: string | null;
-  highlight: (id: string) => void;
+  highlightedKind: EvidenceKind | null;
+  highlight: (id: string, kind: EvidenceKind) => void;
 }
 
 export const WorkspaceContext = createContext<WorkspaceValue | null>(null);
@@ -61,7 +61,28 @@ export function useWorkspace(): WorkspaceValue {
   return value;
 }
 
+/**
+ * What a turn header shows. Derived rather than read off the API: it is
+ * presentation, and no contract carries it.
+ */
+export function runLabel(run: Run): string {
+  const deliverable = run.agent === "EXECUTION" ? run.output?.deliverable?.type : undefined;
+  return [run.intent, deliverable].filter(Boolean).join(" · ");
+}
+
 /** DOM id an evidence chip scrolls to. Every highlightable item uses it. */
 export function evidenceTargetId(id: string): string {
   return `evidence-${id}`;
 }
+
+/**
+ * Which evidence kinds the page renders a row for. Company context is the
+ * tenant's own profile: it has no row to scroll to, so a chip for it does not
+ * pretend to navigate.
+ */
+export const EVIDENCE_HAS_TARGET: Record<EvidenceKind, boolean> = {
+  activity: true,
+  trend: true,
+  influencer: true,
+  company: false,
+};

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { ApiError, type Channel, type Trend } from "../../api";
+import { Badge } from "../../components/ds/Badge";
 import { Button } from "../../components/ds/Button";
 import { EmptyState } from "../../components/ds/EmptyState";
 import { ErrorState } from "../../components/ds/ErrorState";
@@ -59,7 +60,10 @@ export function TrendList() {
           )}
         >
           <span className="flex min-w-0 flex-col">
-            <span className="truncate text-body font-semibold text-text">{trend.topic}</span>
+            <span className="flex min-w-0 items-center gap-1">
+              <span className="truncate text-body font-semibold text-text">{trend.topic}</span>
+              {trend.is_mock ? <Badge title="Demo data, not a measured trend">MOCK</Badge> : null}
+            </span>
             <span className="flex items-center gap-1 text-small text-text-muted">
               {trend.channel} · {trend.mention_count} mentions
               {trend.actions.map((action) => (

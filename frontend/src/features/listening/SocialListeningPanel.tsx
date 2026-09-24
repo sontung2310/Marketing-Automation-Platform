@@ -1,3 +1,5 @@
+import { ApiError } from "../../api";
+import { ErrorState } from "../../components/ds/ErrorState";
 import { Panel } from "../../components/ds/Panel";
 import { SkeletonList } from "../../components/ds/Skeleton";
 import { useCompany } from "../../hooks/queries";
@@ -20,11 +22,18 @@ export function SocialListeningPanel() {
           ) : null
         }
       >
-        {keywords ? (
-          <TrackedKeywordEditor keywords={keywords} />
-        ) : (
-          <SkeletonList rows={5} label="Loading tracked keywords" />
-        )}
+        {company.isError ? (
+          <ErrorState
+            message={
+              company.error instanceof ApiError
+                ? company.error.message
+                : "The company context is unavailable."
+            }
+            onRetry={() => void company.refetch()}
+          />
+        ) : null}
+        {company.isPending ? <SkeletonList rows={5} label="Loading tracked keywords" /> : null}
+        {keywords ? <TrackedKeywordEditor keywords={keywords} /> : null}
         <TrendList />
       </Panel>
       <InfluencerTable />
