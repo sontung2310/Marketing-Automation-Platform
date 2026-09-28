@@ -1,0 +1,19 @@
+{
+  "source": "https://github.com/coreyhaines31/marketingskills",
+  "commit": "5b2c0007766c6a1cf1d53fd8fc73e979e0821022",
+  "license_sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591",
+  "skills": {
+    "ad-creative": "cf74a6e4dc04102f11b2b30ed307f1f3af71714af5c841527d9867500c6242f7",
+    "competitor-profiling": "69a36b81e2a38b1edbf1042a1555fda79476523f3592eebb459f9af6801e9fbe",
+    "competitors": "dfc27bcdff93f64f12c0f25e9975e36d532d3ff26f18a61c0f1a5febc4371597",
+    "content-strategy": "cbb6f66b20c0bf82edde7417301193f894baabf97b809948614817703ea0d380",
+    "copy-editing": "4b3d96d63dceb09d7a0b88b374f7bd6e4ba319c65c6eeb30c71828221671c8a6",
+    "copywriting": "27443548205fe1333837f2e6507503abadb19eca04268e2c45cfd59bdb5db6a8",
+    "emails": "6b7ca878369c3ff719a62bd29f4d46e5f656fcc8a955642fcd9250d47f378c1f",
+    "influencer-marketing": "7625c817af2e21e984599e222f67d25e6f4a22486161d797ee8af66c35d5c089",
+    "marketing-ideas": "b472ef33e418b8d9d7da6063d6e2e3a6bb35c0dd111b550c66bfe109fab06b49",
+    "pricing": "d15f10ee32cbb1c922119b9252c782bf2acb6a8712dcee1c11f2849e712a56c2",
+    "product-marketing": "ba9b3228c13eb07ffc2770e6831857a166efda872409b9f5fb195e5c9ccd2a24",
+    "social": "458802b8cfca53b4f22e13514fe212a67847d95e07a03ddaed6c970dee238970"
+  }
+}
