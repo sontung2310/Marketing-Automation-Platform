@@ -85,7 +85,7 @@ Layering is enforced by import-linter:
 The full procedure is in [docs/agents/collaboration.md](docs/agents/collaboration.md).
 
 - **Behaviour vs. engineering:** nontechnical teammates own behaviour
-  (grilling, tickets, delta-spec review). Engineering owns the design and
+  (grilling and delta-spec review). Engineering owns the design and
   the tasks.
 - **Behaviour changes during implementation:** update the delta spec and
   get it re-reviewed before the code relies on it.
