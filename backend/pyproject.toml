@@ -123,3 +123,18 @@ forbidden_modules = [
     "app.connectors",
     "app.api",
 ]
+
+[[tool.importlinter.contracts]]
+name = "Skills read only the committed catalogue: no data, MCP or network access"
+type = "forbidden"
+source_modules = ["app.skills"]
+forbidden_modules = [
+    "app.intelligence",
+    "app.mcp_server",
+    "app.pipelines",
+    "app.connectors",
+    "app.orchestration",
+    "app.api",
+    "httpx",
+]
+allow_indirect_imports = true
