@@ -139,7 +139,7 @@ agent one function tool and one instruction helper:
   file under that skill's `references/` (paths such as `..`, absolute paths or
   escaping symlinks are rejected). Content is capped at `SKILL_MAX_CHARS`
   (default 25,000) with a visible truncation note. The result is JSON:
-  `{ok: true, name, reference, content, truncated, references}` or
+  `{ok: true, name, description, reference, content, truncated, references}` or
   `{ok: false, code, message}` with `code` one of `NOT_AVAILABLE`,
   `INVALID_REFERENCE` or `LIMIT_REACHED`. Only successful loads count toward
   the limit of 3 per run; the tool never raises into the agent.

@@ -27,6 +27,7 @@ class SkillErrorCode(StrEnum):
 class SkillContent(BaseModel):
     ok: Literal[True] = True
     name: str
+    description: str
     reference: str | None
     content: str
     truncated: bool
@@ -78,6 +79,7 @@ def load_skill(
         text = f"{text[:max_chars]}\n\n[Truncated at {max_chars} characters.]"
     return SkillContent(
         name=name,
+        description=skill.meta.description,
         reference=reference,
         content=f"{text}\n\n{PRODUCT_CONTEXT_NOTE}",
         truncated=truncated,

@@ -32,7 +32,7 @@ matching non-empty `name` and a non-empty `description`.
 ### Requirement: Skill content and references are loaded safely
 
 The loader SHALL parse YAML frontmatter at the skill boundary, return the
-skill body or one reference file within that skill's directory, and append the
+skill body or one file from that skill's `references/` folder, and append the
 product-context note directing the agent to `get_company_context`. It MUST
 reject missing or malformed metadata, unknown skills, missing references and
 references that escape the skill directory. Returned content SHALL be capped

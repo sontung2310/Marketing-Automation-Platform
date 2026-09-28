@@ -70,4 +70,7 @@ def read_reference(skill: Skill, reference: str) -> str:
     path = (skill.root / reference).resolve()
     if not path.is_relative_to(refs) or not path.is_file():
         raise InvalidReferenceError(f"{reference!r} is not one of {skill.references}")
-    return path.read_text(encoding="utf-8")
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise InvalidReferenceError(f"{reference!r} is not a text file") from exc

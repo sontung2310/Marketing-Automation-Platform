@@ -65,6 +65,14 @@ def test_reference_outside_references_is_rejected(reference: str) -> None:
         read_reference(load_catalogue()["pricing"], reference)
 
 
+def test_non_text_reference_is_rejected(tmp_path: Path) -> None:
+    root = write_skill(tmp_path / "demo", "---\nname: demo\ndescription: d\n---\nbody\n")
+    (root / "references").mkdir()
+    (root / "references" / "image.md").write_bytes(b"\xff\xfe\x00")
+    with pytest.raises(InvalidReferenceError):
+        read_reference(parse_skill(root), "references/image.md")
+
+
 def test_symlink_escaping_the_skill_is_rejected(tmp_path: Path) -> None:
     root = write_skill(tmp_path / "demo", "---\nname: demo\ndescription: d\n---\nbody\n")
     (tmp_path / "secret.md").write_text("secret", encoding="utf-8")

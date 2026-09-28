@@ -71,11 +71,18 @@ def update(commit: str, names: list[str]) -> int:
     return 0
 
 
+def full_sha(value: str) -> str:
+    """A branch or short SHA would pin a moving target, so only a full SHA is accepted."""
+    if len(value) != 40 or any(c not in "0123456789abcdef" for c in value.lower()):
+        raise argparse.ArgumentTypeError(f"{value!r} is not a full 40-character commit SHA")
+    return value.lower()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true", help="verify the library offline")
-    mode.add_argument("--commit", help="full upstream commit SHA to vendor")
+    mode.add_argument("--commit", type=full_sha, help="full upstream commit SHA to vendor")
     parser.add_argument("--skills", nargs="+", help="skill names (default: the current lock)")
     args = parser.parse_args()
     if args.check:

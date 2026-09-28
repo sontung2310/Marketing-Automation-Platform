@@ -44,6 +44,7 @@ def test_loaded_skill_carries_the_product_context_note() -> None:
     result = load_skill("social", None, allowlist=STRATEGY, budget=SkillLoadBudget())
     assert isinstance(result, SkillContent)
     assert result.content.endswith(PRODUCT_CONTEXT_NOTE)
+    assert result.description == load_catalogue()["social"].meta.description
     assert "references/platforms.md" in result.references
 
 
