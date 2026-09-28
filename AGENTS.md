@@ -10,9 +10,9 @@ one-page React UI. Start with [docs/specs.md](docs/specs.md).
 |---|---|
 | write any code | [docs/coding-conventions.md](docs/coding-conventions.md) (binding) |
 | touch data, the API, agents or the UI | [data-contract](docs/data-contract.md) · [api-contract](docs/api-contract.md) · [agents-spec](docs/agents-spec.md) · [ui-spec](docs/ui-spec.md) |
-| pick up work | the GitHub issue, [docs/roadmap.md](docs/roadmap.md) and the relevant `openspec/specs/` |
+| pick up work | [docs/roadmap.md](docs/roadmap.md), the Step's OpenSpec change and the relevant `openspec/specs/` |
 | change agent behaviour | [docs/evaluation-spec.md](docs/evaluation-spec.md) |
-| start or resume a lead/implementer loop | [docs/agents/collaboration.md](docs/agents/collaboration.md) |
+| start or resume a Step or autopilot | [docs/agents/collaboration.md](docs/agents/collaboration.md) |
 
 ## 1. Project structure
 
@@ -72,16 +72,17 @@ Layering is enforced by import-linter:
 
 ## 3. Workflow
 
-### Idea → issue → OpenSpec change → PR
+### Idea → OpenSpec change → PR
 
-| Stage | Owner | Skill | Done when |
-|---|---|---|---|
-| Ground | anyone | — | the relevant `openspec/specs/` and `docs/` have been read, before the idea is discussed |
-| Grill | product + engineering | `grill-me` | every open decision about the outcome is answered |
-| Ticket handoff | whoever ran the grilling | `to-tickets` | one GitHub issue exists for the roadmap Step, naming every Given/When/Then scenario in its success-criteria table, blockers and its `Roadmap: X.Y` sub-steps. No OpenSpec change exists yet. |
-| Specify | implementer agent, reviewed by the lead | `openspec-propose` (system-behaviour work) | at most one change per system-behaviour Step (proposal with every `Roadmap: X.Y` sub-step, delta specs, design and tasks), reviewed by the lead; outside autopilot, approved once by a human before implementation and recorded by the lead on the Step issue; in autopilot, reviewed by the human in the Step PR |
-| Implement | implementer agent | `openspec-apply-change` | sub-steps are implemented in order on the Step branch; each is briefed, verified, committed and pushed before the next begins |
-| Review and close | implementer (archive) + reviewer (review) + human (merge); the lead merges only in autopilot | `openspec-archive-change` | the fair review meets the §4 merge bar, any OpenSpec change is archived in the same PR, and the PR is merged under that bar |
+| Stage | Skill | Done when |
+|---|---|---|
+| Ground | — | the relevant `openspec/specs/` and `docs/` have been read, before the idea is discussed |
+| Grill | `grill-me` | every open decision about the outcome is answered (only when the specs leave behaviour open) |
+| Specify | `openspec-propose` (system-behaviour work) | one change for the Step lists every `Roadmap: X.Y` sub-step and every Given/When/Then scenario in its success-criteria table, with delta specs, design and tasks; outside autopilot, approved once by a human before implementation; in autopilot, reviewed by the human in the Step PR |
+| Implement | `openspec-apply-change` | sub-steps are implemented in order on the Step branch; each is verified, committed and pushed before the next begins |
+| Review and close | `openspec-archive-change` | the fair review meets the §4 merge bar, any OpenSpec change is archived in the same PR, and the PR is merged under that bar |
+
+The full procedure is in [docs/agents/collaboration.md](docs/agents/collaboration.md).
 
 - **Behaviour vs. engineering:** nontechnical teammates own behaviour
   (grilling, tickets, delta-spec review). Engineering owns the design and
@@ -89,17 +90,14 @@ Layering is enforced by import-linter:
 - **Behaviour changes during implementation:** update the delta spec and
   get it re-reviewed before the code relies on it.
 - **OpenSpec scope:** system-behaviour work has at most one OpenSpec change per
-  Step. Outside autopilot, the human approves it once before implementation and
-  the lead records that approval as a comment on the Step issue. In autopilot,
-  the human reviews the delta specs in the Step PR instead. Discovery and
-  doc-only work has no OpenSpec change.
-- **Scope:** one issue per Step names every scenario in that Step's
-  success-criteria table. A defect in an already-merged Step gets its own
-  issue and a commit on the current Step's PR; it gets its own PR only when it
-  breaks `main`.
+  Step, and it replaces a Step issue. Discovery and doc-only work has no
+  OpenSpec change; its roadmap sub-steps are the scope.
+- **Issues:** only for a defect in an already-merged Step and for the human
+  queue ([issue-tracker.md](docs/agents/issue-tracker.md)). A defect gets its
+  own issue and a commit on the current Step's PR; it gets its own PR only
+  when it breaks `main`.
 - **Evaluation data** (golden datasets, fixtures, rubrics, reports) lives
   only in `evaluation/`. The harness code lives in `backend/evals/`.
-- **Issue commands:** [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
 
 ### Git and CI
 
@@ -133,31 +131,18 @@ Layering is enforced by import-linter:
 - **`openspec-*` skills** are generated per tool by `openspec update`.
   Regenerate them instead of editing them.
 
-## 4. Agent roles (Herdr)
+## 4. Review and merge
 
-Specify → review runs as a lead/implementer loop in one Herdr session.
-Autopilot runs it without a human in the chat.
-
-- **Lead:** Claude Code (Opus 5, highest effort). Never edits tracked
-  repository files or commits or pushes. Plans, briefs, reviews the proposed
-  OpenSpec change, verifies every result itself, and spawns the reviewer.
-  Owns GitHub bookkeeping (issues, labels, human queue and review-thread
-  resolution) and the `.handoffs/` checkpoint; in autopilot it merges only
-  under the merge bar.
-- **Implementer:** Codex (`gpt-5.6-terra`, `xhigh`). Writes the OpenSpec
-  change from the lead's prompt, implements exactly the briefed tasks and
-  reports back. Commits, pushes and opens the PR when told.
-- **Reviewer:** a fresh Claude subagent. Reviews blind, against the spec
-  and the standards.
-- **Human:** outside autopilot, approves a Step's OpenSpec change once before
-  implementation; the lead records that approval on the Step issue. Answers
-  escalations and merges outside autopilot under the merge bar. In autopilot,
-  reviews the delta specs in the Step PR and audits afterwards through the
-  human queue.
+After the Step PR is open, a fresh reviewer subagent reviews it blind, against
+the spec and the standards, with the fixed prompt in
+[collaboration.md](docs/agents/collaboration.md#fair-review). Outside
+autopilot, a human approves each Step's OpenSpec change before implementation
+and merges. In autopilot, the human reviews the delta specs in the Step PR and
+audits afterwards through the human queue.
 
 ### Merge bar
 
-A human outside autopilot, or the lead in autopilot through
+A human outside autopilot, or the agent in autopilot through
 `gh pr merge --squash`, may merge only when **Check** is green, every
 requirement in §5 is met, every fair-review finding is fixed or answered with
 a written reason, no high-severity finding is merely answered, and every
@@ -179,15 +164,14 @@ reason in the PR; that satisfies the item for the merge bar.
 
 ## 6. Session rules
 
-1. Orient first: read this file, the issue, the checkbox state of
-   `docs/roadmap.md`, and the relevant `openspec/specs/`.
+1. Orient first: read this file, the checkbox state of
+   `docs/roadmap.md`, the Step's OpenSpec change and the relevant
+   `openspec/specs/`.
 2. Before writing code, state:
-   - the issue;
    - the roadmap Step and the sub-step in progress;
    - the OpenSpec change;
-   - your role;
    - the layers the work touches.
-3. Work within the roadmap order and your role.
+3. Work within the roadmap order.
 4. Outside autopilot, when the spec is silent or contradictory, stop and ask.
    In autopilot, follow [the Autopilot rules](docs/agents/collaboration.md#autopilot):
    decide reversible questions and record them in the human queue; stop only
