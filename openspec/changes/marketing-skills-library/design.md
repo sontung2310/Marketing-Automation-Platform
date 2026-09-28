@@ -72,11 +72,12 @@ agents in this Step.
    listing tool was rejected as a wasted tool call duplicating the prompt.
 
 7. **Cap returned content.** `load_skill` returns at most
-   `SKILL_MAX_CHARS` characters (a setting, default 20,000); longer text is
-   truncated with a visible note naming the available references. This
+   `SKILL_MAX_CHARS` characters (a setting, default 25,000, just above the
+   largest vendored file at ~24k); longer text is truncated with a visible
+   note, and every result lists the skill's available references. This
    bounds prompt tokens and protects the Step 4 latency target. The budget of
-   three counts a reference load like a skill load; task 1.1 measures the
-   upstream skills and adjusts the default if typical use needs more.
+   three counts a reference load like a skill load; skill bodies are
+   self-contained and references optional, so three is enough.
 
 8. **Preserve upstream attribution.** The vendored tree keeps upstream
    `references/`, `evals/` and license/notice files. The update check fails on
