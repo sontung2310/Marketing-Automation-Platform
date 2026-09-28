@@ -1,15 +1,17 @@
 # Roadmap — PoC Build Plan
 
-> Parent: [specs.md](specs.md). Work eligible Steps in order: one GitHub issue,
-> `feature/<step-number>-<slug>` branch and PR per Step. Work a Step's
+> Parent: [specs.md](specs.md). Work eligible Steps in order: one OpenSpec change
+> (for system-behaviour work), `feature/<step-number>-<slug>` branch and PR per
+> Step. Work a Step's
 > sub-steps in order; its PR opens only after every sub-step is implemented and
 > verified. The Step PR itself ticks every sub-step box with evidence, so the
 > ticks land on `main` with its merge. Follow AGENTS.md
 > §3 for OpenSpec scope.
 >
-> **Evidence-hold marker:** append `<!-- EVIDENCE-HOLD: #<issue> -->` to the
+> **Evidence-hold marker:** append
+> `<!-- EVIDENCE-HOLD: <which scenario evidence is missing and why> -->` to the
 > end of a sub-step line when its implementation has merged but its
-> success-criteria evidence is outstanding in that issue. Do not select or
+> success-criteria evidence is outstanding. Do not select or
 > tick a marked sub-step as new work.
 >
 > **Success criteria are real test scenarios.** Each scenario is written as
