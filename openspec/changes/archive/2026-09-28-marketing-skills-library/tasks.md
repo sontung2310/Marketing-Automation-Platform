@@ -19,5 +19,5 @@
 
 - [x] 3.1 Run the affected import-linter/static checks and verify `app.skills` has no MongoDB, MCP, connector or arbitrary-write dependency and reads only the committed catalogue at runtime.
 - [x] 3.2 Update `docs/agents-spec.md §1 and §4` (drop `list_skills`, catalogue in instructions, successful-load budget, character cap, lockfile path), `docs/specs.md` if capability wording changes, and `docs/roadmap.md` (3.1 lockfile path, 3.2 tool list, checked 3.1/3.2 boxes); verify the docs match the implemented contracts.
-- [ ] 3.3 Run the affected agent/skill evaluation suite and paste its report in the PR; if the Strategy/Execution suites are still unavailable before Steps 4–5, record evaluation-spec §6 as N/A with that reason and attach the deterministic loader/tool evidence.
-- [ ] 3.4 Run `npm run check` and `npm run test:integration` separately; verify both are green and attach the 3-A–3-D test names/pass lines to the PR.
+- [x] 3.3 Run the affected agent/skill evaluation suite and paste its report in the PR; if the Strategy/Execution suites are still unavailable before Steps 4–5, record evaluation-spec §6 as N/A with that reason and attach the deterministic loader/tool evidence.
+- [x] 3.4 Run `npm run check` and `npm run test:integration` separately; verify both are green and attach the 3-A–3-D test names/pass lines to the PR.
