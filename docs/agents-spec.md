@@ -102,8 +102,8 @@ Rules:
 ### 4.1 Vendored subset
 
 The source is `github.com/coreyhaines31/marketingskills`, pinned by commit in
-`backend/app/skills/skills.lock.json` (with a hash per skill and for the upstream
-MIT `LICENSE`). `npm run check` runs `update_skills.py --check`, so a hand edit
+`backend/app/skills/skills.lock.json` (with a hash per skill; the upstream MIT
+`LICENSE` is kept beside the skills). `npm run check` runs `update_skills.py --check`, so a hand edit
 fails CI. Each skill
 is copied as-is into `backend/app/skills/library/<name>/`, together with its `references/` folder. Its `evals/`
 folder is kept for mining golden cases.

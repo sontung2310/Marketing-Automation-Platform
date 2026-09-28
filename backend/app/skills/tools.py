@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Literal
 
+from agents import FunctionTool, function_tool
 from pydantic import BaseModel
 
-from agents import FunctionTool, function_tool
 from app.core.config import get_settings
 from app.skills.loader import (
     PRODUCT_CONTEXT_NOTE,
@@ -44,7 +44,6 @@ class SkillError(BaseModel):
 class SkillLoadBudget:
     """Successful loads in one agent run; create one per run."""
 
-    limit: int = MAX_LOADS_PER_RUN
     used: int = 0
 
 
@@ -62,10 +61,10 @@ def load_skill(
             code=SkillErrorCode.NOT_AVAILABLE,
             message=f"Skill {name!r} is not available to this agent. Use: {sorted(allowlist)}.",
         )
-    if budget.used >= budget.limit:
+    if budget.used >= MAX_LOADS_PER_RUN:
         return SkillError(
             code=SkillErrorCode.LIMIT_REACHED,
-            message=f"All {budget.limit} skill loads are used. Finish with what you have.",
+            message=f"All {MAX_LOADS_PER_RUN} skill loads are used. Finish with what you have.",
         )
     skill = load_catalogue()[name]
     try:

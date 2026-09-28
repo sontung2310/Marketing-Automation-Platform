@@ -26,7 +26,6 @@ from app.skills.integrity import (
     LICENSE_FILE,
     LOCK_PATH,
     SkillsLock,
-    hash_file,
     hash_tree,
     read_lock,
     verify,
@@ -63,7 +62,6 @@ def update(commit: str, names: list[str]) -> int:
     lock = SkillsLock(
         source=SOURCE,
         commit=commit,
-        license_sha256=hash_file(LIBRARY_DIR / LICENSE_FILE),
         skills={name: hash_tree(LIBRARY_DIR / name) for name in sorted(names)},
     )
     LOCK_PATH.write_text(lock.model_dump_json(indent=2) + "\n", encoding="utf-8")

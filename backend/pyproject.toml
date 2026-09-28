@@ -45,6 +45,8 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "ASYNC", "T20"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "evals"]
+# The OpenAI Agents SDK package; not our app/agents folder.
+known-third-party = ["agents"]
 
 # ---------------------------------------------------------------- mypy
 [tool.mypy]
