@@ -31,10 +31,11 @@ class RunContext:
         """Append an SSE-log event (api-contract run events) with the next `seq`."""
         self.events.append(
             {
+                "run_id": self.run_id,
                 "seq": len(self.events) + 1,
                 "type": event_type,
                 "data": data,
-                "at": datetime.now(UTC),
+                "ts": datetime.now(UTC),
             }
         )
 

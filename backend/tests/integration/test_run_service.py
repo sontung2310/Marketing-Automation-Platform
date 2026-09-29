@@ -1,5 +1,6 @@
 """Run service persistence and event log, with stub agents (no model calls)."""
 
+import asyncio
 from datetime import UTC, datetime
 
 import pytest
@@ -7,8 +8,8 @@ from pymongo.asynchronous.database import AsyncDatabase
 
 from app.agents.common.context import AgentOutcome, RunContext
 from app.core.db import Document
-from app.core.errors import NotFoundError, UpstreamUnavailableError
-from app.intelligence.models import AgentName, RunStatus
+from app.core.errors import NotFoundError, UpstreamUnavailableError, ValidationError
+from app.intelligence.models import AgentName, Run, RunStatus
 from app.orchestration.references import RunRepositories
 from app.orchestration.routing import Trigger, TriggerAction, TriggerKind
 from app.orchestration.run_service import AgentFn, RunService
@@ -19,6 +20,8 @@ COMPANY = "cmp_marketing_eye"
 
 
 async def answering_agent(context: RunContext, message: str | None) -> AgentOutcome:
+    if context.trigger_context is not None:
+        assert str(context.trigger_context["id"]) in context.retrieved_ids
     context.emit("agent.step", {"label": "Thinking"})
     output = strategy_output(recommendation(1, "act_1"), recommendation(2, "act_2"))
     return AgentOutcome(RunStatus.SUCCEEDED, output, {"total_tokens": 1})
@@ -60,6 +63,8 @@ async def test_completed_run_is_persisted_with_ordered_events(
     assert stored.route["method"] == "DETERMINISTIC"
     types = [event["type"] for event in stored.events]
     assert types == ["run.started", "agent.step", "output.final", "run.completed"]
+    assert {event["run_id"] for event in stored.events} == {run.id}
+    assert all("ts" in event for event in stored.events)
     seqs = [event["seq"] for event in stored.events]
     assert seqs == list(range(1, len(seqs) + 1))
     assert stored.output is not None and stored.output["answer"] == "Respond on value, not price."
@@ -82,6 +87,44 @@ async def test_failed_run_records_the_failure(seeded_database: AsyncDatabase[Doc
     assert run.error == {"code": "UPSTREAM_UNAVAILABLE", "message": "MCP is down"}
     assert run.events[-1]["type"] == "run.failed"
     assert await seeded_database["recommendations"].count_documents({"run_id": run.id}) == 0
+    session = await RunRepositories.for_database(seeded_database).sessions.get(run.session_id)
+    assert session is not None and session.last_run_id is None  # a failure keeps the last answer
+
+
+async def test_cancelled_run_is_finalised(seeded_database: AsyncDatabase[Document]) -> None:
+    started = asyncio.Event()
+
+    async def slow_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        started.set()
+        await asyncio.sleep(60)
+        raise AssertionError("unreachable")
+
+    trigger = await price_change_trigger(seeded_database)
+    task = asyncio.create_task(service(seeded_database, slow_agent).start(COMPANY, trigger=trigger))
+    await started.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    (document,) = await seeded_database["runs"].find().to_list()
+    stored = Run.model_validate(document)
+    assert stored.status is RunStatus.FAILED
+    assert stored.error is not None and stored.error["code"] == "CANCELLED"
+    assert stored.events[-1]["type"] == "run.failed"
+    assert stored.finished_at is not None
+
+
+async def test_unavailable_agent_and_other_company_persist_nothing(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    strategy_only = RunService(
+        RunRepositories.for_database(seeded_database), {AgentName.STRATEGY: answering_agent}
+    )
+    with pytest.raises(ValidationError):
+        await strategy_only.start(COMPANY, message="Write a post", agent=AgentName.EXECUTION)
+    with pytest.raises(ValidationError):
+        await strategy_only.start("cmp_other", message="Hi", agent=AgentName.STRATEGY)
+    assert await seeded_database["runs"].count_documents({}) == 0
+    assert await seeded_database["sessions"].count_documents({}) == 0
 
 
 async def test_unknown_reference_persists_nothing(seeded_database: AsyncDatabase[Document]) -> None:

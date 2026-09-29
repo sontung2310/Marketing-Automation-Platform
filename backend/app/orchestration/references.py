@@ -58,7 +58,8 @@ async def resolve_trigger(
     record = await RESOLVERS[trigger.kind](repositories, trigger.ref_id, company_id)
     if record is None:
         raise NotFoundError(f"{trigger.ref_id} was not found", {"ref_id": trigger.ref_id})
-    return record.model_dump(mode="json", by_alias=True)
+    # `id` (not `_id`), the same shape the MCP tools return, so the model cites it as-is.
+    return record.model_dump(mode="json")
 
 
 async def open_session(
