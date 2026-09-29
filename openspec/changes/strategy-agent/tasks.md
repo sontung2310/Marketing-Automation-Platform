@@ -13,7 +13,7 @@ approves.
 
 ## 2. 4.2 Strategy agent
 
-- [ ] 2.1 Add the counting MCP wrapper (12-call limit, tool-call records, `agent.tool` events, retrieved-ID set); verify with unit tests over a fake MCP session.
+- [x] 2.1 Add the counting MCP wrapper (12-call limit, tool-call records, `agent.tool` events, retrieved-ID set); verify with unit tests over a fake MCP session.
 - [ ] 2.2 Add `StrategyOutput`, `agents/strategy/instructions.md` rendered with the skill catalogue, and the agent builder (MCP, `load_skill`, `max_turns=16`); verify the instructions contain every agents-spec §2 element.
 - [ ] 2.3 Add post-validation (grounding repair once, `UNGROUNDED_OUTPUT`, ordinal renumbering, `next_action` rule) and recommendation persistence; verify with unit tests that stub the model output.
 - [ ] 2.4 Run the price-change response plan and "What should we post about next week?" against the seeded database, real MCP and real OpenAI; verify scenarios 4-A and 4-B and save the run output as evidence.
