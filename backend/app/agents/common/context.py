@@ -3,7 +3,10 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from pydantic import BaseModel
+
 from app.agents.common.intents import Intent
+from app.intelligence.models import RunStatus
 from app.skills.tools import SkillLoadBudget
 
 MAX_MCP_CALLS_PER_RUN = 12
@@ -34,3 +37,12 @@ class RunContext:
                 "at": datetime.now(UTC),
             }
         )
+
+
+@dataclass(frozen=True)
+class AgentOutcome:
+    """What an agent hands back to the run service."""
+
+    status: RunStatus
+    output: BaseModel
+    usage: dict[str, object] = field(default_factory=dict)

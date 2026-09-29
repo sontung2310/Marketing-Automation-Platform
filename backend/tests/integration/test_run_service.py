@@ -3,28 +3,25 @@
 from datetime import UTC, datetime
 
 import pytest
-from pydantic import BaseModel
 from pymongo.asynchronous.database import AsyncDatabase
 
-from app.agents.common.context import RunContext
+from app.agents.common.context import AgentOutcome, RunContext
 from app.core.db import Document
 from app.core.errors import NotFoundError, UpstreamUnavailableError
 from app.intelligence.models import AgentName, RunStatus
 from app.orchestration.references import RunRepositories
 from app.orchestration.routing import Trigger, TriggerAction, TriggerKind
-from app.orchestration.run_service import AgentFn, AgentOutcome, RunService
+from app.orchestration.run_service import AgentFn, RunService
+from tests.strategy_samples import recommendation, strategy_output
 
 pytestmark = pytest.mark.integration
 COMPANY = "cmp_marketing_eye"
 
 
-class Answer(BaseModel):
-    answer: str
-
-
 async def answering_agent(context: RunContext, message: str | None) -> AgentOutcome:
     context.emit("agent.step", {"label": "Thinking"})
-    return AgentOutcome(RunStatus.SUCCEEDED, Answer(answer="ok"), {"total_tokens": 1})
+    output = strategy_output(recommendation(1, "act_1"), recommendation(2, "act_2"))
+    return AgentOutcome(RunStatus.SUCCEEDED, output, {"total_tokens": 1})
 
 
 async def failing_agent(context: RunContext, message: str | None) -> AgentOutcome:
@@ -65,7 +62,13 @@ async def test_completed_run_is_persisted_with_ordered_events(
     assert types == ["run.started", "agent.step", "output.final", "run.completed"]
     seqs = [event["seq"] for event in stored.events]
     assert seqs == list(range(1, len(seqs) + 1))
-    assert stored.output == {"answer": "ok"}
+    assert stored.output is not None and stored.output["answer"] == "Respond on value, not price."
+    recommendations = await seeded_database["recommendations"].find({"run_id": run.id}).to_list()
+    assert {r["ordinal"] for r in recommendations} == {1, 2}
+    final = next(e for e in stored.events if e["type"] == "output.final")
+    data = final["data"]
+    assert isinstance(data, dict)
+    assert set(data["recommendation_ids"]) == {r["_id"] for r in recommendations}
     assert stored.finished_at is not None
     session = await RunRepositories.for_database(seeded_database).sessions.get(stored.session_id)
     assert session is not None and session.last_run_id == run.id
@@ -104,4 +107,5 @@ async def test_chat_runs_with_the_selected_agent(seeded_database: AsyncDatabase[
     await runs.start(
         COMPANY, message="Only LinkedIn", agent=AgentName.STRATEGY, session_id=first.session_id
     )
-    assert seen == [None, {"answer": "ok"}]
+    assert seen[0] is None
+    assert seen[1] is not None and seen[1]["answer"] == "Respond on value, not price."

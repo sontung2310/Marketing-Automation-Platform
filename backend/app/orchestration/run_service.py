@@ -2,24 +2,14 @@
 
 import time
 from collections.abc import Awaitable, Callable, Mapping
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from pydantic import BaseModel
-
-from app.agents.common.context import RunContext
+from app.agents.common.context import AgentOutcome, RunContext
 from app.core.errors import DomainError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus
+from app.orchestration.persistence import PERSISTERS
 from app.orchestration.references import RunRepositories, open_session, resolve_trigger
 from app.orchestration.routing import Route, Trigger, route_chat, route_trigger
-
-
-@dataclass(frozen=True)
-class AgentOutcome:
-    status: RunStatus
-    output: BaseModel
-    usage: dict[str, object] = field(default_factory=dict)
-
 
 # An agent receives the run context (trigger record included) and the chat message.
 AgentFn = Callable[[RunContext, str | None], Awaitable[AgentOutcome]]
@@ -72,6 +62,8 @@ class RunService:
         clock = time.monotonic()
         try:
             outcome = await self.agents[route.agent](context, message)
+            persister = PERSISTERS.get(route.agent)
+            saved = await persister(self.repositories, run, outcome.output) if persister else {}
         except Exception as exc:
             code = exc.code if isinstance(exc, DomainError) else "AGENT_FAILED"
             context.emit("run.failed", {"code": code, "message": str(exc)})
@@ -80,7 +72,7 @@ class RunService:
             )
         else:
             output = outcome.output.model_dump(mode="json")
-            context.emit("output.final", output)
+            context.emit("output.final", output | saved)
             duration_ms = round((time.monotonic() - clock) * 1000)
             context.emit(
                 "run.completed",

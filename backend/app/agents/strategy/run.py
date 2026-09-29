@@ -1,0 +1,69 @@
+"""Run the Strategy agent once, with one grounding repair (agents-spec §6)."""
+
+from agents import RunConfig, Runner, TResponseInputItem, Usage
+
+from app.agents.common.context import AgentOutcome, RunContext
+from app.agents.common.mcp import RunMCPServer
+from app.agents.common.openai import configure_openai
+from app.agents.common.prompt import render_input
+from app.agents.strategy.agent import MAX_TURNS, build_strategy_agent
+from app.agents.strategy.output import StrategyOutput
+from app.agents.strategy.validation import (
+    contract_problems,
+    ensure_valid,
+    normalise,
+    repair_message,
+    unknown_ids,
+)
+from app.core.config import get_settings
+from app.intelligence.models import RunStatus
+
+RUN_STATUS = {
+    "OK": RunStatus.SUCCEEDED,
+    "INSUFFICIENT_DATA": RunStatus.SUCCEEDED,
+    "NEEDS_CLARIFICATION": RunStatus.NEEDS_CLARIFICATION,
+    "REFUSED": RunStatus.REFUSED,
+}
+
+
+def usage_summary(usage: Usage) -> dict[str, object]:
+    return {
+        "requests": usage.requests,
+        "input_tokens": usage.input_tokens,
+        "output_tokens": usage.output_tokens,
+        "total_tokens": usage.total_tokens,
+    }
+
+
+async def run_strategy(context: RunContext, message: str | None) -> AgentOutcome:
+    configure_openai()
+    settings = get_settings()
+    config = RunConfig(tracing_disabled=True)
+    usage = Usage()
+    async with RunMCPServer(context, settings.mcp_url) as mcp_server:
+        agent = build_strategy_agent(context, mcp_server)
+        context.emit("agent.step", {"label": "Planning and researching"})
+        items: str | list[TResponseInputItem] = render_input(context, message)
+        result = await Runner.run(
+            agent, items, context=context, max_turns=MAX_TURNS, run_config=config
+        )
+        usage.add(result.context_wrapper.usage)
+        output = result.final_output_as(StrategyOutput)
+        context.emit("agent.step", {"label": "Checking evidence"})
+        unknown = unknown_ids(output, context.retrieved_ids)
+        problems = contract_problems(output)
+        if unknown or problems:
+            context.emit("agent.step", {"label": "Repairing citations"})
+            items = result.to_input_list()
+            items.append({"role": "user", "content": repair_message(unknown, problems)})
+            result = await Runner.run(
+                agent, items, context=context, max_turns=MAX_TURNS, run_config=config
+            )
+            usage.add(result.context_wrapper.usage)
+            output = result.final_output_as(StrategyOutput)
+            ensure_valid(output, context.retrieved_ids)
+    return AgentOutcome(
+        status=RUN_STATUS[output.status],
+        output=normalise(output),
+        usage=usage_summary(usage),
+    )
