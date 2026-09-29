@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     pace_database: str = "pace_database"
 
     openai_api_key: SecretStr | None = None
-    openai_model_agent: str | None = None
+    openai_model_agent: str = "gpt-5.6-luna"
     openai_model_router: str | None = None
     openai_model_judge: str | None = None
 
