@@ -19,6 +19,7 @@ class RunContext:
     skill_budget: SkillLoadBudget = field(default_factory=SkillLoadBudget)
     mcp_calls: int = 0
     tool_calls: list[dict[str, object]] = field(default_factory=list)
+    skills_loaded: list[str] = field(default_factory=list)
     retrieved_ids: set[str] = field(default_factory=set)
     events: list[dict[str, object]] = field(default_factory=list)
 
