@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
-import socket
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
-import uvicorn
 from agents import Agent, RunContextWrapper
 from agents.mcp import MCPServerStreamableHttp
 from mcp.types import CallToolResult, TextContent
@@ -40,17 +37,12 @@ from app.intelligence.models import (
     Trend,
     TrendDirection,
 )
-from app.intelligence.repositories.activities import CompetitorActivitiesRepository
 from app.intelligence.repositories.base import Document
-from app.intelligence.repositories.companies import CompaniesRepository
-from app.intelligence.repositories.competitors import CompetitorsRepository
 from app.intelligence.repositories.indexes import ensure_indexes
-from app.intelligence.repositories.influencers import InfluencersRepository
-from app.intelligence.repositories.recommendations import RecommendationsRepository
 from app.intelligence.repositories.sessions import SessionsRepository
-from app.intelligence.repositories.trends import TrendsRepository
 from app.mcp_server.contracts import NO_RECORDS_MATCHED_NOTE
-from app.mcp_server.server import McpRepositories, build_mcp_app
+from app.mcp_server.server import McpRepositories
+from evals.runtime import serve_mcp
 
 pytestmark = pytest.mark.integration
 
@@ -61,7 +53,6 @@ OTHER_COMPETITOR_ID = "cpt_other_company"
 PRIMARY_INFLUENCER_ID = "inf_tech_voices"
 PRIMARY_RECOMMENDATION_ID = "rec_price_response"
 OTHER_RECOMMENDATION_ID = "rec_other_company"
-MCP_ALLOWED_HOSTS = ("localhost:*", "127.0.0.1:*", "[::1]:*", "mcp:8001")
 _COMPACT_ACTIVITY_KEYS = {
     "id",
     "competitor_name",
@@ -94,43 +85,13 @@ async def mcp_service() -> AsyncIterator[McpService]:
     database_name = f"ma_mcp_{uuid4().hex[:16]}"
     database = db.get_client()[database_name]
     now = datetime.now(UTC)
-    listener: socket.socket | None = None
-    server: uvicorn.Server | None = None
-    task: asyncio.Task[None] | None = None
-
     try:
         await db.get_client().drop_database(database_name)
         await ensure_indexes(database)
-        repositories = _repositories(database)
-        await _load_records(repositories, now)
-
-        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        listener.bind(("127.0.0.1", 0))
-        listener.listen()
-        port = listener.getsockname()[1]
-        app = build_mcp_app(
-            repositories,
-            company_id=COMPANY_ID,
-            now=lambda: now,
-            allowed_hosts=MCP_ALLOWED_HOSTS,
-        )
-        server = uvicorn.Server(
-            uvicorn.Config(app, host="127.0.0.1", port=port, access_log=False, log_level="warning")
-        )
-        task = asyncio.create_task(server.serve(sockets=[listener]))
-        await _wait_for_server(server)
-        yield McpService(database=database, endpoint=f"http://127.0.0.1:{port}/mcp", now=now)
+        await _load_records(McpRepositories.for_database(database), now)
+        async with serve_mcp(database, COMPANY_ID, now=lambda: now) as endpoint:
+            yield McpService(database=database, endpoint=endpoint, now=now)
     finally:
-        if server is not None:
-            server.should_exit = True
-        if task is not None:
-            try:
-                await asyncio.wait_for(task, timeout=5)
-            finally:
-                if listener is not None:
-                    listener.close()
-        elif listener is not None:
-            listener.close()
         await db.get_client().drop_database(database_name)
 
 
@@ -449,25 +410,6 @@ def _tool_json(result: CallToolResult) -> dict[str, object]:
     payload = json.loads(text)
     assert isinstance(payload, dict)
     return payload
-
-
-async def _wait_for_server(server: uvicorn.Server) -> None:
-    for _ in range(100):
-        if server.started:
-            return
-        await asyncio.sleep(0.01)
-    raise TimeoutError("The MCP test server did not start")
-
-
-def _repositories(database: AsyncDatabase[Document]) -> McpRepositories:
-    return McpRepositories(
-        companies=CompaniesRepository(database),
-        competitors=CompetitorsRepository(database),
-        activities=CompetitorActivitiesRepository(database),
-        trends=TrendsRepository(database),
-        influencers=InfluencersRepository(database),
-        recommendations=RecommendationsRepository(database),
-    )
 
 
 async def _load_records(repositories: McpRepositories, now: datetime) -> None:

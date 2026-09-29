@@ -10,7 +10,7 @@ from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.collection import AsyncCollection
 from pymongo.asynchronous.database import AsyncDatabase
 
-from app.intelligence.models import ModelBase, Provenance, SourceSystem
+from app.intelligence.models import ModelBase, Provenance, SourceSystem, TenantModel
 
 Document = dict[str, object]
 ModelT = TypeVar("ModelT", bound=ModelBase)
@@ -136,3 +136,16 @@ def company_feed_indexes() -> list[IndexModel]:
             name="activity_text",
         ),
     ]
+
+
+TenantModelT = TypeVar("TenantModelT", bound=TenantModel)
+
+
+class TenantRepository(Repository[TenantModelT]):
+    """Repositories whose records carry `company_id`."""
+
+    async def get_for_company(self, document_id: str, company_id: str) -> TenantModelT | None:
+        document = await self.collection.find_one({"_id": document_id, "company_id": company_id})
+        if document is None:
+            return None
+        return self.model_type.model_validate(document)

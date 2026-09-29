@@ -1,22 +1,15 @@
-"""Serve the real Intelligence MCP in-process over a given database (evals and live tests)."""
+"""Serve the real Intelligence MCP in-process over a given database (evals and tests)."""
 
 import asyncio
 import socket
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 import uvicorn
 
 from app.core.config import get_settings
 from app.core.db import Database
-from app.intelligence.repositories import (
-    CompaniesRepository,
-    CompetitorActivitiesRepository,
-    CompetitorsRepository,
-    InfluencersRepository,
-    RecommendationsRepository,
-    TrendsRepository,
-)
 from app.mcp_server.server import McpRepositories, build_mcp_app
 
 STARTUP_TIMEOUT_S = 5.0
@@ -24,18 +17,15 @@ STARTUP_POLL_S = 0.01
 
 
 @asynccontextmanager
-async def serve_mcp(database: Database, company_id: str) -> AsyncIterator[str]:
-    """Yield the MCP endpoint URL on a free local port; stop the server on exit."""
-    repositories = McpRepositories(
-        companies=CompaniesRepository(database),
-        competitors=CompetitorsRepository(database),
-        activities=CompetitorActivitiesRepository(database),
-        trends=TrendsRepository(database),
-        influencers=InfluencersRepository(database),
-        recommendations=RecommendationsRepository(database),
-    )
+async def serve_mcp(
+    database: Database, company_id: str, now: Callable[[], datetime] | None = None
+) -> AsyncIterator[str]:
+    """Serve the real MCP app over `database` on a free local port; yield its endpoint."""
     app = build_mcp_app(
-        repositories, company_id=company_id, allowed_hosts=get_settings().mcp_allowed_hosts
+        McpRepositories.for_database(database),
+        company_id=company_id,
+        now=now,
+        allowed_hosts=get_settings().mcp_allowed_hosts,
     )
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.bind(("127.0.0.1", 0))
@@ -52,7 +42,7 @@ async def serve_mcp(database: Database, company_id: str) -> AsyncIterator[str]:
                     break
                 await asyncio.sleep(STARTUP_POLL_S)
             else:
-                raise TimeoutError("The in-process MCP server did not start")
+                raise TimeoutError("The in-process server did not start")
             yield f"http://127.0.0.1:{port}/mcp"
         finally:
             server.should_exit = True

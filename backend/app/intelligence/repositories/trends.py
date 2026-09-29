@@ -4,10 +4,10 @@ from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.intelligence.models import Channel, Trend, TrendDirection
-from app.intelligence.repositories.base import Document, Repository
+from app.intelligence.repositories.base import Document, TenantRepository
 
 
-class TrendsRepository(Repository[Trend]):
+class TrendsRepository(TenantRepository[Trend]):
     collection_name = "trends"
 
     def __init__(self, database: AsyncDatabase[Document]) -> None:
@@ -26,12 +26,6 @@ class TrendsRepository(Repository[Trend]):
             ),
             IndexModel([("topic", "text"), ("keywords", "text")], name="trend_text"),
         ]
-
-    async def get_for_company(self, trend_id: str, company_id: str) -> Trend | None:
-        document = await self.collection.find_one({"_id": trend_id, "company_id": company_id})
-        if document is None:
-            return None
-        return self.model_type.model_validate(document)
 
     async def search_for_company(
         self,
