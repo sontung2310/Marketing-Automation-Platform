@@ -146,7 +146,7 @@ actions that can be approved. Its golden dataset is authored and passing.
 **Goal:** everything the UI needs is exposed per [api-contract.md](api-contract.md), including classifier routing with its own golden dataset.
 
 - [ ] 6.1 Feed, insight and company endpoints, with `actions[]` computed from specs §6.
-- [ ] 6.2 `POST /runs`, the run SSE (with replay via `Last-Event-ID`) and the sessions endpoint.
+- [ ] 6.2 `POST /runs`, the run SSE (with replay via `Last-Event-ID`) and the sessions endpoint. Split `RunService.start` into prepare (returns the RUNNING run for the `202`) and execute, and persist or publish events as they are emitted so SSE is live (Step 4 review).
 - [ ] 6.3 The activity SSE (change stream with a polling fallback), `simulate` and `mark-seen`.
 - [ ] 6.4 The classifier router (`RouteDecision`), the clarify and out-of-scope paths.
 - [ ] 6.5 **Golden dataset `evaluation/golden/router.jsonl`** (≥ 36 cases covering evaluation-spec §3.1) and baseline.
@@ -198,7 +198,7 @@ recommendations above the competitor activity feed on the right.
 
 - [ ] 8.1 A Playwright E2E test scripting the demo story in specs §7 (real backend, real OpenAI).
 - [ ] 8.2 `backend/scripts/reset_demo.py`: re-seeds, clears sessions, runs, actions and simulated items. Also a demo runbook in the README.
-- [ ] 8.3 Hardening: OpenAI and MCP timeouts or retries surfaced as clear run errors, a token/cost log per run, and the cost guard.
+- [ ] 8.3 Hardening: OpenAI and MCP timeouts or retries surfaced as clear run errors, a wall-clock limit per run, a token/cost log per run (including failed and repaired runs), and the cost guard.
 - [ ] 8.4 Final eval run of all three suites. Attach the reports to the release PR.
 
 **Success criteria**

@@ -46,9 +46,18 @@ timestamps. The event log SHALL contain `run.started`, one or more
 - **THEN** its events start with `run.started`, end with `run.completed`,
   contain `output.final`, and their `seq` values strictly increase
 
+#### Scenario: A cancelled run is finalised
+
+- **GIVEN** a run in progress
+- **WHEN** it is cancelled (client disconnect or timeout)
+- **THEN** it is saved as `FAILED` with code `CANCELLED`, a `run.failed`
+  event and `finished_at`, and it is not left `RUNNING`
+
 #### Scenario: A failing run records the failure
 
 - **GIVEN** the model or MCP call fails during a run
 - **WHEN** the run ends
 - **THEN** its status is `FAILED`, a `run.failed` event carries a code and
-  message, and no partial recommendations are persisted
+  message (`UPSTREAM_UNAVAILABLE` when OpenAI or the MCP is unreachable, a
+  fixed `INTERNAL` message for unexpected errors), and no partial
+  recommendations are persisted

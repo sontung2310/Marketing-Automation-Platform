@@ -70,6 +70,7 @@ class RecommendationStatus(StrEnum):
     OPEN = "OPEN"
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"
+    SUPERSEDED = "SUPERSEDED"  # a later Strategy run in the same session replaced it
 
 
 class ProposedActionStatus(StrEnum):

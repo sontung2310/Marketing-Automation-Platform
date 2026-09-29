@@ -37,6 +37,9 @@ async def persist_strategy(
         for rec in output.recommendations
     ]
     await repositories.recommendations.insert_many(recommendations)
+    if recommendations:
+        # "#N" means the latest Strategy run, so only its set stays OPEN.
+        await repositories.recommendations.supersede_open(run.session_id, keep_run_id=run.id)
     return {"recommendation_ids": [rec.id for rec in recommendations]}
 
 

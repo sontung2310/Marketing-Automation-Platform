@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.common.errors import CancelledRunError, run_error
+from app.agents.common.mcp import collect_ids
 from app.core.config import get_settings
 from app.core.errors import DomainError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus, Session
@@ -57,6 +58,9 @@ class RunService:
         if trigger_context is not None:
             # The trigger record was resolved for this company, so the agent may cite it.
             context.retrieved_ids.add(str(trigger_context["id"]))
+        if context.previous_output is not None:
+            # Follow-ups ("drop #3") may re-cite what the last answer already grounded.
+            context.retrieved_ids |= collect_ids(context.previous_output)
         run = Run(
             id=context.run_id,
             session_id=session.id,

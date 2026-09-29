@@ -152,3 +152,25 @@ async def test_chat_runs_with_the_selected_agent(seeded_database: AsyncDatabase[
     )
     assert seen[0] is None
     assert seen[1] is not None and seen[1]["answer"] == "Respond on value, not price."
+
+
+async def test_follow_up_reuses_evidence_and_supersedes_old_recommendations(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    retrieved: list[set[str]] = []
+
+    async def recording_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        retrieved.append(set(context.retrieved_ids))
+        return await answering_agent(context, message)
+
+    runs = service(seeded_database, recording_agent)
+    first = await runs.start(COMPANY, message="What should we post?", agent=AgentName.STRATEGY)
+    second = await runs.start(
+        COMPANY, message="Drop #2", agent=AgentName.STRATEGY, session_id=first.session_id
+    )
+    assert retrieved[1] >= {"act_1", "act_2"}  # cited by the first answer
+    statuses = {
+        doc["run_id"]: doc["status"]
+        async for doc in seeded_database["recommendations"].find({}, {"run_id": 1, "status": 1})
+    }
+    assert statuses == {first.id: "SUPERSEDED", second.id: "OPEN"}

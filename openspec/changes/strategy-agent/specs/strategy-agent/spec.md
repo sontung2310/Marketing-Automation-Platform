@@ -46,6 +46,24 @@ persisted in ordinal order.
   repaired answer still cites one, the run fails with `UNGROUNDED_OUTPUT`
   and persists no recommendations
 
+### Requirement: Follow-ups build on the previous answer
+
+A Strategy run in a session that already has a successful answer SHALL
+receive that answer (labelled as untrusted data), and the evidence IDs it
+cited SHALL count as retrieved for the new run, since they were grounded
+when first cited (owner decision, 2026-09-30). When the new run persists
+recommendations, the session's other `OPEN` recommendations SHALL become
+`SUPERSEDED`, so "#N" and the Strategy panel always mean the latest set. A
+failed run SHALL NOT replace the session's last answer.
+
+#### Scenario: Drop a recommendation
+
+- **GIVEN** a session whose last Strategy run recommended three items
+- **WHEN** the user sends "drop #3" to Strategy in that session
+- **THEN** the new run may cite the previous run's evidence without
+  re-fetching it, returns the remaining recommendations, and the previous
+  run's recommendations are `SUPERSEDED`
+
 ### Requirement: Strategy never invents evidence and resists misuse
 
 The agent SHALL return `INSUFFICIENT_DATA`, or `OK` with `data_gaps`, when
