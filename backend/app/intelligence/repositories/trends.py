@@ -27,6 +27,12 @@ class TrendsRepository(Repository[Trend]):
             IndexModel([("topic", "text"), ("keywords", "text")], name="trend_text"),
         ]
 
+    async def get_for_company(self, trend_id: str, company_id: str) -> Trend | None:
+        document = await self.collection.find_one({"_id": trend_id, "company_id": company_id})
+        if document is None:
+            return None
+        return self.model_type.model_validate(document)
+
     async def search_for_company(
         self,
         company_id: str,

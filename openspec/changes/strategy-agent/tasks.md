@@ -8,7 +8,7 @@ approves.
 
 - [x] 1.1 Verify the OpenAI key can call `gpt-5.6-luna` with structured output and set it as the `OPENAI_MODEL_AGENT` default; stop for the owner if the call fails.
 - [x] 1.2 Add the trigger routing registry (agents-spec §5.1) and `EXPLICIT` chat route; verify with a unit test that every `(kind, action)` pair maps and an unknown pair is rejected.
-- [ ] 1.3 Add `RunContext`, reference resolution through repositories (company-scoped) and session creation; verify an unknown `ref_id` is rejected with no run persisted.
+- [x] 1.3 Add `RunContext`, reference resolution through repositories (company-scoped) and session creation; verify an unknown `ref_id` is rejected with no run persisted.
 - [ ] 1.4 Add the run service with the event log (`run.started` … `run.completed`/`run.failed`, increasing `seq`) and run persistence, using a stub agent; verify with an integration test against MongoDB that a completed and a failed run persist the scenarios' fields.
 
 ## 2. 4.2 Strategy agent
