@@ -52,7 +52,7 @@ known-third-party = ["agents"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
-packages = ["app"]
+packages = ["app", "evals"]
 plugins = ["pydantic.mypy"]
 
 # ---------------------------------------------------------------- pytest
@@ -63,8 +63,9 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
     "integration: needs a real MongoDB (MONGODB_URI); run with -m integration",
+    "live: calls the real OpenAI API (costs money); run with -m live",
 ]
-addopts = "-m 'not integration' --strict-markers"
+addopts = "-m 'not integration and not live' --strict-markers"
 
 # ---------------------------------------------------------------- import-linter
 # Enforces the layering rules in AGENTS.md §2.

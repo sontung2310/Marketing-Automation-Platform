@@ -1,5 +1,6 @@
 """The Strategy run loop: one grounding repair, then success or UNGROUNDED_OUTPUT."""
 
+from contextlib import nullcontext
 from types import SimpleNamespace, TracebackType
 from typing import Any
 
@@ -41,7 +42,7 @@ def fake_runner(monkeypatch: pytest.MonkeyPatch, outputs: list[StrategyOutput]) 
         )
 
     monkeypatch.setattr(strategy_run, "RunMCPServer", FakeMCP)
-    monkeypatch.setattr(strategy_run, "configure_openai", lambda: None)
+    monkeypatch.setattr(strategy_run, "model_provider", nullcontext)
     monkeypatch.setattr(Runner, "run", run)
     return inputs
 

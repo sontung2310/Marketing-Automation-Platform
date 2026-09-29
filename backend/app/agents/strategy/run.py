@@ -4,7 +4,7 @@ from agents import RunConfig, Runner, TResponseInputItem, Usage
 
 from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.common.mcp import RunMCPServer
-from app.agents.common.openai import configure_openai
+from app.agents.common.openai import model_provider
 from app.agents.common.prompt import render_input
 from app.agents.strategy.agent import MAX_TURNS, build_strategy_agent
 from app.agents.strategy.output import StrategyOutput
@@ -35,12 +35,16 @@ def usage_summary(usage: Usage) -> dict[str, object]:
     }
 
 
-async def run_strategy(context: RunContext, message: str | None) -> AgentOutcome:
-    configure_openai()
-    settings = get_settings()
-    config = RunConfig(tracing_disabled=True)
+async def run_strategy(
+    context: RunContext, message: str | None, *, mcp_url: str | None = None
+) -> AgentOutcome:
+    """mcp_url overrides MCP_URL, e.g. for an in-process eval server."""
     usage = Usage()
-    async with RunMCPServer(context, settings.mcp_url) as mcp_server:
+    async with (
+        model_provider() as provider,
+        RunMCPServer(context, mcp_url or get_settings().mcp_url) as mcp_server,
+    ):
+        config = RunConfig(model_provider=provider, tracing_disabled=True)
         agent = build_strategy_agent(context, mcp_server)
         context.emit("agent.step", {"label": "Planning and researching"})
         items: str | list[TResponseInputItem] = render_input(context, message)
