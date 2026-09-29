@@ -22,18 +22,31 @@ def test_contract_needs_evidence_and_next_action_except_monitor() -> None:
     no_action = recommendation(1, "act_1", next_action=False)
     monitor = recommendation(2, "act_1", kind="MONITOR", next_action=False)
     no_evidence = recommendation(3, "act_1").model_copy(update={"evidence": []})
-    problems = contract_problems(strategy_output(no_action, monitor, no_evidence))
+    problems = contract_problems(strategy_output(no_action, monitor, no_evidence), {"pricing"})
     assert problems == [
-        "recommendation 1 (COMPETITIVE_RESPONSE) has no next_action",
+        "recommendation 1 (COMPETITIVE_RESPONSE) needs a next_action with a brief",
         "recommendation 3 cites no evidence",
+    ]
+
+
+def test_contract_rejects_empty_text_wrong_prefix_and_unloaded_skills() -> None:
+    blank = recommendation(1, "act_1").model_copy(update={"rationale": "  "})
+    wrong_kind = recommendation(2, "trd_1")  # cited as an activity
+    problems = contract_problems(strategy_output(blank, wrong_kind), set())
+    assert problems == [
+        "recommendation 1 needs a title and a rationale",
+        "recommendation 1 lists skills you did not load: pricing",
+        "recommendation 2: trd_1 is not a activity ID",
+        "recommendation 2 lists skills you did not load: pricing",
     ]
 
 
 def test_ensure_valid_raises_the_matching_error() -> None:
     with pytest.raises(UngroundedOutputError):
-        ensure_valid(strategy_output(recommendation(1, "act_x")), set())
+        ensure_valid(strategy_output(recommendation(1, "act_x")), set(), {"pricing"})
     with pytest.raises(InvalidOutputError):
-        ensure_valid(strategy_output(recommendation(1, "act_1", next_action=False)), {"act_1"})
+        output = strategy_output(recommendation(1, "act_1", next_action=False))
+        ensure_valid(output, {"act_1"}, {"pricing"})
 
 
 def test_normalise_renumbers_and_caps_lengths() -> None:

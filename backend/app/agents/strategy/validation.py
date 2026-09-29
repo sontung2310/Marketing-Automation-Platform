@@ -20,14 +20,27 @@ def unknown_ids(output: StrategyOutput, retrieved: set[str]) -> list[str]:
     return sorted(cited - retrieved)
 
 
-def contract_problems(output: StrategyOutput) -> list[str]:
-    """Rules the agent must fix itself: code cannot invent evidence or a next action."""
+EVIDENCE_PREFIX = {"activity": "act_", "trend": "trd_", "influencer": "inf_", "company": "cmp_"}
+
+
+def contract_problems(output: StrategyOutput, loaded_skills: set[str]) -> list[str]:
+    """Rules the agent must fix itself: code cannot invent evidence, text or a next action."""
     problems: list[str] = []
     for rec in output.recommendations:
+        label = f"recommendation {rec.ordinal}"
+        if not rec.title.strip() or not rec.rationale.strip():
+            problems.append(f"{label} needs a title and a rationale")
         if not rec.evidence:
-            problems.append(f"recommendation {rec.ordinal} cites no evidence")
-        if rec.kind != "MONITOR" and rec.next_action is None:
-            problems.append(f"recommendation {rec.ordinal} ({rec.kind}) has no next_action")
+            problems.append(f"{label} cites no evidence")
+        for evidence in rec.evidence:
+            if not evidence.id.startswith(EVIDENCE_PREFIX[evidence.kind]):
+                problems.append(f"{label}: {evidence.id} is not a {evidence.kind} ID")
+            if not evidence.note.strip():
+                problems.append(f"{label}: evidence {evidence.id} needs a note")
+        if rec.kind != "MONITOR" and (rec.next_action is None or not rec.next_action.brief.strip()):
+            problems.append(f"{label} ({rec.kind}) needs a next_action with a brief")
+        if unloaded := sorted(set(rec.skills_used) - loaded_skills):
+            problems.append(f"{label} lists skills you did not load: {', '.join(unloaded)}")
     return problems
 
 
@@ -42,10 +55,10 @@ def repair_message(unknown: list[str], problems: list[str]) -> str:
     return "\n".join(lines)
 
 
-def ensure_valid(output: StrategyOutput, retrieved: set[str]) -> None:
+def ensure_valid(output: StrategyOutput, retrieved: set[str], loaded_skills: set[str]) -> None:
     if unknown := unknown_ids(output, retrieved):
         raise UngroundedOutputError("Cited evidence was not retrieved", {"ids": unknown})
-    if problems := contract_problems(output):
+    if problems := contract_problems(output, loaded_skills):
         raise InvalidOutputError("; ".join(problems))
 
 

@@ -55,17 +55,19 @@ async def run_strategy(
         output = result.final_output_as(StrategyOutput)
         context.emit("agent.step", {"label": "Checking evidence"})
         unknown = unknown_ids(output, context.retrieved_ids)
-        problems = contract_problems(output)
+        problems = contract_problems(output, context.skill_budget.skills)
         if unknown or problems:
             context.emit("agent.step", {"label": "Repairing citations"})
             items = result.to_input_list()
             items.append({"role": "user", "content": repair_message(unknown, problems)})
+            # The repair shares the run's turn budget (agents-spec §1: max_turns=16).
+            turns_left = max(1, MAX_TURNS - len(result.raw_responses))
             result = await Runner.run(
-                agent, items, context=context, max_turns=MAX_TURNS, run_config=config
+                agent, items, context=context, max_turns=turns_left, run_config=config
             )
             usage.add(result.context_wrapper.usage)
             output = result.final_output_as(StrategyOutput)
-            ensure_valid(output, context.retrieved_ids)
+            ensure_valid(output, context.retrieved_ids, context.skill_budget.skills)
     return AgentOutcome(
         status=RUN_STATUS[output.status],
         output=normalise(output),

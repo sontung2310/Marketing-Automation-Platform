@@ -46,6 +46,11 @@ class SkillLoadBudget:
 
     loaded: list[str] = field(default_factory=list)
 
+    @property
+    def skills(self) -> set[str]:
+        """Skill names loaded so far (a reference load counts for its skill)."""
+        return {entry.split("/")[0] for entry in self.loaded}
+
 
 def render_catalogue(allowlist: frozenset[str]) -> str:
     """The agent's skills as instruction text, one `- name: description` line each."""
@@ -89,7 +94,8 @@ def load_skill(
 def make_load_skill_tool(allowlist: frozenset[str], budget: SkillLoadBudget) -> FunctionTool:
     """Build the per-run `load_skill` tool bound to one agent's allowlist and budget."""
 
-    def load_skill_tool(name: str, reference: str | None = None) -> str:
+    # async: the SDK runs sync tools in threads, where parallel calls race the budget.
+    async def load_skill_tool(name: str, reference: str | None = None) -> str:
         """Load a marketing skill's instructions, or one of its reference files.
 
         Args:

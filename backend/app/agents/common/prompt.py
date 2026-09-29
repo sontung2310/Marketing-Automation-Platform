@@ -14,7 +14,10 @@ def render_input(context: RunContext, message: str | None) -> str:
         parts.append(f"Trigger record:\n<{UNTRUSTED}>\n{record}\n</{UNTRUSTED}>")
     if context.previous_output is not None:
         previous = json.dumps(context.previous_output, ensure_ascii=False, indent=1)
-        parts.append(f"Your previous answer in this session:\n{previous}")
+        # It may quote third-party text, so it is data like the trigger record.
+        parts.append(
+            f"Your previous answer in this session:\n<{UNTRUSTED}>\n{previous}\n</{UNTRUSTED}>"
+        )
     if message is not None:
         parts.append(f"User message:\n{message}")
     return "\n\n".join(parts)

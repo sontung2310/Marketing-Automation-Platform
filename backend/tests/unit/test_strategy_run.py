@@ -19,6 +19,7 @@ from tests.strategy_samples import recommendation, strategy_output
 class FakeMCP:
     def __init__(self, context: RunContext, url: str) -> None:
         context.retrieved_ids |= {"act_1", "cmp_marketing_eye"}
+        context.skill_budget.loaded.append("pricing")
 
     async def __aenter__(self) -> "FakeMCP":
         return self
@@ -33,11 +34,12 @@ def fake_runner(monkeypatch: pytest.MonkeyPatch, outputs: list[StrategyOutput]) 
     inputs: list[Any] = []
 
     async def run(agent: object, items: Any, **kwargs: object) -> SimpleNamespace:
-        inputs.append(items)
+        inputs.append((items, kwargs["max_turns"]))
         output = outputs[len(inputs) - 1]
         return SimpleNamespace(
             final_output_as=lambda _type: output,
             to_input_list=lambda: [{"role": "user", "content": "first"}],
+            raw_responses=[object()] * 5,  # five model turns used
             context_wrapper=SimpleNamespace(usage=Usage(requests=1, total_tokens=10)),
         )
 
@@ -67,7 +69,9 @@ async def test_invented_id_is_repaired_once(monkeypatch: pytest.MonkeyPatch) -> 
     inputs = fake_runner(monkeypatch, [bad, good])
     outcome = await strategy_run.run_strategy(context(), "Plan a response")
     assert len(inputs) == 2
-    assert "act_invented" in inputs[1][-1]["content"]
+    repair_items, repair_turns = inputs[1]
+    assert "act_invented" in repair_items[-1]["content"]
+    assert repair_turns == 16 - 5  # the repair only gets the turns left
     assert outcome.usage["total_tokens"] == 20
 
 
