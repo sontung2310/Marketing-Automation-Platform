@@ -43,6 +43,9 @@ class RunService:
             raise ValidationError("Send exactly one of message or trigger")
         route, trigger_context = await self._route(company_id, trigger, agent)
         session = await open_session(self.repositories, company_id, session_id)
+        previous = (
+            await self.repositories.runs.get(session.last_run_id) if session.last_run_id else None
+        )
         started = datetime.now(UTC)
         context = RunContext(
             company_id=company_id,
@@ -50,6 +53,7 @@ class RunService:
             run_id=Run.new_id(),
             intent=route.intent,
             trigger_context=trigger_context,
+            previous_output=previous.output if previous else None,
         )
         run = Run(
             id=context.run_id,
@@ -89,7 +93,7 @@ class RunService:
             update={
                 "events": context.events,
                 "tool_calls": context.tool_calls,
-                "skills_loaded": context.skills_loaded,
+                "skills_loaded": context.skill_budget.loaded,
                 "finished_at": datetime.now(UTC),
             }
         )

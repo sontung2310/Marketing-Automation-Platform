@@ -37,7 +37,7 @@ def test_execution_cannot_load_pricing_and_keeps_its_budget() -> None:
     assert isinstance(result, SkillError)
     assert result.code is SkillErrorCode.NOT_AVAILABLE
     assert "not available to this agent" in result.message
-    assert budget.used == 0
+    assert budget.loaded == []
 
 
 def test_loaded_skill_carries_the_product_context_note() -> None:
@@ -68,7 +68,7 @@ def test_invalid_reference_is_an_error_and_free() -> None:
     result = load_skill("pricing", "../social/SKILL.md", allowlist=STRATEGY, budget=budget)
     assert isinstance(result, SkillError)
     assert result.code is SkillErrorCode.INVALID_REFERENCE
-    assert budget.used == 0
+    assert budget.loaded == []
 
 
 def test_oversized_content_is_truncated(monkeypatch: pytest.MonkeyPatch) -> None:

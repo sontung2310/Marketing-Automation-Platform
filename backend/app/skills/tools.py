@@ -1,6 +1,6 @@
 """The `load_skill` agent tool: allowlisted, budgeted, and never raising into the agent."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Literal
 
@@ -42,9 +42,9 @@ class SkillError(BaseModel):
 
 @dataclass
 class SkillLoadBudget:
-    """Successful loads in one agent run; create one per run."""
+    """Successful loads in one agent run (skill or skill/reference); create one per run."""
 
-    used: int = 0
+    loaded: list[str] = field(default_factory=list)
 
 
 def render_catalogue(allowlist: frozenset[str]) -> str:
@@ -61,7 +61,7 @@ def load_skill(
             code=SkillErrorCode.NOT_AVAILABLE,
             message=f"Skill {name!r} is not available to this agent. Use: {sorted(allowlist)}.",
         )
-    if budget.used >= MAX_LOADS_PER_RUN:
+    if len(budget.loaded) >= MAX_LOADS_PER_RUN:
         return SkillError(
             code=SkillErrorCode.LIMIT_REACHED,
             message=f"All {MAX_LOADS_PER_RUN} skill loads are used. Finish with what you have.",
@@ -71,7 +71,7 @@ def load_skill(
         text = read_reference(skill, reference) if reference else skill.body
     except InvalidReferenceError as exc:
         return SkillError(code=SkillErrorCode.INVALID_REFERENCE, message=str(exc))
-    budget.used += 1
+    budget.loaded.append(f"{name}/{reference}" if reference else name)
     max_chars = get_settings().skill_max_chars
     truncated = len(text) > max_chars
     if truncated:

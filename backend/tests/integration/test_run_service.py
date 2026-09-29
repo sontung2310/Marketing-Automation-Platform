@@ -92,7 +92,16 @@ async def test_unknown_reference_persists_nothing(seeded_database: AsyncDatabase
 
 
 async def test_chat_runs_with_the_selected_agent(seeded_database: AsyncDatabase[Document]) -> None:
-    run = await service(seeded_database, answering_agent).start(
-        COMPANY, message="What should we post?", agent=AgentName.STRATEGY
+    seen: list[dict[str, object] | None] = []
+
+    async def remembering_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        seen.append(context.previous_output)
+        return await answering_agent(context, message)
+
+    runs = service(seeded_database, remembering_agent)
+    first = await runs.start(COMPANY, message="What should we post?", agent=AgentName.STRATEGY)
+    assert (first.intent, first.route["method"]) == ("CHAT", "EXPLICIT")
+    await runs.start(
+        COMPANY, message="Only LinkedIn", agent=AgentName.STRATEGY, session_id=first.session_id
     )
-    assert (run.intent, run.route["method"]) == ("CHAT", "EXPLICIT")
+    assert seen == [None, {"answer": "ok"}]

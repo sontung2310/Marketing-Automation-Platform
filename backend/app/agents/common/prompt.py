@@ -1,0 +1,20 @@
+"""The run input the model sees: intent, labelled untrusted trigger data, history, message."""
+
+import json
+
+from app.agents.common.context import RunContext
+
+UNTRUSTED = "UNTRUSTED_SOURCE_CONTENT"
+
+
+def render_input(context: RunContext, message: str | None) -> str:
+    parts = [f"Intent: {context.intent}"]
+    if context.trigger_context is not None:
+        record = json.dumps(context.trigger_context, ensure_ascii=False, indent=1)
+        parts.append(f"Trigger record:\n<{UNTRUSTED}>\n{record}\n</{UNTRUSTED}>")
+    if context.previous_output is not None:
+        previous = json.dumps(context.previous_output, ensure_ascii=False, indent=1)
+        parts.append(f"Your previous answer in this session:\n{previous}")
+    if message is not None:
+        parts.append(f"User message:\n{message}")
+    return "\n\n".join(parts)
