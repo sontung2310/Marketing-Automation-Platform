@@ -9,6 +9,8 @@ from app.core.config import get_settings
 from app.core.errors import UpstreamUnavailableError
 
 Document = dict[str, object]
+# Lets layers that may not import pymongo (e.g. orchestration) name a database.
+Database = AsyncDatabase[Document]
 
 
 @lru_cache

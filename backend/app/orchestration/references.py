@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from pydantic import BaseModel
-from pymongo.asynchronous.database import AsyncDatabase
 
+from app.core.db import Database
 from app.core.errors import NotFoundError
 from app.intelligence.models import Session
 from app.intelligence.repositories import (
@@ -17,7 +17,6 @@ from app.intelligence.repositories import (
     SessionsRepository,
     TrendsRepository,
 )
-from app.intelligence.repositories.base import Document
 from app.orchestration.routing import Trigger, TriggerKind
 
 
@@ -31,7 +30,7 @@ class RunRepositories:
     runs: RunsRepository
 
     @classmethod
-    def for_database(cls, database: AsyncDatabase[Document]) -> "RunRepositories":
+    def for_database(cls, database: Database) -> "RunRepositories":
         return cls(
             activities=CompetitorActivitiesRepository(database),
             trends=TrendsRepository(database),
