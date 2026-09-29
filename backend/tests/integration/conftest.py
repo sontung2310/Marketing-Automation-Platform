@@ -12,7 +12,7 @@ from app.pipelines.seed.writer import seed_database
 
 
 @pytest.fixture(autouse=True)
-async def clear_mongo_client_between_event_loops() -> None:
+async def clear_mongo_client_between_event_loops() -> AsyncIterator[None]:
     """AsyncMongoClient is bound to one pytest event loop at a time."""
 
     yield

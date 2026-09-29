@@ -64,7 +64,7 @@ async def test_completed_run_is_persisted_with_ordered_events(
     types = [event["type"] for event in stored.events]
     assert types == ["run.started", "agent.step", "output.final", "run.completed"]
     seqs = [event["seq"] for event in stored.events]
-    assert seqs == sorted(set(seqs))
+    assert seqs == list(range(1, len(seqs) + 1))
     assert stored.output == {"answer": "ok"}
     assert stored.finished_at is not None
     session = await RunRepositories.for_database(seeded_database).sessions.get(stored.session_id)
