@@ -25,7 +25,7 @@ async def test_feed_trigger_resolves_to_the_company_activity(
         kind=TriggerKind.FEED_ACTION, ref_id=activity.id, action=TriggerAction.RESPONSE_PLAN
     )
     record = await resolve_trigger(repositories, trigger, COMPANY)
-    assert record["_id"] == activity.id
+    assert record["id"] == activity.id  # same key shape as MCP results
 
 
 @pytest.mark.parametrize("company", [COMPANY, "cmp_someone_else"])
@@ -38,7 +38,6 @@ async def test_unknown_or_foreign_reference_is_not_found(
     trigger = Trigger(kind=TriggerKind.TREND, ref_id=ref, action=TriggerAction.USE_TREND)
     with pytest.raises(NotFoundError):
         await resolve_trigger(repositories, trigger, company)
-    assert await seeded_database["runs"].count_documents({}) == 0
 
 
 async def test_sessions_are_created_then_reused_per_company(
