@@ -1,6 +1,6 @@
 # Strategy judge rubric
 
-> Status: proposed for owner approval (roadmap 4.4). Calibrated against 50 owner-scored
+> Status: approved by the owner on 2026-09-30 (roadmap 4.4). Calibrated against 50 owner-scored
 > runs before the first baseline; results are appended at the end of this file.
 
 The judge scores what code cannot: whether the advice is right for Marketing Eye.
