@@ -21,7 +21,7 @@ approves.
 ## 3. 4.3 Eval harness and fixture
 
 - [x] 3.1 Add `scripts/snapshot_fixture.py` and `evaluation/fixtures/intelligence_v1.json` with the adversarial records (injection, stale, unknown-competitor gaps); verify the fixture loads and every `*_fx_*` ID is present.
-- [ ] 3.2 Add the case loader (evaluation-spec §4 schema, fixture-ID validation) and the throwaway-database + in-process MCP runner; verify a case with a missing fixture ID fails at load time.
+- [x] 3.2 Add the case loader (evaluation-spec §4 schema, fixture-ID validation) and the throwaway-database + in-process MCP runner; verify a case with a missing fixture ID fails at load time.
 - [ ] 3.3 Add the deterministic checks (evaluation-spec §5.1, Strategy-applicable) with unit tests for each check's pass and fail path.
 - [ ] 3.4 Add judge bundles, the score schema, `evals.cli report` and `evals.cli calibrate`; verify a report with missing scores is marked incomplete and cannot be written as a baseline.
 - [ ] 3.5 Add the `.agents/skills/eval-judge/` team skill (with its `.claude/skills/` symlink and `skills-lock.json` entry); verify by judging a 3-case run in session and building its report.
