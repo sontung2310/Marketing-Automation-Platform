@@ -228,3 +228,8 @@ def test_dates_are_checked_against_the_shifted_fixture() -> None:
     )
     assert run_checks(base_case(), record(run), fixture)["no_invented_numbers"] is True
     assert run_checks(base_case(), record(run), FIXTURE)["no_invented_numbers"] is False
+
+
+def test_policy_numbers_from_the_instructions_are_allowed() -> None:
+    run = with_output(lambda o: o.update(answer="The newest evidence is older than 21 days."))
+    assert run_checks(base_case(), record(run), FIXTURE)["no_invented_numbers"] is True

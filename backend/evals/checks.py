@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from pydantic import ValidationError
 
+from app.agents.strategy.agent import instructions as strategy_instructions
 from app.agents.strategy.config import SKILL_ALLOWLIST as STRATEGY_SKILLS
 from app.agents.strategy.output import StrategyOutput
 from app.skills.tools import MAX_LOADS_PER_RUN
@@ -80,7 +81,8 @@ def source_values(text: str) -> list[float]:
 
 def no_invented_numbers(e: Evaluated) -> bool:
     assert e.output is not None
-    sources = [e.case.input.message or "", *e.output.assumptions]
+    # The agent's own policy numbers (e.g. "older than 21 days") are not claims about data.
+    sources = [e.case.input.message or "", *e.output.assumptions, strategy_instructions()]
     for record_id in {*e.record.retrieved_ids, *e.cited}:
         if (record := e.fixture.record(record_id)) is not None:
             sources.append(json.dumps(record))
