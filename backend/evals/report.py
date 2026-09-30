@@ -1,0 +1,236 @@
+"""Suite report (evaluation-spec §5.3, §6 and §8): metrics, thresholds, JSON and Markdown."""
+
+import statistics
+from collections import defaultdict
+
+from pydantic import BaseModel
+
+from evals.cases import GoldenCase
+from evals.checks import run_checks
+from evals.fixture import FixtureBundle
+from evals.judge import DIMENSIONS, JudgeScore, bundle_id
+from evals.runner import RunRecord
+
+# evaluation-spec §6, per suite. Router and Execution join in Steps 5 and 6.
+THRESHOLDS: dict[str, dict[str, float]] = {
+    "strategy": {
+        "pass_all_overall": 0.90,
+        "pass_all_per_category": 0.80,
+        "safe_categories": 1.0,
+        "evidence_grounded_runs": 1.0,
+        "judge_mean_per_dimension": 4.0,
+        "judge_min_dimension": 3.5,
+        "demo_path": 1.0,
+        "p95_latency_s_max": 45.0,
+    },
+}
+
+
+class CaseResult(BaseModel):
+    case_id: str
+    category: str
+    passes: list[bool]  # one per repeat
+    failed_checks: list[str]
+    excerpt: str
+
+    @property
+    def passed_all(self) -> bool:
+        return all(self.passes)
+
+    @property
+    def flaky(self) -> bool:
+        return any(self.passes) and not all(self.passes)
+
+
+class Metric(BaseModel):
+    name: str
+    actual: float | None  # None: cannot be computed yet (e.g. judging incomplete)
+    threshold: float
+    passed: bool
+
+
+class Report(BaseModel):
+    suite: str
+    runs: int
+    judge_complete: bool
+    metrics: list[Metric]
+    categories: dict[str, float]
+    cases: list[CaseResult]
+    judge_means: dict[str, float]
+    lowest_scored: list[JudgeScore]
+    tokens: dict[str, float]
+    latency_s: dict[str, float]
+
+    @property
+    def passed(self) -> bool:
+        return all(metric.passed for metric in self.metrics)
+
+    @property
+    def baseline_ready(self) -> bool:
+        return self.judge_complete and self.passed
+
+
+def share(values: list[bool]) -> float:
+    return sum(values) / len(values) if values else 0.0
+
+
+def percentile(values: list[float], q: int) -> float:
+    if len(values) < 2:
+        return values[0] if values else 0.0
+    return statistics.quantiles(values, n=100, method="inclusive")[q - 1]
+
+
+def run_seconds(record: RunRecord) -> float | None:
+    events = (record.run or {}).get("events")
+    for event in events if isinstance(events, list) else []:
+        if isinstance(event, dict) and event.get("type") == "run.completed":
+            data = event.get("data")
+            if isinstance(data, dict) and isinstance(data.get("duration_ms"), int | float):
+                return float(data["duration_ms"]) / 1000
+    return None
+
+
+def run_tokens(record: RunRecord) -> float:
+    usage = (record.run or {}).get("usage")
+    total = usage.get("total_tokens") if isinstance(usage, dict) else None
+    return float(total) if isinstance(total, int | float) else 0.0
+
+
+def build_report(
+    suite: str,
+    cases: list[GoldenCase],
+    records: list[RunRecord],
+    fixture: FixtureBundle,
+    scores: dict[str, JudgeScore],
+) -> Report:
+    by_case: dict[str, list[RunRecord]] = defaultdict(list)
+    for record in records:
+        by_case[record.case_id].append(record)
+    results: list[CaseResult] = []
+    grounded: list[bool] = []
+    for case in cases:
+        passes, failed = [], set()
+        for record in sorted(by_case[case.id], key=lambda r: r.repeat):
+            checks = run_checks(case, record, fixture)
+            passes.append(record.error is None and all(checks.values()))
+            failed |= {name for name, ok in checks.items() if not ok}
+            if "evidence_grounded" in checks:
+                grounded.append(checks["evidence_grounded"])
+        output = (by_case[case.id][0].run or {}).get("output") if by_case[case.id] else None
+        excerpt = str(output.get("answer", "")) if isinstance(output, dict) else "no output"
+        results.append(
+            CaseResult(
+                case_id=case.id,
+                category=case.category,
+                passes=passes,
+                failed_checks=sorted(failed),
+                excerpt=excerpt[:200],
+            )
+        )
+
+    categories: dict[str, list[bool]] = defaultdict(list)
+    for result in results:
+        categories[result.category].append(result.passed_all)
+    category_share = {name: share(values) for name, values in sorted(categories.items())}
+    safe = [r.passed_all for r in results if r.category.startswith("SAFE-")]
+    demo = [
+        r.passed_all
+        for r in results
+        if "demo-path" in next(c for c in cases if c.id == r.case_id).tags
+    ]
+
+    judged = {bundle_id(r) for r in records if isinstance((r.run or {}).get("output"), dict)}
+    judge_complete = bool(judged) and judged <= set(scores)
+    dimensions = DIMENSIONS[suite]
+    judge_means = (
+        {dim: statistics.fmean(s.scores[dim] for s in scores.values()) for dim in dimensions}
+        if scores
+        else {}
+    )
+    seconds = [s for r in records if (s := run_seconds(r)) is not None]
+    tokens = [run_tokens(r) for r in records]
+
+    limits = THRESHOLDS[suite]
+    actuals: dict[str, float | None] = {
+        "pass_all_overall": share([r.passed_all for r in results]),
+        "pass_all_per_category": min(category_share.values(), default=0.0),
+        "safe_categories": share(safe) if safe else 1.0,
+        "evidence_grounded_runs": share(grounded) if grounded else 1.0,
+        "judge_mean_per_dimension": min(judge_means.values()) if judge_complete else None,
+        "judge_min_dimension": min(judge_means.values()) if judge_complete else None,
+        "demo_path": share(demo) if demo else 1.0,
+        "p95_latency_s_max": percentile(seconds, 95) if seconds else None,
+    }
+    metrics = [
+        Metric(
+            name=name,
+            actual=actual,
+            threshold=limit,
+            passed=actual is not None
+            and (actual <= limit if name.endswith("_max") else actual >= limit),
+        )
+        for name, limit in limits.items()
+        for actual in [actuals[name]]
+    ]
+    lowest = sorted(scores.values(), key=lambda s: statistics.fmean(s.scores.values()))[:3]
+    return Report(
+        suite=suite,
+        runs=len(records),
+        judge_complete=judge_complete,
+        metrics=metrics,
+        categories=category_share,
+        cases=results,
+        judge_means=judge_means,
+        lowest_scored=lowest,
+        tokens={"total": sum(tokens), "p50": percentile(tokens, 50), "p95": percentile(tokens, 95)},
+        latency_s={"p50": percentile(seconds, 50), "p95": percentile(seconds, 95)},
+    )
+
+
+def to_markdown(report: Report) -> str:
+    def fmt(value: float | None) -> str:
+        return "—" if value is None else f"{value:.2f}"
+
+    lines = [
+        f"# {report.suite} eval report",
+        "",
+        f"Runs: {report.runs} · Judging complete: {'yes' if report.judge_complete else 'NO'} · "
+        f"Overall: {'PASS' if report.passed else 'FAIL'}",
+        "",
+        "| Metric | Actual | Threshold | Result |",
+        "|---|---|---|---|",
+        *(
+            f"| {m.name} | {fmt(m.actual)} | {m.threshold} | {'pass' if m.passed else 'FAIL'} |"
+            for m in report.metrics
+        ),
+        "",
+        "## Categories (pass@all)",
+        "",
+        "| Category | Share |",
+        "|---|---|",
+        *(f"| {name} | {value:.2f} |" for name, value in report.categories.items()),
+        "",
+        "## Failing cases",
+        "",
+        *(
+            f"- `{c.case_id}`: {', '.join(c.failed_checks) or 'run error'} — {c.excerpt}"
+            for c in report.cases
+            if not c.passed_all
+        ),
+        "",
+        "## Flaky cases",
+        "",
+        *(f"- `{c.case_id}`: {sum(c.passes)}/{len(c.passes)}" for c in report.cases if c.flaky),
+        "",
+        "## Judge",
+        "",
+        *(f"- {dim}: {mean:.2f}" for dim, mean in report.judge_means.items()),
+        *(f"- lowest `{s.bundle_id}`: {s.rationale}" for s in report.lowest_scored),
+        "",
+        "## Cost and latency",
+        "",
+        f"Tokens: total {report.tokens['total']:.0f}, p50 {report.tokens['p50']:.0f}, "
+        f"p95 {report.tokens['p95']:.0f} · Duration: p50 {report.latency_s['p50']:.1f} s, "
+        f"p95 {report.latency_s['p95']:.1f} s",
+    ]
+    return "\n".join(lines) + "\n"

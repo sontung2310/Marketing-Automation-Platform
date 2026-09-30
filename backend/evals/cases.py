@@ -82,6 +82,8 @@ def golden_path(suite: Suite) -> Path:
 
 
 def parse_cases(path: Path) -> list[GoldenCase]:
+    if not path.is_file():
+        raise CaseFileError(f"{path} does not exist")
     cases: list[GoldenCase] = []
     for number, line in enumerate(path.read_text("utf-8").splitlines(), start=1):
         if not line.strip():
