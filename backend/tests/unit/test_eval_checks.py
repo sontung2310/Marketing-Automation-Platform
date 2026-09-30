@@ -178,6 +178,8 @@ def test_parallel_first_turn_order_does_not_matter() -> None:
         ("Priced at 5200.0 before.", True),
         ("Aisha Patel has 48K followers and a 95% relevance fit.", True),  # 48200, 0.95
         ("Aisha Patel has 90K followers.", False),
+        ("The package moved to 5600 across many markets.", True),  # "m" of a word, not million
+        ("Aisha Patel has 48 K followers.", True),
     ],
 )
 def test_numbers_are_matched_by_value_scale_and_rounding(claim: str, ok: bool) -> None:

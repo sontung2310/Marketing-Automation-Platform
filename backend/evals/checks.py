@@ -21,7 +21,8 @@ from evals.runner import RunRecord
 
 # ponytail: single digits are skipped because counts and ordinals ("3 posts", "#2") are
 # not claims; a stricter rule would need the model to cite every number's source.
-NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM%])?")
+# A K/M suffix counts only as a whole unit: "275 mentions" is 275, not 275 million.
+NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM](?![A-Za-z])|%)?")
 MIN_CHECKED_NUMBER = 10
 SCALE = {"k": 1e3, "m": 1e6}
 # "48K followers" for 48,200 is a rounding, not an invention.
