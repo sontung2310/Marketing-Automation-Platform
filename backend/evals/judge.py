@@ -4,12 +4,13 @@ The harness writes one bundle per schema-valid run; Claude subagents (the `eval-
 team skill) score them against the rubric and write scores.jsonl; code validates it.
 """
 
-import json
 from pathlib import Path
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from evals.cases import GoldenCase
+from evals.files import read_jsonl
 from evals.fixture import FixtureBundle
 from evals.runner import RunRecord
 
@@ -36,14 +37,8 @@ class JudgeScore(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     bundle_id: str
-    scores: dict[str, int]
+    scores: dict[str, Annotated[StrictInt, Field(ge=1, le=5)]]
     rationale: str = Field(min_length=1)
-
-    @model_validator(mode="after")
-    def scores_are_one_to_five(self) -> "JudgeScore":
-        if not all(1 <= score <= 5 for score in self.scores.values()):
-            raise ValueError("scores must be integers from 1 to 5")
-        return self
 
 
 class ScoreFileError(ValueError):
@@ -57,8 +52,8 @@ def make_bundles(
     brand_voice = fixture.companies[0].brand_voice.model_dump(mode="json")
     bundles = []
     for record in records:
-        output = (record.run or {}).get("output")
-        if not isinstance(output, dict):
+        output = record.run.output if record.run else None
+        if output is None:
             continue  # the judge runs only on schema-valid output
         case = by_id[record.case_id]
         evidence = [r for i in record.retrieved_ids if (r := fixture.record(i)) is not None]
@@ -90,16 +85,14 @@ def read_scores(path: Path, suite: str, bundle_ids: set[str]) -> dict[str, Judge
     """Validated scores keyed by bundle; unknown bundles or wrong dimensions are errors."""
     scores: dict[str, JudgeScore] = {}
     expected = set(DIMENSIONS[suite])
-    for number, line in enumerate(path.read_text("utf-8").splitlines(), start=1):
-        if not line.strip():
-            continue
-        try:
-            score = JudgeScore.model_validate(json.loads(line))
-        except (json.JSONDecodeError, ValidationError) as exc:
-            raise ScoreFileError(f"{path.name}:{number}: {exc}") from exc
+    for score in read_jsonl(path, JudgeScore, ScoreFileError):
         if score.bundle_id not in bundle_ids:
-            raise ScoreFileError(f"{path.name}:{number}: unknown bundle {score.bundle_id}")
+            raise ScoreFileError(f"{path.name}: unknown bundle {score.bundle_id}")
+        if score.bundle_id in scores:
+            raise ScoreFileError(f"{path.name}: {score.bundle_id} is scored twice")
         if set(score.scores) != expected:
-            raise ScoreFileError(f"{path.name}:{number}: dimensions must be {sorted(expected)}")
+            raise ScoreFileError(
+                f"{path.name}: {score.bundle_id} dimensions must be {sorted(expected)}"
+            )
         scores[score.bundle_id] = score
     return scores

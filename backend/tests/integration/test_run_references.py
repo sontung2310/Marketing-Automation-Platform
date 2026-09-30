@@ -1,18 +1,17 @@
 """Trigger reference resolution and sessions against a seeded database."""
 
 from datetime import UTC, datetime
-from uuid import uuid4
 
 import pytest
 from pymongo.asynchronous.database import AsyncDatabase
 
-from app.core import db
 from app.core.config import get_settings
 from app.core.db import Document
 from app.core.errors import NotFoundError
 from app.orchestration.references import RunRepositories, open_session, resolve_trigger
 from app.orchestration.routing import Trigger, TriggerAction, TriggerKind
 from evals.fixture import install_fixture, load_fixture
+from evals.runtime import throwaway_database
 
 pytestmark = pytest.mark.integration
 COMPANY = "cmp_marketing_eye"
@@ -58,9 +57,7 @@ async def test_eval_fixture_installs_shifted_to_now() -> None:
     if get_settings().mongodb_uri is None:
         pytest.skip("MONGODB_URI is not configured")
     fixture = load_fixture("intelligence_v1")
-    name = f"ma_fixture_{uuid4().hex[:12]}"
-    database = db.get_client()[name]
-    try:
+    async with throwaway_database("ma_fixture") as database:
         await install_fixture(database, fixture)
         assert await database["competitor_activities"].count_documents({}) == len(
             fixture.competitor_activities
@@ -69,5 +66,3 @@ async def test_eval_fixture_installs_shifted_to_now() -> None:
         assert stale is not None and isinstance(stale["detected_at"], datetime)
         age = datetime.now(UTC) - stale["detected_at"]
         assert 60 <= age.days <= 80  # authored ~70 days before the snapshot
-    finally:
-        await db.get_client().drop_database(name)

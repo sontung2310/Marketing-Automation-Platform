@@ -9,6 +9,7 @@ from datetime import date
 from itertools import zip_longest
 
 from evals.judge import JudgeBundle, JudgeScore
+from evals.report import share
 
 SAMPLE_SIZE = 50
 MIN_AGREEMENT = 0.80
@@ -24,17 +25,22 @@ def sample(bundles: list[JudgeBundle], size: int = SAMPLE_SIZE) -> list[JudgeBun
 
 
 def agreement(owner: dict[str, JudgeScore], judge: dict[str, JudgeScore]) -> float:
-    pairs = [
-        abs(score - judge[bundle].scores[dim]) <= 1
-        for bundle, scored in owner.items()
-        if bundle in judge
-        for dim, score in scored.scores.items()
-    ]
-    return sum(pairs) / len(pairs) if pairs else 0.0
+    return share(
+        [
+            abs(score - judge[bundle].scores[dim]) <= 1
+            for bundle, scored in owner.items()
+            if bundle in judge
+            for dim, score in scored.scores.items()
+        ]
+    )
+
+
+def passed(owner_count: int, value: float) -> bool:
+    return owner_count >= SAMPLE_SIZE and value >= MIN_AGREEMENT
 
 
 def calibration_line(owner_count: int, value: float) -> str:
-    verdict = "PASS" if owner_count >= SAMPLE_SIZE and value >= MIN_AGREEMENT else "FAIL"
+    verdict = "PASS" if passed(owner_count, value) else "FAIL"
     return (
         f"- {date.today().isoformat()}: {owner_count} owner-scored runs, "
         f"agreement within ±1 = {value:.0%} ({verdict}, needs {MIN_AGREEMENT:.0%} "

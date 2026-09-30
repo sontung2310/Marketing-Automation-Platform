@@ -4,20 +4,18 @@ import asyncio
 from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import partial
-from uuid import uuid4
 
 from pydantic import BaseModel
 
 from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.strategy.run import run_strategy
-from app.core import db
 from app.core.config import get_settings
 from app.intelligence.models import AgentName, Run, RunStatus, Session
 from app.orchestration.references import RunRepositories
 from app.orchestration.run_service import AgentFn, RunService
 from evals.cases import GoldenCase
 from evals.fixture import FixtureBundle, install_fixture
-from evals.runtime import serve_mcp
+from evals.runtime import serve_mcp, throwaway_database
 
 # Which agent serves each suite while the chat classifier (Step 6) does not exist.
 SUITE_AGENT = {"strategy": AgentName.STRATEGY}
@@ -31,7 +29,7 @@ def real_agents(mcp_url: str) -> AgentFn:
 class RunRecord(BaseModel):
     case_id: str
     repeat: int
-    run: dict[str, object] | None  # the persisted Run, JSON-ready
+    run: Run | None  # None: the case could not start a run
     retrieved_ids: list[str]  # IDs the run's tools returned (for evidence_grounded)
     error: str | None = None  # the case could not start a run
 
@@ -66,10 +64,8 @@ async def run_suite(
 ) -> list[RunRecord]:
     company_id = get_settings().default_company_id
     agent_name = SUITE_AGENT[suite]
-    name = f"marketing_automation_eval_{uuid4().hex[:12]}"
-    database = db.get_client()[name]
     retrieved: dict[str, list[str]] = {}
-    try:
+    async with throwaway_database("marketing_automation_eval") as database:
         await install_fixture(database, fixture)
         repositories = RunRepositories.for_database(database)
         async with serve_mcp(database, company_id) as mcp_url:
@@ -108,12 +104,10 @@ async def run_suite(
                     return RunRecord(
                         case_id=case.id,
                         repeat=repeat,
-                        run=run.model_dump(mode="json"),
+                        run=run,
                         retrieved_ids=retrieved.get(run.id, []),
                     )
 
             return await asyncio.gather(
                 *(one(case, repeat) for case in cases for repeat in range(1, repeats + 1))
             )
-    finally:
-        await db.get_client().drop_database(name)

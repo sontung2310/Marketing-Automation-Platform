@@ -9,38 +9,30 @@ from evals.cases import GoldenCase
 from evals.checks import CHECKS, run_checks
 from evals.fixture import load_fixture
 from evals.runner import RunRecord
-from tests.strategy_samples import recommendation, strategy_output
+from tests.strategy_samples import golden_case, recommendation, sample_run, strategy_output
 
 FIXTURE = load_fixture("intelligence_v1")
 TRIGGER = "act_seed_026"  # Brightlane price change: before 5200, after 5600
 
 
 def base_case(**expect: Any) -> GoldenCase:
-    return GoldenCase.model_validate(
-        {
-            "id": "ST-T",
-            "suite": "strategy",
-            "category": "ST-RESP-PRICE_CHANGE",
-            "fixture": "intelligence_v1",
-            "description": "check test",
-            "input": {
-                "trigger": {"kind": "FEED_ACTION", "ref_id": TRIGGER, "action": "RESPONSE_PLAN"}
-            },
-            "expect": {
-                "route": {"agent": "STRATEGY", "intent": "RESPONSE_PLAN"},
-                "status": ["OK"],
-                "tools_required": ["get_company_context", "get_competitor_activity"],
-                "tools_forbidden": ["search_influencers"],
-                "evidence_required_all": [TRIGGER],
-                "evidence_required_any": [TRIGGER, "act_seed_041"],
-                "evidence_forbidden": ["act_seed_001"],
-                "skills_any": ["pricing"],
-                "recommendations": {"min": 1, "max": 3, "kinds_required": ["COMPETITIVE_RESPONSE"]},
-                "must_include_any": ["value"],
-                "must_not_include": ["50%"],
-            }
-            | expect,
+    return golden_case(
+        category="ST-RESP-PRICE_CHANGE",
+        input={"trigger": {"kind": "FEED_ACTION", "ref_id": TRIGGER, "action": "RESPONSE_PLAN"}},
+        expect={
+            "route": {"agent": "STRATEGY", "intent": "RESPONSE_PLAN"},
+            "status": ["OK"],
+            "tools_required": ["get_company_context", "get_competitor_activity"],
+            "tools_forbidden": ["search_influencers"],
+            "evidence_required_all": [TRIGGER],
+            "evidence_required_any": [TRIGGER, "act_seed_041"],
+            "evidence_forbidden": ["act_seed_001"],
+            "skills_any": ["pricing"],
+            "recommendations": {"min": 1, "max": 3, "kinds_required": ["COMPETITIVE_RESPONSE"]},
+            "must_include_any": ["value"],
+            "must_not_include": ["50%"],
         }
+        | expect,
     )
 
 
@@ -59,19 +51,18 @@ def base_run() -> dict[str, Any]:
 
 def record(run: dict[str, Any] | None, retrieved: list[str] | None = None) -> RunRecord:
     ids = ["cmp_marketing_eye", TRIGGER] if retrieved is None else retrieved
-    return RunRecord(case_id="ST-T", repeat=1, run=run, retrieved_ids=ids)
-
-
-def with_output(change: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
-    run = base_run()
-    change(run["output"])
-    return run
+    typed = sample_run(**run) if run is not None else None
+    return RunRecord(case_id="ST-T", repeat=1, run=typed, retrieved_ids=ids)
 
 
 def with_run(change: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
     run = base_run()
     change(run)
     return run
+
+
+def with_output(change: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
+    return with_run(lambda run: change(run["output"]))
 
 
 def test_a_good_run_passes_every_check() -> None:

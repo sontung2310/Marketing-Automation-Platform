@@ -7,18 +7,16 @@ import pytest
 
 from evals.cases import CaseFileError, check_fixture_ids, parse_cases
 from evals.fixture import load_fixture
+from tests.strategy_samples import golden_case_data
 
 
 def case(case_id: str, ref_id: str = "act_seed_026") -> dict[str, object]:
-    return {
-        "id": case_id,
-        "suite": "strategy",
-        "category": "ST-RESP-PRICE_CHANGE",
-        "fixture": "intelligence_v1",
-        "description": "Plan a response",
-        "input": {"trigger": {"kind": "FEED_ACTION", "ref_id": ref_id, "action": "RESPONSE_PLAN"}},
-        "expect": {"status": ["OK"], "evidence_required_all": [ref_id]},
-    }
+    trigger = {"kind": "FEED_ACTION", "ref_id": ref_id, "action": "RESPONSE_PLAN"}
+    return golden_case_data(
+        id=case_id,
+        input={"trigger": trigger},
+        expect={"status": ["OK"], "evidence_required_all": [ref_id]},
+    )
 
 
 def write(tmp_path: Path, *cases: dict[str, object]) -> Path:

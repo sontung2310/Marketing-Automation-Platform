@@ -5,15 +5,27 @@ import socket
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
+from uuid import uuid4
 
 import uvicorn
 
+from app.core import db
 from app.core.config import get_settings
 from app.core.db import Database
 from app.mcp_server.server import McpRepositories, build_mcp_app
 
 STARTUP_TIMEOUT_S = 5.0
 STARTUP_POLL_S = 0.01
+
+
+@asynccontextmanager
+async def throwaway_database(prefix: str) -> AsyncIterator[Database]:
+    """A uniquely named database on the configured cluster, dropped on exit."""
+    name = f"{prefix}_{uuid4().hex[:12]}"
+    try:
+        yield db.get_client()[name]
+    finally:
+        await db.get_client().drop_database(name)
 
 
 @asynccontextmanager

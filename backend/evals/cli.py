@@ -15,12 +15,12 @@ import fnmatch
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TypeVar
 
 from pydantic import BaseModel
 
-from evals.calibration import agreement, calibration_line, sample
+from evals.calibration import agreement, calibration_line, passed, sample
 from evals.cases import CaseFileError, GoldenCase, check_fixture_ids, golden_path, parse_cases
+from evals.files import read_jsonl, write_jsonl
 from evals.fixture import EVALUATION_DIR, load_fixture
 from evals.judge import JudgeBundle, JudgeScore, ScoreFileError, make_bundles, read_scores
 from evals.report import build_report, to_markdown
@@ -37,16 +37,8 @@ class RunMeta(BaseModel):
     started_at: datetime
 
 
-def write_jsonl(path: Path, items: list[BaseModel]) -> None:
-    path.write_text("".join(item.model_dump_json() + "\n" for item in items), encoding="utf-8")
-
-
-ModelT = TypeVar("ModelT", bound=BaseModel)
-
-
-def read_jsonl(path: Path, model: type[ModelT]) -> list[ModelT]:
-    lines = path.read_text("utf-8").splitlines()
-    return [model.model_validate_json(line) for line in lines if line.strip()]
+def read_meta(run_dir: Path) -> RunMeta:
+    return RunMeta.model_validate_json((run_dir / "meta.json").read_text("utf-8"))
 
 
 def resolve_run_dir(value: str) -> Path:
@@ -58,8 +50,8 @@ def resolve_run_dir(value: str) -> Path:
 
 def write_report(run_dir: Path) -> bool:
     """Rebuild report.{json,md} from the run directory; True when baseline-ready."""
-    meta = RunMeta.model_validate_json((run_dir / "meta.json").read_text("utf-8"))
-    cases = read_jsonl(run_dir / "cases.jsonl", GoldenCase)
+    meta = read_meta(run_dir)
+    cases = read_jsonl(run_dir / "cases.jsonl", GoldenCase, CaseFileError)
     records = read_jsonl(run_dir / "runs.jsonl", RunRecord)
     bundles = read_jsonl(run_dir / "bundles.jsonl", JudgeBundle)
     scores_path = run_dir / "scores.jsonl"
@@ -110,8 +102,7 @@ def report(args: argparse.Namespace) -> int:
     if not ready:
         sys.stderr.write("evals: not a baseline (judging incomplete or a threshold failed)\n")
         return 1
-    suite = RunMeta.model_validate_json((run_dir / "meta.json").read_text("utf-8")).suite
-    baseline = REPORTS_DIR / f"baseline_{suite}.json"
+    baseline = REPORTS_DIR / f"baseline_{read_meta(run_dir).suite}.json"
     baseline.write_text((run_dir / "report.json").read_text("utf-8"), encoding="utf-8")
     sys.stdout.write(f"evals: wrote {baseline.name}\n")
     return 0
@@ -119,7 +110,7 @@ def report(args: argparse.Namespace) -> int:
 
 def calibrate(args: argparse.Namespace) -> int:
     run_dir = resolve_run_dir(args.run_dir)
-    meta = RunMeta.model_validate_json((run_dir / "meta.json").read_text("utf-8"))
+    meta = read_meta(run_dir)
     bundles = read_jsonl(run_dir / "bundles.jsonl", JudgeBundle)
     ids = {b.bundle_id for b in bundles}
     if args.action == "sample":
@@ -142,36 +133,35 @@ def calibrate(args: argparse.Namespace) -> int:
         sys.stderr.write("evals: human_scores.jsonl still has TODO placeholders\n")
         return 1
     judge = read_scores(run_dir / "scores.jsonl", meta.suite, ids)
-    line = calibration_line(len(owner), agreement(owner, judge))
+    value = agreement(owner, judge)
+    line = calibration_line(len(owner), value)
     rubric = RUBRICS_DIR / f"{meta.suite}.md"
     with rubric.open("a", encoding="utf-8") as file:
         file.write(line + "\n")
     sys.stdout.write(line + "\n")
-    return 0 if "PASS" in line else 1
+    return 0 if passed(len(owner), value) else 1
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Golden-dataset eval harness")
     commands = parser.add_subparsers(dest="command", required=True)
     run_parser = commands.add_parser("run", help="run cases against the real agent")
+    run_parser.set_defaults(func=lambda a: asyncio.run(run(a)))
     run_parser.add_argument("--suite", choices=["strategy"], required=True)
     run_parser.add_argument("--repeats", type=int, default=1)
     run_parser.add_argument("--cases", nargs="+", default=["*"], help="case ID globs")
     run_parser.add_argument("--concurrency", type=int, default=4)
     report_parser = commands.add_parser("report", help="merge judge scores and apply thresholds")
+    report_parser.set_defaults(func=report)
     report_parser.add_argument("run_dir")
     report_parser.add_argument("--baseline", action="store_true")
     calibrate_parser = commands.add_parser("calibrate", help="owner scoring for judge calibration")
+    calibrate_parser.set_defaults(func=calibrate)
     calibrate_parser.add_argument("run_dir")
     calibrate_parser.add_argument("action", choices=["sample", "compare"])
     args = parser.parse_args()
-    commands_by_name = {
-        "run": lambda a: asyncio.run(run(a)),
-        "report": report,
-        "calibrate": calibrate,
-    }
     try:
-        return commands_by_name[args.command](args)
+        return int(args.func(args))
     except (CaseFileError, ScoreFileError) as exc:
         sys.stderr.write(f"evals: {exc}\n")
         return 1

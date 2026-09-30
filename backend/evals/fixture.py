@@ -6,12 +6,20 @@ Timestamps are stored as authored and shifted to "now" on install, so recency ru
 
 import json
 from datetime import UTC, datetime
+from functools import cached_property
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
 from app.core.db import Database
-from app.intelligence.models import Company, Competitor, CompetitorActivity, Influencer, Trend
+from app.intelligence.models import (
+    Company,
+    Competitor,
+    CompetitorActivity,
+    Influencer,
+    PrefixedModel,
+    Trend,
+)
 from app.intelligence.repositories import (
     CompaniesRepository,
     CompetitorActivitiesRepository,
@@ -37,29 +45,24 @@ class FixtureBundle(BaseModel):
     trends: list[Trend]
     influencers: list[Influencer]
 
+    @cached_property
+    def by_id(self) -> dict[str, PrefixedModel]:
+        records: list[PrefixedModel] = [
+            *self.companies,
+            *self.competitors,
+            *self.competitor_activities,
+            *self.trends,
+            *self.influencers,
+        ]
+        return {record.id: record for record in records}
+
     def ids(self) -> set[str]:
-        records = (
-            self.companies
-            + self.competitors
-            + self.competitor_activities
-            + self.trends
-            + self.influencers
-        )
-        return {record.id for record in records}
+        return set(self.by_id)
 
     def record(self, record_id: str) -> dict[str, object] | None:
         """One record as JSON-ready data (the shape MCP tools return), or None."""
-        for records in (
-            self.companies,
-            self.competitors,
-            self.competitor_activities,
-            self.trends,
-            self.influencers,
-        ):
-            for record in records:
-                if record.id == record_id:
-                    return record.model_dump(mode="json")
-        return None
+        record = self.by_id.get(record_id)
+        return record.model_dump(mode="json") if record else None
 
 
 def fixture_path(version: str) -> Path:

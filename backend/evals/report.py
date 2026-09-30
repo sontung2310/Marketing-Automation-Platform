@@ -81,18 +81,15 @@ def percentile(values: list[float], q: int) -> float:
 
 
 def run_seconds(record: RunRecord) -> float | None:
-    events = (record.run or {}).get("events")
-    for event in events if isinstance(events, list) else []:
-        if isinstance(event, dict) and event.get("type") == "run.completed":
-            data = event.get("data")
-            if isinstance(data, dict) and isinstance(data.get("duration_ms"), int | float):
-                return float(data["duration_ms"]) / 1000
-    return None
+    """Wall-clock duration, failed runs included (a timeout must not flatter p95)."""
+    run = record.run
+    if run is None or run.finished_at is None:
+        return None
+    return (run.finished_at - run.started_at).total_seconds()
 
 
 def run_tokens(record: RunRecord) -> float:
-    usage = (record.run or {}).get("usage")
-    total = usage.get("total_tokens") if isinstance(usage, dict) else None
+    total = (record.run.usage or {}).get("total_tokens") if record.run else None
     return float(total) if isinstance(total, int | float) else 0.0
 
 
@@ -116,8 +113,9 @@ def build_report(
             failed |= {name for name, ok in checks.items() if not ok}
             if "evidence_grounded" in checks:
                 grounded.append(checks["evidence_grounded"])
-        output = (by_case[case.id][0].run or {}).get("output") if by_case[case.id] else None
-        excerpt = str(output.get("answer", "")) if isinstance(output, dict) else "no output"
+        first = by_case[case.id][0].run if by_case[case.id] else None
+        output = first.output if first else None
+        excerpt = str(output.get("answer", "")) if output else "no output"
         results.append(
             CaseResult(
                 case_id=case.id,
@@ -139,7 +137,7 @@ def build_report(
         if "demo-path" in next(c for c in cases if c.id == r.case_id).tags
     ]
 
-    judged = {bundle_id(r) for r in records if isinstance((r.run or {}).get("output"), dict)}
+    judged = {bundle_id(r) for r in records if r.run and r.run.output is not None}
     judge_complete = bool(judged) and judged <= set(scores)
     dimensions = DIMENSIONS[suite]
     judge_means = (

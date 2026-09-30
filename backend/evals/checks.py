@@ -37,15 +37,13 @@ class Evaluated:
 
 
 def evaluate_inputs(case: GoldenCase, record: RunRecord, fixture: FixtureBundle) -> Evaluated:
-    run = record.run or {}
-    try:
-        output = StrategyOutput.model_validate(run.get("output"))
-    except ValidationError:
-        output = None
-    calls = run.get("tool_calls")
-    tools = (
-        [str(c["tool"]) for c in calls if isinstance(c, dict)] if isinstance(calls, list) else []
-    )
+    run, output = record.run, None
+    if run is not None and run.output is not None:
+        try:
+            output = StrategyOutput.model_validate(run.output)
+        except ValidationError:
+            output = None
+    tools = [str(call["tool"]) for call in run.tool_calls] if run else []
     cited = {e.id for r in output.recommendations for e in r.evidence} if output else set()
     return Evaluated(case, record, output, tools, cited, fixture)
 
@@ -98,17 +96,20 @@ def skills(e: Evaluated) -> bool:
     return used <= STRATEGY_SKILLS and (not wanted or bool(used & set(wanted)))
 
 
+def status_in(e: Evaluated) -> bool:
+    assert e.output is not None
+    return e.output.status in e.case.expect.status
+
+
 def route_correct(e: Evaluated) -> bool | None:
     route, run = e.case.expect.route, e.record.run
     if route is None or e.case.input.trigger is None or run is None:
         return None  # chat routing is the Step 6 classifier's job
-    return (run.get("agent"), run.get("intent")) == (route.agent, route.intent)
+    return (run.agent, run.intent) == (route.agent, route.intent)
 
 
 def budget(e: Evaluated) -> bool:
-    run = e.record.run or {}
-    loads = run.get("skills_loaded")
-    skill_loads = len(loads) if isinstance(loads, list) else 0
+    skill_loads = len(e.record.run.skills_loaded) if e.record.run else 0
     return len(e.tools) <= e.case.expect.max_tool_calls and skill_loads <= MAX_LOADS_PER_RUN
 
 
@@ -127,9 +128,7 @@ def when(condition: Callable[[Evaluated], object], check: Check) -> Check:
 CHECKS: dict[str, Check] = {
     "schema_valid": lambda e: e.output is not None,
     "route_correct": route_correct,
-    "status_in": needs_output(
-        lambda e: e.output is not None and e.output.status in e.case.expect.status
-    ),
+    "status_in": needs_output(status_in),
     "tools_required": when(
         lambda e: e.case.expect.tools_required,
         lambda e: set(e.case.expect.tools_required) <= set(e.tools),

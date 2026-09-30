@@ -2,45 +2,29 @@
 
 import argparse
 from pathlib import Path
-from typing import Any
 
 import pytest
 
 from evals import cli
 from evals.calibration import agreement, sample
 from evals.cases import GoldenCase
+from evals.files import write_jsonl
 from evals.fixture import EVALUATION_DIR, load_fixture
 from evals.judge import JudgeScore, ScoreFileError, make_bundles, read_scores
 from evals.report import build_report
 from evals.runner import RunRecord
-from tests.strategy_samples import recommendation, strategy_output
+from tests.strategy_samples import golden_case, sample_run
 
 FIXTURE = load_fixture("intelligence_v1")
 DIMS = ("relevance", "grounding", "actionability", "marketing_soundness")
 
 
 def case(case_id: str, category: str = "ST-TOPIC") -> GoldenCase:
-    return GoldenCase.model_validate(
-        {
-            "id": case_id,
-            "suite": "strategy",
-            "category": category,
-            "fixture": "intelligence_v1",
-            "description": "report test",
-            "input": {"message": "What should we post?"},
-            "expect": {"status": ["OK"]},
-        }
-    )
+    return golden_case(id=case_id, category=category)
 
 
 def good_record(case_id: str, repeat: int = 1) -> RunRecord:
-    run: dict[str, Any] = {
-        "output": strategy_output(recommendation(1, "act_seed_001")).model_dump(mode="json"),
-        "tool_calls": [{"tool": "get_company_context"}],
-        "skills_loaded": ["pricing"],
-        "usage": {"total_tokens": 1000},
-        "events": [{"type": "run.completed", "data": {"duration_ms": 20_000}}],
-    }
+    run = sample_run()
     return RunRecord(case_id=case_id, repeat=repeat, run=run, retrieved_ids=["act_seed_001"])
 
 
@@ -109,11 +93,9 @@ def test_cli_refuses_a_baseline_without_scores(
         ' "started_at": "2026-09-30T00:00:00Z"}',
         encoding="utf-8",
     )
-    cli.write_jsonl(run_dir / "cases.jsonl", list(CASES))
-    cli.write_jsonl(run_dir / "runs.jsonl", list(RECORDS))
-    cli.write_jsonl(
-        run_dir / "bundles.jsonl", list(make_bundles("strategy", CASES, RECORDS, FIXTURE))
-    )
+    write_jsonl(run_dir / "cases.jsonl", list(CASES))
+    write_jsonl(run_dir / "runs.jsonl", list(RECORDS))
+    write_jsonl(run_dir / "bundles.jsonl", list(make_bundles("strategy", CASES, RECORDS, FIXTURE)))
     monkeypatch.setattr(cli, "REPORTS_DIR", tmp_path)
     args = argparse.Namespace(run_dir=str(run_dir), baseline=True)
     assert cli.report(args) == 1

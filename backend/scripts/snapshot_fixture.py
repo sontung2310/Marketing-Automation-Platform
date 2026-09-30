@@ -7,8 +7,6 @@ The output is deterministic, so re-running it on an unchanged seed rewrites the 
 A changed seed or adversarial file needs a new version (evaluation-spec §7.5).
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

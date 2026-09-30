@@ -9,7 +9,7 @@ from app.orchestration.run_service import AgentFn
 from evals.cases import GoldenCase
 from evals.fixture import load_fixture
 from evals.runner import run_suite
-from tests.strategy_samples import recommendation, strategy_output
+from tests.strategy_samples import golden_case, recommendation, strategy_output
 
 pytestmark = pytest.mark.integration
 
@@ -26,17 +26,7 @@ def stub_factory(mcp_url: str) -> AgentFn:
 
 
 def golden(case_id: str, **input: object) -> GoldenCase:
-    return GoldenCase.model_validate(
-        {
-            "id": case_id,
-            "suite": "strategy",
-            "category": "ST-TEST",
-            "fixture": "intelligence_v1",
-            "description": "runner test",
-            "input": input,
-            "expect": {"status": ["OK"]},
-        }
-    )
+    return golden_case(id=case_id, input=input)
 
 
 async def test_runner_records_each_repeat_with_retrieved_ids() -> None:
@@ -60,7 +50,7 @@ async def test_runner_records_each_repeat_with_retrieved_ids() -> None:
     ]
     for record in records:
         assert record.error is None and record.run is not None
-        assert record.run["status"] == "SUCCEEDED"
+        assert record.run.status is RunStatus.SUCCEEDED
     trigger_record = next(r for r in records if r.case_id == "ST-TRIGGER")
     assert "act_fx_inject_02" in trigger_record.retrieved_ids
     follow_up = next(r for r in records if r.case_id == "ST-FOLLOWUP")

@@ -1,12 +1,13 @@
 """Golden cases (evaluation-spec §4): schema, loading and fixture-ID validation."""
 
-import json
+from collections import Counter
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict
 
 from app.orchestration.routing import Trigger
+from evals.files import read_jsonl
 from evals.fixture import EVALUATION_DIR, FixtureBundle
 
 GOLDEN_DIR = EVALUATION_DIR / "golden"
@@ -82,17 +83,8 @@ def golden_path(suite: Suite) -> Path:
 
 
 def parse_cases(path: Path) -> list[GoldenCase]:
-    if not path.is_file():
-        raise CaseFileError(f"{path} does not exist")
-    cases: list[GoldenCase] = []
-    for number, line in enumerate(path.read_text("utf-8").splitlines(), start=1):
-        if not line.strip():
-            continue
-        try:
-            cases.append(GoldenCase.model_validate(json.loads(line)))
-        except (json.JSONDecodeError, ValidationError) as exc:
-            raise CaseFileError(f"{path.name}:{number}: {exc}") from exc
-    duplicates = sorted({c.id for c in cases if [d.id for d in cases].count(c.id) > 1})
+    cases = read_jsonl(path, GoldenCase, CaseFileError)
+    duplicates = sorted(i for i, n in Counter(c.id for c in cases).items() if n > 1)
     if duplicates:
         raise CaseFileError(f"{path.name}: duplicate case IDs {duplicates}")
     return cases
