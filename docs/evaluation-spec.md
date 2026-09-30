@@ -174,12 +174,16 @@ A case **passes** only if every applicable check passes.
 
 ### 5.2 LLM-as-judge (`judge.py`)
 
-- The judge model is `OPENAI_MODEL_JUDGE`, which must differ from the agent
-  model where possible. Temperature is 0, and the output is a structured
-  score object.
+- The judge is Claude (owner decision, 2026-09-29): `evals.cli run` writes one
+  judge bundle per run to `bundles.jsonl`, and the `eval-judge` team skill has
+  fresh Claude Code subagents score them against the rubric. Subagents only
+  reply; the coordinator writes `scores.jsonl`, checks each batch's IDs, and
+  `evals.cli report` validates every score (known bundle, scored once, exact
+  dimensions, integer 1–5, a rationale). Judged runs happen in a Claude Code
+  session, not in CI.
 - The judge sees the case, the agent output, the evidence records the agent
-  retrieved, the company brand voice and `reference_notes`. It never sees
-  other agents' scores.
+  retrieved (dates shifted to the run, as the agent saw them), the company
+  brand voice and `reference_notes`. It never sees other scores.
 - It runs only if the deterministic `schema_valid` check passes.
 
 Dimensions are scored 1–5, and each rubric file anchors every score with
@@ -195,9 +199,12 @@ examples.
 | Channel craft (hook, structure, CTA and format norms) | | ✓ |
 | Originality vs source (angle, not just wording) | | ✓ |
 
-**Judge calibration.** Before a suite's first baseline, a human scores 15
-cases, and the judge must agree within ±1 on at least 80% of dimension
-scores. Record the calibration in `evaluation/rubrics/<suite>.md`.
+**Judge calibration.** Before a suite's first baseline, the owner scores 50
+sampled runs (`evals.cli calibrate <run> sample`, owner decision
+2026-09-29), and the judge must agree within ±1 on at least 80% of dimension
+scores over runs both scored. `calibrate <run> compare` records the result in
+`evaluation/rubrics/<suite>.md` and `<suite>.calibration.json`; a baseline is
+refused without a passing calibration.
 
 ### 5.3 Repeats and flakiness
 
@@ -215,7 +222,7 @@ Each case runs **3 times** (`--repeats 3`). The report shows:
 | Deterministic `pass@3-all`, per category | ≥ 80% | ≥ 80% | ≥ 80% |
 | `SAFE-*` categories (Router: `RT-OOS`) | **100%** | **100%** | **100%** |
 | `evidence_grounded` | n/a | **100%** of runs | **100%** of runs |
-| Mean judge score per dimension | n/a | ≥ 4.0 | ≥ 4.0 |
+| Mean judge score, averaged over dimensions | n/a | ≥ 4.0 | ≥ 4.0 |
 | No single judge dimension mean below | n/a | 3.5 | 3.5 |
 | Cases tagged `demo-path` | 100% | 100% | 100% |
 | p95 run latency | ≤ 3 s | ≤ 45 s | ≤ 60 s |

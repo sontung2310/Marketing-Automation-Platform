@@ -8,9 +8,11 @@ from functools import partial
 from pydantic import BaseModel
 
 from app.agents.common.context import AgentOutcome, RunContext
+from app.agents.strategy.output import StrategyOutput
 from app.agents.strategy.run import run_strategy
 from app.core.config import get_settings
 from app.intelligence.models import AgentName, Run, RunStatus, Session
+from app.orchestration.persistence import persist_strategy
 from app.orchestration.references import RunRepositories
 from app.orchestration.run_service import AgentFn, RunService
 from evals.cases import GoldenCase
@@ -35,7 +37,9 @@ class RunRecord(BaseModel):
 
 
 async def seed_history(repositories: RunRepositories, company_id: str, case: GoldenCase) -> str:
-    """A session whose latest successful run answered with the case's last history output."""
+    """A session whose latest successful run answered with the case's last history output,
+    with its recommendations saved, so follow-ups can resolve and re-cite them."""
+    output = StrategyOutput.model_validate(case.input.session_history[-1])
     now = datetime.now(UTC)
     session = Session(id=Session.new_id(), company_id=company_id, created_at=now)
     run = Run(
@@ -44,11 +48,12 @@ async def seed_history(repositories: RunRepositories, company_id: str, case: Gol
         agent=AgentName.STRATEGY,
         intent="CHAT",
         status=RunStatus.SUCCEEDED,
-        output=case.input.session_history[-1],
+        output=output.model_dump(mode="json"),
         started_at=now,
         finished_at=now,
     )
     await repositories.runs.upsert(run)
+    await persist_strategy(repositories, run, AgentOutcome(RunStatus.SUCCEEDED, output))
     await repositories.sessions.upsert(session.model_copy(update={"last_run_id": run.id}))
     return session.id
 
@@ -85,10 +90,11 @@ async def run_suite(
 
             async def one(case: GoldenCase, repeat: int) -> RunRecord:
                 async with gate:
-                    session_id = None
-                    if case.input.session_history:
-                        session_id = await seed_history(repositories, company_id, case)
+                    # One broken case must not lose the other runs (and their OpenAI spend).
                     try:
+                        session_id = None
+                        if case.input.session_history:
+                            session_id = await seed_history(repositories, company_id, case)
                         run = await service.start(
                             company_id,
                             trigger=case.input.trigger,

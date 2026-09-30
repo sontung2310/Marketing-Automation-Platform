@@ -44,7 +44,12 @@ def main() -> int:
         sys.stderr.write("fixture: duplicate record IDs\n")
         return 1
     path = fixture_path(args.version)
-    path.write_text(fixture.model_dump_json(indent=1, by_alias=True) + "\n", encoding="utf-8")
+    content = fixture.model_dump_json(indent=1, by_alias=True) + "\n"
+    if path.exists() and path.read_text("utf-8") != content:
+        # A version is frozen once cases and baselines use it (evaluation-spec §7.5).
+        sys.stderr.write(f"fixture: {path.name} exists with other content; use a new --version\n")
+        return 1
+    path.write_text(content, encoding="utf-8")
     sys.stdout.write(f"fixture: wrote {len(fixture.ids())} records to {path.name}\n")
     return 0
 
