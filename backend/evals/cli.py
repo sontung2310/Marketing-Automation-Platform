@@ -18,8 +18,16 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from evals.calibration import agreement, calibration_line, passed, sample
-from evals.cases import CaseFileError, GoldenCase, check_fixture_ids, golden_path, parse_cases
+from evals.calibration import CalibrationResult, calibration_line, sample
+from evals.calibration import calibrate as calibrate_judge
+from evals.cases import (
+    CaseFileError,
+    GoldenCase,
+    Suite,
+    check_fixture_ids,
+    golden_path,
+    parse_cases,
+)
 from evals.files import read_jsonl, write_jsonl
 from evals.fixture import EVALUATION_DIR, load_fixture, shifted_to
 from evals.judge import JudgeBundle, JudgeScore, ScoreFileError, make_bundles, read_scores
@@ -31,7 +39,7 @@ RUBRICS_DIR = EVALUATION_DIR / "rubrics"
 
 
 class RunMeta(BaseModel):
-    suite: str
+    suite: Suite
     fixture: str
     repeats: int
     started_at: datetime
@@ -48,8 +56,34 @@ def resolve_run_dir(value: str) -> Path:
     return path if path.is_absolute() else EVALUATION_DIR.parent / path
 
 
+BASELINE_REPEATS = 3  # evaluation-spec §5.3
+
+
+def calibration_path(suite: str) -> Path:
+    return RUBRICS_DIR / f"{suite}.calibration.json"
+
+
+def baseline_problems(run_dir: Path, report_ready: bool) -> list[str]:
+    """Why this run cannot become the suite's baseline (empty when it can)."""
+    meta = read_meta(run_dir)
+    problems = [] if report_ready else ["judging is incomplete or a threshold failed"]
+    if meta.repeats != BASELINE_REPEATS:
+        problems.append(f"it ran {meta.repeats} repeat(s), a baseline needs {BASELINE_REPEATS}")
+    ran = {c.id for c in read_jsonl(run_dir / "cases.jsonl", GoldenCase, CaseFileError)}
+    golden = {c.id for c in parse_cases(golden_path(meta.suite))}
+    if ran != golden:
+        problems.append(f"it ran {len(ran)} of the {len(golden)} golden cases")
+    calibration = calibration_path(meta.suite)
+    if (
+        not calibration.is_file()
+        or not CalibrationResult.model_validate_json(calibration.read_text("utf-8")).passed
+    ):
+        problems.append("the judge has no passing calibration (`calibrate ... compare`)")
+    return problems
+
+
 def write_report(run_dir: Path) -> bool:
-    """Rebuild report.{json,md} from the run directory; True when baseline-ready."""
+    """Rebuild report.{json,md} from the run directory; True when the report passes."""
     meta = read_meta(run_dir)
     cases = read_jsonl(run_dir / "cases.jsonl", GoldenCase, CaseFileError)
     records = read_jsonl(run_dir / "runs.jsonl", RunRecord)
@@ -61,7 +95,7 @@ def write_report(run_dir: Path) -> bool:
         else {}
     )
     fixture = shifted_to(load_fixture(meta.fixture), meta.started_at)
-    report = build_report(meta.suite, cases, records, fixture, scores)
+    report = build_report(meta.suite, cases, records, fixture, scores, meta.repeats)
     (run_dir / "report.json").write_text(report.model_dump_json(indent=1), encoding="utf-8")
     (run_dir / "report.md").write_text(to_markdown(report), encoding="utf-8")
     return report.baseline_ready
@@ -101,8 +135,8 @@ def report(args: argparse.Namespace) -> int:
     sys.stdout.write((run_dir / "report.md").read_text("utf-8"))
     if not args.baseline:
         return 0
-    if not ready:
-        sys.stderr.write("evals: not a baseline (judging incomplete or a threshold failed)\n")
+    if problems := baseline_problems(run_dir, ready):
+        sys.stderr.write("evals: not a baseline: " + "; ".join(problems) + "\n")
         return 1
     baseline = REPORTS_DIR / f"baseline_{read_meta(run_dir).suite}.json"
     baseline.write_text((run_dir / "report.json").read_text("utf-8"), encoding="utf-8")
@@ -135,13 +169,13 @@ def calibrate(args: argparse.Namespace) -> int:
         sys.stderr.write("evals: human_scores.jsonl still has TODO placeholders\n")
         return 1
     judge = read_scores(run_dir / "scores.jsonl", meta.suite, ids)
-    value = agreement(owner, judge)
-    line = calibration_line(len(owner), value)
-    rubric = RUBRICS_DIR / f"{meta.suite}.md"
-    with rubric.open("a", encoding="utf-8") as file:
+    result = calibrate_judge(meta.suite, owner, judge)
+    line = calibration_line(result)
+    with (RUBRICS_DIR / f"{meta.suite}.md").open("a", encoding="utf-8") as file:
         file.write(line + "\n")
+    calibration_path(meta.suite).write_text(result.model_dump_json(indent=1), encoding="utf-8")
     sys.stdout.write(line + "\n")
-    return 0 if passed(len(owner), value) else 1
+    return 0 if result.passed else 1
 
 
 def main() -> int:
