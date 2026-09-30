@@ -32,6 +32,11 @@ def base_case(**expect: Any) -> GoldenCase:
             "recommendations": {"min": 1, "max": 3, "kinds_required": ["COMPETITIVE_RESPONSE"]},
             "must_include_any": ["value"],
             "must_not_include": ["50%"],
+            "data_gaps_any": ["pricing"],
+            "channels_only": ["LINKEDIN"],
+            "each_cites_prefix": ["act_"],
+            "implications_min": 0,
+            "implications_max": 1,
         }
         | expect,
     )
@@ -40,6 +45,8 @@ def base_case(**expect: Any) -> GoldenCase:
 def base_run() -> dict[str, Any]:
     output = strategy_output(recommendation(1, TRIGGER)).model_dump(mode="json")
     output["answer"] = "Compete on value; the package moved from 5200 to 5600."
+    output["data_gaps"] = ["No pricing history before this change"]
+    output["recommendations"][0]["channel"] = "LINKEDIN"
     return {
         "agent": "STRATEGY",
         "intent": "RESPONSE_PLAN",
@@ -123,6 +130,18 @@ FAILURES: list[tuple[str, dict[str, Any] | None, list[str] | None]] = [
     ),
     ("phrases", with_output(lambda o: o.update(answer="Match their 50% discount.")), None),
     ("budget", with_run(lambda r: r.update(skills_loaded=["a", "b", "c", "d"])), None),
+    ("data_gaps", with_output(lambda o: o.update(data_gaps=["No influencer data"])), None),
+    ("implications", with_output(lambda o: o.update(implications=["a", "b"])), None),
+    ("channels", with_output(lambda o: o["recommendations"][0].update(channel="X")), None),
+    (
+        "each_cites",
+        with_output(
+            lambda o: o["recommendations"][0]["evidence"][0].update(
+                id="cmp_marketing_eye", kind="company"
+            )
+        ),
+        ["cmp_marketing_eye", TRIGGER],
+    ),
 ]
 
 
@@ -148,6 +167,11 @@ def test_checks_without_expectations_are_not_applicable() -> None:
         recommendations=None,
         must_include_any=[],
         must_not_include=[],
+        data_gaps_any=[],
+        channels_only=[],
+        each_cites_prefix=[],
+        implications_min=None,
+        implications_max=None,
     )
     applicable = set(run_checks(case, record(base_run()), FIXTURE))
     assert applicable == {

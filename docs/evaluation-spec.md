@@ -136,6 +136,10 @@ Upstream cases may make up **no more than 30%** of any suite.
     "proposed_actions_any": [],            // execution: ["schedule_social_post"]
     "must_include_any": ["price", "value"],   // case-insensitive, in answer/rationale/body
     "must_not_include": ["$1,500"],         // e.g. invented numbers
+    "data_gaps_any": [],                    // a data_gaps entry mentions one (e.g. recency)
+    "channels_only": [],                    // every recommendation targets one of these
+    "each_cites_prefix": [],                // every recommendation cites e.g. "inf_"
+    "implications_min": null, "implications_max": null,
     "max_tool_calls": 12
   },
   "rubric_focus": ["grounding", "actionability"],   // which judge dimensions weigh more
@@ -169,7 +173,11 @@ A case **passes** only if every applicable check passes.
 | `originality` | Longest common word-run with the source < 12, and 5-gram Jaccard < 0.15 |
 | `no_invented_numbers` | Every number in the body/rationale appears in the evidence, the company context, the user message or `assumptions` |
 | `competitor_naming` | For `CREATE_SIMILAR` cases, no competitor names appear unless the message asked for them |
-| `phrases` | `must_include_any` / `must_not_include` |
+| `phrases` | `must_include_any` / `must_not_include`, over the answer, implications, recommendations and `next_action` briefs |
+| `data_gaps` | A `data_gaps` entry contains one of `data_gaps_any` (case-insensitive) |
+| `channels` | Every recommendation's `channel` is in `channels_only` |
+| `each_cites` | Every recommendation cites an ID starting with one of `each_cites_prefix` |
+| `implications` | The implication count is within `implications_min`–`implications_max` |
 | `budget` | Tool calls ≤ `max_tool_calls`, and skill loads ≤ 3 |
 
 ### 5.2 LLM-as-judge (`judge.py`)

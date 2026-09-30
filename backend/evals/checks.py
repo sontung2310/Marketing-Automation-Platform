@@ -110,6 +110,34 @@ def phrases(e: Evaluated) -> bool:
     return ok_include and not any(p.lower() in text for p in e.case.expect.must_not_include)
 
 
+def data_gaps(e: Evaluated) -> bool:
+    assert e.output is not None
+    gaps = " ".join(e.output.data_gaps).lower()
+    return any(phrase.lower() in gaps for phrase in e.case.expect.data_gaps_any)
+
+
+def channels(e: Evaluated) -> bool:
+    assert e.output is not None
+    allowed = set(e.case.expect.channels_only)
+    return all(r.channel is not None and r.channel in allowed for r in e.output.recommendations)
+
+
+def each_cites(e: Evaluated) -> bool:
+    assert e.output is not None
+    prefixes = tuple(e.case.expect.each_cites_prefix)
+    return all(
+        any(evidence.id.startswith(prefixes) for evidence in r.evidence)
+        for r in e.output.recommendations
+    )
+
+
+def implications(e: Evaluated) -> bool:
+    assert e.output is not None
+    count, expect = len(e.output.implications), e.case.expect
+    low = expect.implications_min is None or count >= expect.implications_min
+    return low and (expect.implications_max is None or count <= expect.implications_max)
+
+
 def skills(e: Evaluated) -> bool:
     assert e.output is not None
     used = {s for r in e.output.recommendations for s in r.skills_used}
@@ -182,6 +210,15 @@ CHECKS: dict[str, Check] = {
     "phrases": when(
         lambda e: e.case.expect.must_include_any or e.case.expect.must_not_include,
         needs_output(phrases),
+    ),
+    "data_gaps": when(lambda e: e.case.expect.data_gaps_any, needs_output(data_gaps)),
+    "channels": when(lambda e: e.case.expect.channels_only, needs_output(channels)),
+    "each_cites": when(lambda e: e.case.expect.each_cites_prefix, needs_output(each_cites)),
+    "implications": when(
+        lambda e: (
+            e.case.expect.implications_min is not None or e.case.expect.implications_max is not None
+        ),
+        needs_output(implications),
     ),
     "budget": budget,
 }

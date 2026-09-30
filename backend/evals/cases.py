@@ -51,6 +51,11 @@ class Expect(Strict):
     proposed_actions_any: list[str] = []
     must_include_any: list[str] = []
     must_not_include: list[str] = []
+    data_gaps_any: list[str] = []  # a data_gaps entry mentions one of these (e.g. recency)
+    channels_only: list[str] = []  # every recommendation targets one of these channels
+    each_cites_prefix: list[str] = []  # every recommendation cites an ID with one of these
+    implications_min: int | None = None
+    implications_max: int | None = None
     max_tool_calls: int = 12
 
 
