@@ -43,3 +43,11 @@ def test_duplicate_ids_and_bad_lines_are_rejected(tmp_path: Path) -> None:
     bad = case("ST-BAD") | {"unexpected": True}
     with pytest.raises(CaseFileError, match=r"strategy\.jsonl:1"):
         parse_cases(write(tmp_path, bad))
+
+
+def test_ids_inside_session_history_must_exist(tmp_path: Path) -> None:
+    history = [{"recommendations": [{"evidence": [{"id": "act_typo_404"}]}]}]
+    line = case("ST-MULTI") | {"input": {"message": "Drop #1", "session_history": history}}
+    cases = parse_cases(write(tmp_path, line))
+    with pytest.raises(CaseFileError, match="act_typo_404"):
+        check_fixture_ids(cases, load_fixture("intelligence_v1"))

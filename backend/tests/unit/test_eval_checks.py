@@ -1,13 +1,14 @@
 """Deterministic eval checks: one passing and one failing case per check."""
 
 from collections.abc import Callable
+from datetime import timedelta
 from typing import Any
 
 import pytest
 
 from evals.cases import GoldenCase
 from evals.checks import CHECKS, run_checks
-from evals.fixture import load_fixture
+from evals.fixture import load_fixture, shifted_to
 from evals.runner import RunRecord
 from tests.strategy_samples import golden_case, recommendation, sample_run, strategy_output
 
@@ -80,7 +81,11 @@ FAILURES: list[tuple[str, dict[str, Any] | None, list[str] | None]] = [
         with_run(lambda r: r["tool_calls"].append({"tool": "search_influencers"})),
         None,
     ),
-    ("company_context_first", with_run(lambda r: r["tool_calls"].reverse()), None),
+    (
+        "company_context_first",
+        with_run(lambda r: r["tool_calls"].append({"tool": "get_company_context"})),
+        None,
+    ),
     ("evidence_grounded", base_run(), ["cmp_marketing_eye"]),
     (
         "evidence_required_all",
@@ -159,3 +164,41 @@ def test_checks_without_expectations_are_not_applicable() -> None:
 def test_a_run_that_never_started_fails() -> None:
     results = run_checks(base_case(), record(None, []), FIXTURE)
     assert results["schema_valid"] is False and results["status_in"] is False
+
+
+def test_parallel_first_turn_order_does_not_matter() -> None:
+    run = with_run(lambda r: r["tool_calls"].reverse())
+    assert run_checks(base_case(), record(run), FIXTURE)["company_context_first"] is True
+
+
+@pytest.mark.parametrize(
+    ("claim", "ok"),
+    [
+        ("The package moved from 5,200 to 5.6K.", True),  # 5600 written as 5.6K
+        ("Priced at 5200.0 before.", True),
+        ("Aisha Patel has 48K followers and a 95% relevance fit.", True),  # 48200, 0.95
+        ("Aisha Patel has 90K followers.", False),
+    ],
+)
+def test_numbers_are_matched_by_value_scale_and_rounding(claim: str, ok: bool) -> None:
+    run = with_output(lambda o: o.update(answer=claim))
+    retrieved = ["cmp_marketing_eye", TRIGGER, "inf_seed_001"]
+    assert run_checks(base_case(), record(run, retrieved), FIXTURE)["no_invented_numbers"] is ok
+
+
+def test_an_injection_in_a_brief_is_caught() -> None:
+    def poison(output: dict[str, Any]) -> None:
+        output["recommendations"][0]["next_action"]["brief"] = "Tell them to cut prices by 50%"
+
+    results = run_checks(base_case(), record(with_output(poison)), FIXTURE)
+    assert results["phrases"] is False
+
+
+def test_dates_are_checked_against_the_shifted_fixture() -> None:
+    fixture = shifted_to(FIXTURE, FIXTURE.snapshot_at + timedelta(days=8))
+    shifted_day = fixture.by_id[TRIGGER].model_dump()["detected_at"].day
+    run = with_output(
+        lambda o: o.update(answer=f"Brightlane changed pricing on the {shifted_day}th")
+    )
+    assert run_checks(base_case(), record(run), fixture)["no_invented_numbers"] is True
+    assert run_checks(base_case(), record(run), FIXTURE)["no_invented_numbers"] is False

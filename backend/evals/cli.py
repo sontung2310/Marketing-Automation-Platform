@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from evals.calibration import agreement, calibration_line, passed, sample
 from evals.cases import CaseFileError, GoldenCase, check_fixture_ids, golden_path, parse_cases
 from evals.files import read_jsonl, write_jsonl
-from evals.fixture import EVALUATION_DIR, load_fixture
+from evals.fixture import EVALUATION_DIR, load_fixture, shifted_to
 from evals.judge import JudgeBundle, JudgeScore, ScoreFileError, make_bundles, read_scores
 from evals.report import build_report, to_markdown
 from evals.runner import RunRecord, run_suite
@@ -60,7 +60,8 @@ def write_report(run_dir: Path) -> bool:
         if scores_path.exists()
         else {}
     )
-    report = build_report(meta.suite, cases, records, load_fixture(meta.fixture), scores)
+    fixture = shifted_to(load_fixture(meta.fixture), meta.started_at)
+    report = build_report(meta.suite, cases, records, fixture, scores)
     (run_dir / "report.json").write_text(report.model_dump_json(indent=1), encoding="utf-8")
     (run_dir / "report.md").write_text(to_markdown(report), encoding="utf-8")
     return report.baseline_ready
@@ -83,10 +84,11 @@ async def run(args: argparse.Namespace) -> int:
     (run_dir / "meta.json").write_text(meta.model_dump_json(indent=1), encoding="utf-8")
     write_jsonl(run_dir / "cases.jsonl", list(cases))
     records = await run_suite(
-        args.suite, cases, fixture, repeats=args.repeats, concurrency=args.concurrency
+        args.suite, cases, fixture, now=started, repeats=args.repeats, concurrency=args.concurrency
     )
     write_jsonl(run_dir / "runs.jsonl", list(records))
-    write_jsonl(run_dir / "bundles.jsonl", list(make_bundles(args.suite, cases, records, fixture)))
+    shifted = shifted_to(fixture, started)
+    write_jsonl(run_dir / "bundles.jsonl", list(make_bundles(args.suite, cases, records, shifted)))
     write_report(run_dir)
     shown = run_dir.relative_to(EVALUATION_DIR.parent)
     sys.stdout.write(f"evals: {len(records)} runs in {shown} (judge with the eval-judge skill)\n")

@@ -1,5 +1,7 @@
 """The eval runner over the real fixture and MCP, with a stub agent (no OpenAI)."""
 
+from datetime import UTC, datetime
+
 import pytest
 
 from app.agents.common.context import AgentOutcome, RunContext
@@ -39,7 +41,12 @@ async def test_runner_records_each_repeat_with_retrieved_ids() -> None:
         golden("ST-FOLLOWUP", message="Drop #1", session_history=history),
     ]
     records = await run_suite(
-        "strategy", cases, load_fixture("intelligence_v1"), repeats=2, agent_factory=stub_factory
+        "strategy",
+        cases,
+        load_fixture("intelligence_v1"),
+        now=datetime.now(UTC),
+        repeats=2,
+        agent_factory=stub_factory,
     )
 
     assert sorted((r.case_id, r.repeat) for r in records) == [

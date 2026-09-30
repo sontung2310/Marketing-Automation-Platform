@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from app.agents.common.mcp import collect_ids
 from app.orchestration.routing import Trigger
 from evals.files import read_jsonl
 from evals.fixture import EVALUATION_DIR, FixtureBundle
@@ -71,7 +72,8 @@ class GoldenCase(Strict):
         ids |= set(self.expect.evidence_forbidden)
         if self.input.trigger is not None:
             ids.add(self.input.trigger.ref_id)
-        return ids
+        # Follow-ups may re-cite what the history cited, so those IDs must exist too.
+        return ids | collect_ids(self.input.session_history)
 
 
 class CaseFileError(ValueError):

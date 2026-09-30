@@ -5,7 +5,7 @@ Timestamps are stored as authored and shifted to "now" on install, so recency ru
 """
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime
 from functools import cached_property
 from pathlib import Path
 
@@ -73,9 +73,14 @@ def load_fixture(version: str) -> FixtureBundle:
     return FixtureBundle.model_validate(json.loads(fixture_path(version).read_text("utf-8")))
 
 
-async def install_fixture(database: Database, fixture: FixtureBundle) -> None:
-    """Write the fixture, shifted to now, into an empty database."""
-    shifted = shift_datetimes(fixture, offset=datetime.now(UTC) - fixture.snapshot_at)
+def shifted_to(fixture: FixtureBundle, when: datetime) -> FixtureBundle:
+    """The fixture as if snapshotted at `when` (an eval run's start). The agent, the checks
+    and the judge must all read this same shifted copy."""
+    return shift_datetimes(fixture, offset=when - fixture.snapshot_at)
+
+
+async def install_fixture(database: Database, shifted: FixtureBundle) -> None:
+    """Write an already-shifted fixture into an empty database."""
     await ensure_indexes(database)
     await CompaniesRepository(database).insert_many(shifted.companies)
     await CompetitorsRepository(database).insert_many(shifted.competitors)

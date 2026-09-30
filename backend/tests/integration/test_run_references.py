@@ -10,7 +10,7 @@ from app.core.db import Document
 from app.core.errors import NotFoundError
 from app.orchestration.references import RunRepositories, open_session, resolve_trigger
 from app.orchestration.routing import Trigger, TriggerAction, TriggerKind
-from evals.fixture import install_fixture, load_fixture
+from evals.fixture import install_fixture, load_fixture, shifted_to
 from evals.runtime import throwaway_database
 
 pytestmark = pytest.mark.integration
@@ -58,7 +58,7 @@ async def test_eval_fixture_installs_shifted_to_now() -> None:
         pytest.skip("MONGODB_URI is not configured")
     fixture = load_fixture("intelligence_v1")
     async with throwaway_database("ma_fixture") as database:
-        await install_fixture(database, fixture)
+        await install_fixture(database, shifted_to(fixture, datetime.now(UTC)))
         assert await database["competitor_activities"].count_documents({}) == len(
             fixture.competitor_activities
         )

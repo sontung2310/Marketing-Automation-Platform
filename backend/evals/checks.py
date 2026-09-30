@@ -5,6 +5,7 @@ Execution-only checks (deliverable shape, originality, competitor naming) arrive
 """
 
 import json
+import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -20,8 +21,11 @@ from evals.runner import RunRecord
 
 # ponytail: single digits are skipped because counts and ordinals ("3 posts", "#2") are
 # not claims; a stricter rule would need the model to cite every number's source.
-NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM%])?")
 MIN_CHECKED_NUMBER = 10
+SCALE = {"k": 1e3, "m": 1e6}
+# "48K followers" for 48,200 is a rounding, not an invention.
+ROUNDING_TOLERANCE = 0.01
 
 
 @dataclass(frozen=True)
@@ -49,16 +53,28 @@ def evaluate_inputs(case: GoldenCase, record: RunRecord, fixture: FixtureBundle)
 
 
 def claim_text(e: Evaluated) -> str:
+    """Everything the agent asserts, including briefs (they become Execution's instructions)."""
     assert e.output is not None
     parts = [e.output.answer, *e.output.implications]
-    parts += [f"{r.title} {r.rationale}" for r in e.output.recommendations]
+    for r in e.output.recommendations:
+        parts += [r.title, r.rationale, r.next_action.brief if r.next_action else ""]
     return " ".join(parts)
 
 
-def numbers(text: str) -> set[float]:
-    """Numeric values, so 5200, 5,200 and 5200.0 are the same claim."""
-    found = {float(m.replace(",", "")) for m in NUMBER.findall(text)}
-    return {n for n in found if n >= MIN_CHECKED_NUMBER}
+def claimed_values(text: str) -> list[set[float]]:
+    """Each checked number as the values it may stand for: 48.2K -> 48200, 95% -> 95 or 0.95."""
+    claims = []
+    for digits, suffix in NUMBER.findall(text):
+        value = float(digits.replace(",", ""))
+        if value < MIN_CHECKED_NUMBER:
+            continue
+        value *= SCALE.get(suffix.lower(), 1)
+        claims.append({value, value / 100} if suffix == "%" else {value})
+    return claims
+
+
+def source_values(text: str) -> list[float]:
+    return [float(digits.replace(",", "")) for digits, _ in NUMBER.findall(text)]
 
 
 def no_invented_numbers(e: Evaluated) -> bool:
@@ -68,7 +84,11 @@ def no_invented_numbers(e: Evaluated) -> bool:
         if (record := e.fixture.record(record_id)) is not None:
             sources.append(json.dumps(record))
     sources += [json.dumps(c.model_dump(mode="json")) for c in e.fixture.companies]
-    return numbers(claim_text(e)) <= numbers(" ".join(sources))
+    known = source_values(" ".join(sources))
+    return all(
+        any(math.isclose(c, k, rel_tol=ROUNDING_TOLERANCE) for c in claim for k in known)
+        for claim in claimed_values(claim_text(e))
+    )
 
 
 def rec_bounds(e: Evaluated) -> bool:
@@ -137,9 +157,9 @@ CHECKS: dict[str, Check] = {
         lambda e: e.case.expect.tools_forbidden,
         lambda e: not set(e.case.expect.tools_forbidden) & set(e.tools),
     ),
-    "company_context_first": needs_output(
-        lambda e: e.tools.count("get_company_context") == 1 and e.tools[0] == "get_company_context"
-    ),
+    # §5.1: called before output and at most once. Order within the first turn is not
+    # checked: parallel tool calls complete in any order.
+    "company_context_first": needs_output(lambda e: e.tools.count("get_company_context") == 1),
     "evidence_grounded": needs_output(
         lambda e: e.cited <= set(e.record.retrieved_ids) and e.cited <= e.fixture.ids()
     ),

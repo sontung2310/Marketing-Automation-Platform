@@ -14,7 +14,7 @@ from app.intelligence.models import AgentName, Run, RunStatus, Session
 from app.orchestration.references import RunRepositories
 from app.orchestration.run_service import AgentFn, RunService
 from evals.cases import GoldenCase
-from evals.fixture import FixtureBundle, install_fixture
+from evals.fixture import FixtureBundle, install_fixture, shifted_to
 from evals.runtime import serve_mcp, throwaway_database
 
 # Which agent serves each suite while the chat classifier (Step 6) does not exist.
@@ -58,6 +58,7 @@ async def run_suite(
     cases: list[GoldenCase],
     fixture: FixtureBundle,
     *,
+    now: datetime,
     repeats: int,
     concurrency: int = 4,
     agent_factory: AgentFactory = real_agents,
@@ -66,9 +67,11 @@ async def run_suite(
     agent_name = SUITE_AGENT[suite]
     retrieved: dict[str, list[str]] = {}
     async with throwaway_database("marketing_automation_eval") as database:
-        await install_fixture(database, fixture)
+        # The fixture is shifted to `now` and the MCP clock frozen there, so recency windows
+        # (30-day lookback, 21-day staleness) cannot drift during a long suite.
+        await install_fixture(database, shifted_to(fixture, now))
         repositories = RunRepositories.for_database(database)
-        async with serve_mcp(database, company_id) as mcp_url:
+        async with serve_mcp(database, company_id, now=lambda: now) as mcp_url:
             agent = agent_factory(mcp_url)
 
             async def capturing(context: RunContext, message: str | None) -> AgentOutcome:
