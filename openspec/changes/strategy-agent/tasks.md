@@ -24,7 +24,7 @@ approves.
 - [x] 3.2 Add the case loader (evaluation-spec §4 schema, fixture-ID validation) and the throwaway-database + in-process MCP runner; verify a case with a missing fixture ID fails at load time.
 - [x] 3.3 Add the deterministic checks (evaluation-spec §5.1, Strategy-applicable) with unit tests for each check's pass and fail path.
 - [x] 3.4 Add judge bundles, the score schema, `evals.cli report` and `evals.cli calibrate`; verify a report with missing scores is marked incomplete and cannot be written as a baseline.
-- [ ] 3.5 Add the `.agents/skills/eval-judge/` team skill (with its `.claude/skills/` symlink and `skills-lock.json` entry); verify by judging a 3-case run in session and building its report.
+- [x] 3.5 Add the `.agents/skills/eval-judge/` team skill with its `.claude/skills/` symlink (committed directly: `skills-lock.json` pins only GitHub-installed skills), a draft rubric and three starter golden cases; verify by judging a 3-case run in session and building its report.
 
 ## 4. 4.4 Golden dataset, calibration and baseline
 

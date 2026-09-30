@@ -49,6 +49,13 @@ def read_jsonl(path: Path, model: type[ModelT]) -> list[ModelT]:
     return [model.model_validate_json(line) for line in lines if line.strip()]
 
 
+def resolve_run_dir(value: str) -> Path:
+    """Relative run directories are read from the repository root, where `run` prints them;
+    `uv run --directory backend` would otherwise resolve them inside backend/."""
+    path = Path(value)
+    return path if path.is_absolute() else EVALUATION_DIR.parent / path
+
+
 def write_report(run_dir: Path) -> bool:
     """Rebuild report.{json,md} from the run directory; True when baseline-ready."""
     meta = RunMeta.model_validate_json((run_dir / "meta.json").read_text("utf-8"))
@@ -89,12 +96,13 @@ async def run(args: argparse.Namespace) -> int:
     write_jsonl(run_dir / "runs.jsonl", list(records))
     write_jsonl(run_dir / "bundles.jsonl", list(make_bundles(args.suite, cases, records, fixture)))
     write_report(run_dir)
-    sys.stdout.write(f"evals: {len(records)} runs in {run_dir} (judge with the eval-judge skill)\n")
+    shown = run_dir.relative_to(EVALUATION_DIR.parent)
+    sys.stdout.write(f"evals: {len(records)} runs in {shown} (judge with the eval-judge skill)\n")
     return 0
 
 
 def report(args: argparse.Namespace) -> int:
-    run_dir = Path(args.run_dir)
+    run_dir = resolve_run_dir(args.run_dir)
     ready = write_report(run_dir)
     sys.stdout.write((run_dir / "report.md").read_text("utf-8"))
     if not args.baseline:
@@ -110,7 +118,7 @@ def report(args: argparse.Namespace) -> int:
 
 
 def calibrate(args: argparse.Namespace) -> int:
-    run_dir = Path(args.run_dir)
+    run_dir = resolve_run_dir(args.run_dir)
     meta = RunMeta.model_validate_json((run_dir / "meta.json").read_text("utf-8"))
     bundles = read_jsonl(run_dir / "bundles.jsonl", JudgeBundle)
     ids = {b.bundle_id for b in bundles}

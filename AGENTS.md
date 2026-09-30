@@ -124,7 +124,8 @@ The full procedure is in [docs/agents/collaboration.md](docs/agents/collaboratio
 ### Skills
 
 - **Team skills** live in `.agents/skills/<name>/`, with a relative symlink
-  in `.claude/skills/`, and are pinned in `skills-lock.json`.
+  in `.claude/skills/`. Skills added from GitHub are pinned in `skills-lock.json`;
+  skills written in this repo (e.g. `eval-judge`) are committed directly.
   - Add one with
     `npx skills add <owner/repo> --agent claude-code --agent codex --skill <name>`.
   - Edit only the `.agents/` copy.

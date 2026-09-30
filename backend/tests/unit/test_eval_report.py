@@ -9,7 +9,7 @@ import pytest
 from evals import cli
 from evals.calibration import agreement, sample
 from evals.cases import GoldenCase
-from evals.fixture import load_fixture
+from evals.fixture import EVALUATION_DIR, load_fixture
 from evals.judge import JudgeScore, ScoreFileError, make_bundles, read_scores
 from evals.report import build_report
 from evals.runner import RunRecord
@@ -119,3 +119,9 @@ def test_cli_refuses_a_baseline_without_scores(
     assert cli.report(args) == 1
     assert not (tmp_path / "baseline_strategy.json").exists()
     assert (run_dir / "report.md").exists()
+
+
+def test_relative_run_dirs_resolve_from_the_repository_root() -> None:
+    resolved = cli.resolve_run_dir("evaluation/reports/strategy_x")
+    assert resolved == EVALUATION_DIR / "reports" / "strategy_x"
+    assert cli.resolve_run_dir("/tmp/run") == Path("/tmp/run")
