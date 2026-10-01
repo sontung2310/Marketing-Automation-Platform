@@ -69,13 +69,13 @@ never fewer. The IDs are used in the `category` field.
 
 | Category | Scenario | Trigger | Expected status | Min |
 |---|---|---|---|---|
-| `ST-TOPIC` | "What should we post about next week?", including per-channel and per-pillar variants | chat / `USE_TREND` | OK, 3–5 `CONTENT_TOPIC` | 6 |
+| `ST-TOPIC` | "What should we post about next week?", including per-channel and per-pillar variants | chat / `USE_TREND` | OK, 1–5 `CONTENT_TOPIC` | 6 |
 | `ST-RESP-<TYPE>` | **Plan a response** for each Strategy-routed type: `NEW_PRODUCT`, `PRODUCT_REMOVED`, `PRICE_CHANGE`, `PROMOTION`, `CAMPAIGN_LAUNCH`, `PAGE_UPDATE` | `FEED_ACTION` | OK, ≥ 1 `COMPETITIVE_RESPONSE` citing the trigger | 2 per type (12) |
 | `ST-WHY-<TYPE>` | **Why it matters** for `NEW_BLOG`, `SOCIAL_POST`, `EXECUTIVE_POST` | `FEED_ACTION` | OK, 2–3 implications | 2 per type (6) |
 | `ST-INFL` | Influencer recommendations by topic, channel and region | chat | OK, cites `inf_` IDs | 4 |
 | `ST-TREND` | Trend analysis: rising, falling, per channel | chat | OK | 3 |
-| `ST-COMP` | Competitor questions: "What has Brightlane done this month?", comparisons | chat | OK, a direct answer | 3 |
-| `ST-GAP` | No data: an unknown competitor, a topic with zero trends, a window with no activity | chat | `INSUFFICIENT_DATA` or OK with `data_gaps`, **no invented evidence** | 4 |
+| `ST-COMP` | Competitor questions: "What has Brightlane done this month?", comparisons | chat | OK, a direct answer, no recommendations | 3 |
+| `ST-GAP` | No data: an unknown competitor, a topic with zero trends, a window with no activity | chat | `INSUFFICIENT_DATA` or OK with `data_gaps`, **no invented evidence**, no recommendations | 4 |
 | `ST-STALE` | Only old evidence exists (> 21 days) | chat | the `data_gaps` entry mentions recency | 2 |
 | `ST-CLAR` | Underspecified request, sent with an explicit hint | chat | `NEEDS_CLARIFICATION` | 2 |
 | `ST-MULTI` | A follow-up refining the previous run ("only LinkedIn", "drop #3") | chat + session history | OK, reflects the constraint | 2 |

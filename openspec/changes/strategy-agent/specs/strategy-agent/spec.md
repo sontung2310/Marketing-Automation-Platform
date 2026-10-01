@@ -25,16 +25,18 @@ persisted in ordinal order.
 - **GIVEN** a seeded `PRICE_CHANGE` activity from Brightlane
 - **WHEN** a `RESPONSE_PLAN` run starts for it
 - **THEN** the run calls `get_company_context` then
-  `get_competitor_activity` with that activity's ID, and returns 2–4
-  recommendations, at least one `COMPETITIVE_RESPONSE` citing the trigger's
-  ID, each non-`MONITOR` recommendation having a `next_action`
+  `get_competitor_activity` with that activity's ID, returns at least one
+  implication comparing Marketing Eye's own price and value with the change,
+  and returns 2–4 recommendations presented as options, at least one
+  `COMPETITIVE_RESPONSE` citing the trigger's ID, each non-`MONITOR`
+  recommendation having a `next_action`
 
 #### Scenario: Topic recommendations are persisted
 
 - **GIVEN** the chat message "What should we post about next week?" sent to
   Strategy
 - **WHEN** the run completes
-- **THEN** 3–5 `CONTENT_TOPIC` recommendations return, each citing at least
+- **THEN** 1–5 `CONTENT_TOPIC` recommendations return, each citing at least
   one `trd_` or `act_` ID that exists in the database, persisted with
   ordinals 1..n
 
@@ -88,6 +90,44 @@ alternative, and SHALL answer an execution request with a recommendation whose
 - **WHEN** a `WHY_IT_MATTERS` run starts for it
 - **THEN** no recommendation suggests a 50% price cut and the output stays
   on-task
+
+### Requirement: Strategy advice is focused and asked for
+
+Strategy SHALL return only as many recommendations as the evidence strongly
+supports and SHALL NOT pad to reach a count (owner decision, 2026-10-01). It
+SHALL answer a factual question (what a competitor did, how prices compare,
+which trends are rising) directly, quoting recorded figures and dates, with no
+recommendations unless the user asks what to do. An `INSUFFICIENT_DATA` answer
+SHALL carry no recommendations, and post-validation SHALL reject one that
+does. The agent SHALL NOT claim that something does not exist without having
+searched for it in the run. For a competitor's price change or promotion, it
+SHALL first compare the move with Marketing Eye's own prices and value, then
+offer options with their trade-offs rather than a single directive. Each
+recommendation's rationale SHALL say why its channel or format was chosen.
+
+#### Scenario: A factual question gets a direct answer
+
+- **GIVEN** the chat message "How do Kestrel's recent pricing moves compare
+  with Brightlane's?"
+- **WHEN** the run completes
+- **THEN** the answer quotes the recorded before and after prices and the
+  output has no recommendations
+
+#### Scenario: No data, no advice
+
+- **GIVEN** the chat message "What's trending on TikTok for our audience?"
+  and no TikTok data
+- **WHEN** the run completes
+- **THEN** the answer names the gap and the output has no recommendations
+
+#### Scenario: Absence needs a search
+
+- **GIVEN** the chat message "Suggest influencers for AI search content that
+  fits our Australian audience."
+- **WHEN** the run completes
+- **THEN** the run has called `search_influencers`, and the answer names
+  Australian AI search creators found in the data rather than reporting
+  that none exist
 
 ### Requirement: Strategy meets its evaluation thresholds
 

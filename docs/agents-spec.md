@@ -230,12 +230,12 @@ Intent-specific expectations:
 
 | Intent | Must retrieve | Output shape |
 |---|---|---|
-| `TOPIC_RECOMMENDATION` | trends + competitor activity (recent) | 3–5 recommendations of kind `CONTENT_TOPIC` |
-| `RESPONSE_PLAN` | the triggering activity (`get_competitor_activity`) + related activity by the same competitor | 2–4 recommendations. At least one must be kind `COMPETITIVE_RESPONSE`, and at least one may be "no action / monitor", with justification. |
-| `WHY_IT_MATTERS` | the triggering activity + related trends | 2–3 `implications` + 1–2 recommendations |
-| `INFLUENCER_RECOMMENDATION` | influencers (+ trends for topic fit) | 3–5 recommendations of kind `INFLUENCER_PARTNERSHIP`, each citing an `inf_` ID |
-| `TREND_ANALYSIS` | trends | `implications` + 2–3 recommendations |
-| `COMPETITOR_QUESTION` | competitor activity (summary or filtered) | a direct `answer` + optional recommendations |
+| `TOPIC_RECOMMENDATION` | trends + competitor activity (recent) | 1–5 recommendations of kind `CONTENT_TOPIC`: only as many as the evidence strongly supports |
+| `RESPONSE_PLAN` | the triggering activity (`get_competitor_activity`) + related activity by the same competitor | 1–4 recommendations. At least one must be kind `COMPETITIVE_RESPONSE`, and at least one may be "no action / monitor", with justification. For `PRICE_CHANGE` and `PROMOTION`: first an implication comparing the move with Marketing Eye's own prices and value, then 2–4 recommendations as options with their trade-offs (for example hold and monitor, adjust the offer, respond with value content). |
+| `WHY_IT_MATTERS` | the triggering activity + related trends | 2–3 `implications` + 1–2 recommendations (one is usually enough) |
+| `INFLUENCER_RECOMMENDATION` | influencers (`search_influencers` is required) (+ trends for topic fit) | 1–5 recommendations of kind `INFLUENCER_PARTNERSHIP`, each citing an `inf_` ID |
+| `TREND_ANALYSIS` | trends | `implications` + up to 3 recommendations, only when the user asks what to do |
+| `COMPETITOR_QUESTION` | competitor activity (summary or filtered) | a direct `answer` quoting recorded figures and dates; recommendations only when the user asks what to do |
 
 ### 6.2 Output schema
 
@@ -289,6 +289,15 @@ class StrategyOutput(BaseModel):
 - **No fabrication.** Numbers, dates, prices and names come from tool
   results. If the data is missing, return `INSUFFICIENT_DATA` or add a
   `data_gaps` entry.
+- **Quality over quantity.** Return only the recommendations the evidence
+  strongly supports; never pad to reach a count. Each `rationale` says why its
+  channel or format was chosen.
+- **Answer what was asked.** A factual question gets a direct answer quoting
+  the recorded figures and dates, without recommendations unless the user asks
+  what to do. An `INSUFFICIENT_DATA` answer carries no recommendations
+  (post-validation rejects one that does).
+- **Absence needs a search.** Never say something does not exist (an
+  influencer, a trend, an activity) without having searched for it in the run.
 - **Recency.** If the newest relevant evidence is more than 21 days old, say
   so in `data_gaps`.
 - **Mock awareness.** If recommendations rest mainly on `is_mock`/`is_simulated`
