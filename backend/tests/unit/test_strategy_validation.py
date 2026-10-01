@@ -41,6 +41,16 @@ def test_contract_rejects_empty_text_wrong_prefix_and_unloaded_skills() -> None:
     ]
 
 
+def test_insufficient_data_carries_no_recommendations() -> None:
+    output = strategy_output(recommendation(1, "act_1")).model_copy(
+        update={"status": "INSUFFICIENT_DATA"}
+    )
+    assert contract_problems(output, {"pricing"}) == [
+        "an INSUFFICIENT_DATA answer must have no recommendations"
+    ]
+    assert contract_problems(output.model_copy(update={"recommendations": []}), set()) == []
+
+
 def test_ensure_valid_raises_the_matching_error() -> None:
     with pytest.raises(UngroundedOutputError):
         ensure_valid(strategy_output(recommendation(1, "act_x")), set(), {"pricing"})

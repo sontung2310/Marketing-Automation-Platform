@@ -26,6 +26,8 @@ EVIDENCE_PREFIX = {"activity": "act_", "trend": "trd_", "influencer": "inf_", "c
 def contract_problems(output: StrategyOutput, loaded_skills: set[str]) -> list[str]:
     """Rules the agent must fix itself: code cannot invent evidence, text or a next action."""
     problems: list[str] = []
+    if output.status == "INSUFFICIENT_DATA" and output.recommendations:
+        problems.append("an INSUFFICIENT_DATA answer must have no recommendations")
     for rec in output.recommendations:
         label = f"recommendation {rec.ordinal}"
         if not rec.title.strip() or not rec.rationale.strip():
@@ -45,7 +47,10 @@ def contract_problems(output: StrategyOutput, loaded_skills: set[str]) -> list[s
 
 
 def repair_message(unknown: list[str], problems: list[str]) -> str:
-    lines = ["Your answer broke the output contract. Fix it and return StrategyOutput again."]
+    lines = [
+        "Your answer broke the output contract. Fix it and return StrategyOutput again. "
+        "Your earlier tool results still count; do not call get_company_context again."
+    ]
     if unknown:
         lines.append(
             f"These IDs were not retrieved in this run: {', '.join(unknown)}. "
