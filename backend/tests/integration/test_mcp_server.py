@@ -307,6 +307,7 @@ async def test_since_days_upper_bound_uses_validation_envelope(
         ("search_trends", {"query": "x" * 201}),
         ("search_influencers", {"topic": "x" * 201}),
         ("search_influencers", {"region": "x" * 201}),
+        ("search_influencers", {"region": "Australia"}),
     ],
 )
 async def test_text_and_list_bounds_use_validation_envelopes(
@@ -342,6 +343,7 @@ async def test_empty_activity_summary_remains_a_noted_summary(mcp_service: McpSe
     assert _tool_json(result) == {
         "counts": [],
         "recent_items": [],
+        "totals_by_competitor": {},
         "note": NO_RECORDS_MATCHED_NOTE,
     }
 

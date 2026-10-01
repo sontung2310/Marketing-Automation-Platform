@@ -236,7 +236,8 @@ def build_mcp_server(
         return _results_or_note(trends)
 
     @server.tool(
-        description="Search configured-company influencers with optional raw JSON filters.",
+        description="Search configured-company influencers with optional raw JSON filters. "
+        "`region` is a two-letter country code such as AU.",
         structured_output=False,
     )
     @_tool_boundary("search_influencers")

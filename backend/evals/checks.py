@@ -88,6 +88,8 @@ def no_invented_numbers(e: Evaluated) -> bool:
             sources.append(json.dumps(record))
     sources += [json.dumps(c.model_dump(mode="json")) for c in e.fixture.companies]
     sources += [json.dumps(r, default=str) for r in e.record.tool_results]  # e.g. summary counts
+    if e.record.run:  # the agent's own search window ("in the last 365 days")
+        sources += [str(call.get("args_summary", "")) for call in e.record.run.tool_calls]
     known = source_values(" ".join(sources))
     return all(
         any(math.isclose(c, k, rel_tol=ROUNDING_TOLERANCE) for c in claim for k in known)

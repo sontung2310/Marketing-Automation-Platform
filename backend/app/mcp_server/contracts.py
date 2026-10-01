@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import datetime
 from typing import Generic, TypeVar
 
@@ -116,6 +117,11 @@ class CompactActivitySummary(ModelBase):
             "counts": [count.model_dump(mode="json") for count in self.counts],
             "recent_items": [item.model_dump(mode="json") for item in self.recent_items],
         }
+        totals: Counter[str] = Counter()
+        for count in self.counts:
+            totals[count.competitor_name] += count.count
+        # "Who was most active?" is the common question; answer it without client-side sums.
+        payload["totals_by_competitor"] = dict(totals.most_common())
         if self.note is not None:
             payload["note"] = self.note
         return payload
@@ -144,7 +150,8 @@ class TrendSearchArguments(ModelBase):
 class InfluencerSearchArguments(ModelBase):
     topic: str | None = Field(default=None, max_length=MAX_SEARCH_TEXT_LENGTH)
     channels: list[Channel] | None = None
-    region: str | None = Field(default=None, max_length=MAX_SEARCH_TEXT_LENGTH)
+    # Stored as ISO 3166-1 alpha-2 ("AU"); reject "Australia" rather than silently match nothing.
+    region: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
     min_followers: int | None = Field(default=None, ge=0)
     limit: int = Field(default=DEFAULT_TOOL_LIMIT, ge=1)
 
