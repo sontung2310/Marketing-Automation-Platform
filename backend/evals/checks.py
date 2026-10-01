@@ -87,6 +87,7 @@ def no_invented_numbers(e: Evaluated) -> bool:
         if (record := e.fixture.record(record_id)) is not None:
             sources.append(json.dumps(record))
     sources += [json.dumps(c.model_dump(mode="json")) for c in e.fixture.companies]
+    sources += [json.dumps(r, default=str) for r in e.record.tool_results]  # e.g. summary counts
     known = source_values(" ".join(sources))
     return all(
         any(math.isclose(c, k, rel_tol=ROUNDING_TOLERANCE) for c in claim for k in known)

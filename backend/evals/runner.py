@@ -4,6 +4,7 @@ import asyncio
 from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import partial
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -33,6 +34,7 @@ class RunRecord(BaseModel):
     repeat: int
     run: Run | None  # None: the case could not start a run
     retrieved_ids: list[str]  # IDs the run's tools returned (for evidence_grounded)
+    tool_results: list[Any] = []  # raw tool payloads (for no_invented_numbers)
     error: str | None = None  # the case could not start a run
 
 
@@ -71,6 +73,7 @@ async def run_suite(
     company_id = get_settings().default_company_id
     agent_name = SUITE_AGENT[suite]
     retrieved: dict[str, list[str]] = {}
+    results: dict[str, list[Any]] = {}
     async with throwaway_database("marketing_automation_eval") as database:
         # The fixture is shifted to `now` and the MCP clock frozen there, so recency windows
         # (30-day lookback, 21-day staleness) cannot drift during a long suite.
@@ -84,6 +87,7 @@ async def run_suite(
                     return await agent(context, message)
                 finally:
                     retrieved[context.run_id] = sorted(context.retrieved_ids)
+                    results[context.run_id] = context.tool_results
 
             service = RunService(repositories, {agent_name: capturing})
             gate = asyncio.Semaphore(concurrency)
@@ -115,6 +119,7 @@ async def run_suite(
                         repeat=repeat,
                         run=run,
                         retrieved_ids=retrieved.get(run.id, []),
+                        tool_results=results.get(run.id, []),
                     )
 
             return await asyncio.gather(

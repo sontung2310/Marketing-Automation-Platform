@@ -61,6 +61,7 @@ _COMPACT_ACTIVITY_KEYS = {
     "title",
     "summary",
     "url",
+    "price",
     "detected_at",
     "is_mock",
     "is_simulated",

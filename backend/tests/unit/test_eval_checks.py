@@ -57,10 +57,14 @@ def base_run() -> dict[str, Any]:
     }
 
 
-def record(run: dict[str, Any] | None, retrieved: list[str] | None = None) -> RunRecord:
+def record(
+    run: dict[str, Any] | None, retrieved: list[str] | None = None, results: list[Any] | None = None
+) -> RunRecord:
     ids = ["cmp_marketing_eye", TRIGGER] if retrieved is None else retrieved
     typed = sample_run(**run) if run is not None else None
-    return RunRecord(case_id="ST-T", repeat=1, run=typed, retrieved_ids=ids)
+    return RunRecord(
+        case_id="ST-T", repeat=1, run=typed, retrieved_ids=ids, tool_results=results or []
+    )
 
 
 def with_run(change: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
@@ -233,3 +237,10 @@ def test_dates_are_checked_against_the_shifted_fixture() -> None:
 def test_policy_numbers_from_the_instructions_are_allowed() -> None:
     run = with_output(lambda o: o.update(answer="The newest evidence is older than 21 days."))
     assert run_checks(base_case(), record(run), FIXTURE)["no_invented_numbers"] is True
+
+
+def test_figures_from_tool_results_are_allowed() -> None:
+    run = with_output(lambda o: o.update(answer="Brightlane logged 29 activities."))
+    summary = [{"counts": [{"competitor_id": "cpt_brightlane", "count": 29}]}]
+    assert run_checks(base_case(), record(run), FIXTURE)["no_invented_numbers"] is False
+    assert run_checks(base_case(), record(run, results=summary), FIXTURE)["no_invented_numbers"]

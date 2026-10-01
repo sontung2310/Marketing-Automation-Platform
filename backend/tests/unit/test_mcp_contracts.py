@@ -111,6 +111,7 @@ def test_compact_projections_keep_the_documented_fields() -> None:
         "title",
         "summary",
         "url",
+        "price",
         "detected_at",
         "is_mock",
         "is_simulated",

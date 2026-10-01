@@ -19,6 +19,7 @@ from app.intelligence.models import (
     CompetitorActivity,
     Influencer,
     ModelBase,
+    Price,
     Recommendation,
     Trend,
     TrendDirection,
@@ -88,6 +89,7 @@ class CompactCompetitorActivity(ModelBase):
     title: str
     summary: str
     url: str | None
+    price: Price | None  # PRICE_CHANGE / PROMOTION only; the figure is the point
     detected_at: datetime
     is_mock: bool
     is_simulated: bool

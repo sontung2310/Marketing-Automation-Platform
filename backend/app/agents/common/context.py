@@ -25,6 +25,8 @@ class RunContext:
     mcp_calls: int = 0
     tool_calls: list[dict[str, object]] = field(default_factory=list)
     retrieved_ids: set[str] = field(default_factory=set)
+    # Raw MCP payloads, so figures the agent quotes (e.g. summary counts) can be audited.
+    tool_results: list[object] = field(default_factory=list)
     events: list[dict[str, object]] = field(default_factory=list)
 
     def emit(self, event_type: str, data: dict[str, object]) -> None:

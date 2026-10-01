@@ -67,6 +67,7 @@ class RunMCPServer(MCPServerStreamableHttp):
         result = await super().call_tool(tool_name, arguments, meta)
         payload = result_payload(result)
         self.context.retrieved_ids |= collect_ids(payload)
+        self.context.tool_results.append(payload)
         call: dict[str, object] = {
             "tool": tool_name,
             "args_summary": json.dumps(arguments or {})[:ARGS_SUMMARY_CHARS],
