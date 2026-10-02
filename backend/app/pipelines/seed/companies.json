@@ -36,6 +36,13 @@
       ]
     },
     "channels": ["LINKEDIN", "X", "WEBSITE"],
+    "tracked_keywords": [
+      "Marketing Strategy",
+      "Digital Marketing Trends",
+      "AI in Marketing",
+      "Marketing Automation",
+      "Social Media Marketing"
+    ],
     "content_pillars": ["B2B growth", "Brand clarity", "Content craft", "Marketing leadership"],
     "is_mock": true,
     "updated_at": "2026-09-22T00:00:00+00:00"

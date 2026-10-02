@@ -177,9 +177,15 @@ class Company(PrefixedModel):
     brand_voice: BrandVoice
     spokesperson: Spokesperson
     channels: list[Channel] = Field(min_length=1)
+    tracked_keywords: list[str] = Field(min_length=1, max_length=20)
     content_pillars: list[str] = Field(min_length=1)
     is_mock: bool
     updated_at: datetime
+
+    @field_validator("tracked_keywords")
+    @classmethod
+    def tracked_keywords_are_normalized(cls, value: list[str]) -> list[str]:
+        return normalize_keywords(value)
 
     @field_validator("updated_at")
     @classmethod
@@ -516,6 +522,21 @@ class SimulationTemplate(ModelBase):
         if not value.startswith("cpt_"):
             raise ValueError("competitor_id must start with 'cpt_'")
         return value
+
+
+def normalize_keywords(values: list[str]) -> list[str]:
+    """Trim, reject blanks, and drop case-insensitive repeats (first spelling wins)."""
+
+    seen: set[str] = set()
+    keywords: list[str] = []
+    for raw in values:
+        keyword = raw.strip()
+        if not keyword:
+            raise ValueError("tracked keywords must be non-empty")
+        if keyword.casefold() not in seen:
+            seen.add(keyword.casefold())
+            keywords.append(keyword)
+    return keywords
 
 
 def ensure_aware(value: datetime) -> datetime:

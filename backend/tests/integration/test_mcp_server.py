@@ -471,6 +471,7 @@ def _company(company_id: str, name: str, now: datetime) -> Company:
         brand_voice=BrandVoice(tone=["clear"], do=["help"], dont=["hype"], sample_copy=["Useful."]),
         spokesperson=Spokesperson(name="Sam Lee", role="CEO", voice_notes=["Lead with insight."]),
         channels=[Channel.LINKEDIN],
+        tracked_keywords=["AI search"],
         content_pillars=["Growth"],
         is_mock=True,
         updated_at=now,

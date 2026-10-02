@@ -13,6 +13,7 @@ from app.intelligence.models import (
     Provenance,
     SourceSystem,
     Trend,
+    normalize_keywords,
 )
 
 
@@ -32,6 +33,7 @@ def _company() -> Company:
         ),
         spokesperson={"name": "Sam Lee", "role": "CEO", "voice_notes": ["Lead with insight."]},
         channels=[Channel.LINKEDIN],
+        tracked_keywords=["AI search"],
         content_pillars=["Growth"],
         is_mock=True,
         updated_at=datetime(2026, 9, 22, tzinfo=UTC),
@@ -139,3 +141,9 @@ def test_source_derived_collections_allow_empty_optional_lists() -> None:
     assert influencer.topics == []
     assert influencer.evidence == []
     assert trend.keywords == []
+
+
+def test_tracked_keywords_trim_dedupe_and_reject_blanks() -> None:
+    assert normalize_keywords([" AI search ", "ai search", "SEO"]) == ["AI search", "SEO"]
+    with pytest.raises(ValueError):
+        normalize_keywords(["SEO", "  "])
