@@ -71,8 +71,9 @@ class RunMCPServer(MCPServerStreamableHttp):
         self.context.mcp_calls += 1
         started = time.monotonic()
         result = await super().call_tool(tool_name, arguments, meta)
-        self._results[key] = result
         payload = result_payload(result)
+        if not (isinstance(payload, dict) and "error" in payload):
+            self._results[key] = result  # a failed call (e.g. a DB blip) stays retryable
         self.context.retrieved_ids |= collect_ids(payload)
         self.context.tool_results.append(payload)
         self._trace(tool_name, arguments, payload, round((time.monotonic() - started) * 1000))

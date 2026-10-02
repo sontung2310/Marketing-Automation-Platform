@@ -65,3 +65,18 @@ async def test_a_repeated_identical_call_reuses_the_result(server: RunMCPServer)
     assert again is first and other is not first
     assert ctx.mcp_calls == 2  # the repeat costs nothing from the run's budget
     assert [c.get("cached", False) for c in ctx.tool_calls] == [False, True, False]
+
+
+async def test_an_error_result_is_not_reused(monkeypatch: pytest.MonkeyPatch) -> None:
+    error = {"error": {"code": "UPSTREAM_UNAVAILABLE", "message": "blip"}}
+
+    async def failing(
+        self: MCPServerStreamableHttp, name: str, args: dict[str, Any] | None, meta: object = None
+    ) -> CallToolResult:
+        return CallToolResult(content=[TextContent(type="text", text=json.dumps(error))])
+
+    monkeypatch.setattr(MCPServerStreamableHttp, "call_tool", failing)
+    server = RunMCPServer(context(), "http://mcp.test/mcp")
+    await server.call_tool("search_trends", {})
+    await server.call_tool("search_trends", {})
+    assert server.context.mcp_calls == 2  # the retry reached the server
