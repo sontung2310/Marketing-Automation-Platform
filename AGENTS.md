@@ -19,7 +19,7 @@ one-page React UI. Start with [docs/specs.md](docs/specs.md).
 Update this section before adding a top-level folder or a backend module.
 
 ```text
-backend/                 Python service: pyproject.toml, uv.lock, Dockerfile (build context)
+backend/                 Python service: pyproject.toml, uv.lock, Dockerfile (build context), index.py (Vercel entrypoint), openapi.json (exported API contract)
   app/                   the `app` package
     core/                settings, Mongo client, logging, domain errors
     intelligence/        domain models + repositories/ (the only runtime Mongo queries)
@@ -36,7 +36,7 @@ backend/                 Python service: pyproject.toml, uv.lock, Dockerfile (bu
 frontend/                React + Vite service (npm workspace)
   src/                   api/ (sole backend caller), components/ds/, features/, hooks/, lib/, styles/theme.css (sole token source)
 evaluation/              agent evaluation data: golden/, fixtures/, rubrics/, reports/
-tools/                   repo tooling in Node (OpenSpec conflict check)
+tools/                   repo tooling in Node (OpenSpec conflict check, API type drift check)
 docs/  openspec/         specs and plan; specs/ (current behaviour), changes/ (proposed)
 .agents/skills/          team skills (source of truth); .claude/skills/ links to them
 ```

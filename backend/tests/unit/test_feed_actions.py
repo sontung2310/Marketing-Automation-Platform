@@ -3,8 +3,8 @@ from datetime import UTC, datetime
 import pytest
 
 from app.core.errors import ValidationError
-from app.intelligence.models import ActivityType, AgentName, Channel, DeliverableType
-from app.orchestration.feed import ACTIVITY_ACTIONS, ItemActionName, decode_cursor
+from app.intelligence.models import ActivityType, AgentName, Channel, DeliverableType, Run
+from app.orchestration.feed import ACTIVITY_ACTIONS, ItemActionName, decode_cursor, run_label
 
 EXECUTION_TYPES = {ActivityType.NEW_BLOG, ActivityType.SOCIAL_POST, ActivityType.EXECUTIVE_POST}
 
@@ -55,3 +55,27 @@ def test_garbage_cursor_is_a_validation_error() -> None:
         datetime(2026, 10, 2, tzinfo=UTC),
         "act_1",
     )
+
+
+def _run(trigger: dict[str, object]) -> Run:
+    return Run.model_validate(
+        {
+            "_id": "run_1",
+            "session_id": "ses_1",
+            "agent": "STRATEGY",
+            "intent": "RESPONSE_PLAN",
+            "trigger": trigger,
+            "status": "SUCCEEDED",
+            "started_at": datetime(2026, 10, 2, tzinfo=UTC),
+        }
+    )
+
+
+def test_run_label_names_the_button_and_the_item_type() -> None:
+    feed_run = _run({"kind": "FEED_ACTION", "ref_id": "act_1", "action": "RESPONSE_PLAN"})
+    assert run_label(feed_run, {"act_1": ActivityType.PRICE_CHANGE}) == (
+        "Plan a response · PRICE_CHANGE"
+    )
+    trend_run = _run({"kind": "TREND", "ref_id": "trd_1", "action": "USE_TREND"})
+    assert run_label(trend_run, {}) == "Get topic ideas · TREND"
+    assert run_label(_run({}), {}) == "RESPONSE_PLAN"

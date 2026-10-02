@@ -34,6 +34,7 @@ from app.intelligence.models import (
     Price,
     RecommendationEvidence,
     RecommendationStatus,
+    Run,
     SamplePost,
     Service,
     SimulationTemplate,
@@ -377,18 +378,44 @@ async def list_influencers(
     )
 
 
+# Run headers in the Strategy panel name the button that started the run.
+TRIGGER_LABELS: dict[str, str] = {
+    ItemActionName.CREATE_SIMILAR: "Create similar",
+    ItemActionName.WHY_IT_MATTERS: WHY_IT_MATTERS.label,
+    ItemActionName.RESPONSE_PLAN: PLAN_A_RESPONSE[0].label,
+    ItemActionName.USE_TREND: USE_TREND.label,
+    ItemActionName.DRAFT_OUTREACH: DRAFT_OUTREACH.label,
+    ItemActionName.DO_THIS: DO_THIS.label,
+}
+
+
+def run_label(run: Run, activity_types: dict[str, ActivityType]) -> str:
+    """`<button label> · <triggering item type>` (api-contract `run_label`)."""
+    action = str(run.trigger.get("action", ""))
+    ref_id = str(run.trigger.get("ref_id", ""))
+    if action not in TRIGGER_LABELS:
+        return run.intent
+    item_type = activity_types.get(ref_id) or str(run.trigger.get("kind", ""))
+    return f"{TRIGGER_LABELS[action]} · {item_type}" if item_type else TRIGGER_LABELS[action]
+
+
 async def list_recommendations(
     company_id: str, *, status: RecommendationStatus, limit: int
 ) -> Items[RecommendationItem]:
     rows = await RecommendationsRepository(get_database()).list_for_company(
         company_id, status=status, limit=limit
     )
+    ref_ids = {str(run.trigger.get("ref_id")) for _, run in rows if run.trigger.get("ref_id")}
+    activities = await CompetitorActivitiesRepository(get_database()).get_many_for_company(
+        sorted(ref_ids), company_id
+    )
+    activity_types = {activity.id: activity.activity_type for activity in activities}
     return Items[RecommendationItem](
         items=[
             RecommendationItem(
                 **recommendation.model_dump(include=set(RecommendationItem.model_fields)),
                 created_at=run.started_at,
-                run_label=run.intent,
+                run_label=run_label(run, activity_types),
                 actions=[DO_THIS],
             )
             for recommendation, run in rows

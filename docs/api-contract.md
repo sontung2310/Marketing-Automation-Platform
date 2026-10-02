@@ -39,8 +39,8 @@ Returns `200 {status: "ok", mongo: "ok|down", mcp: "ok|down", openai: "configure
 
 ### `GET /company`
 Returns `200` with the company context (see data-contract §3.1), plus
-`tracked_keywords` and `last_sync_at` (the newest `ingested_at` across the
-intelligence collections).
+`tracked_keywords` and `last_sync_at` (the newest `ingested_at` of the
+company's competitor activities, or `null`).
 
 ### `PUT /company/tracked-keywords`
 Replaces the configured company's social-listening keywords.
@@ -90,10 +90,12 @@ server-side from the mapping in specs §6, so the UI holds no routing logic.
 Request: `{ "up_to": "ISO timestamp" }`. Response: `200 {updated: n}`.
 
 ### `GET /activities/stream` (SSE)
-Emits `activity.created` with the same item shape as above whenever a new
-activity is ingested or simulated. Sends a heartbeat comment every 15 s. It
-is implemented with a MongoDB change stream on `competitor_activities`, and
-falls back to 3 s polling when change streams are unavailable.
+Emits `activity.created` with the same item shape as above, and the item `id`
+as the event ID, for every activity detected after the stream opened. Sends a
+heartbeat comment every 15 s. It polls `competitor_activities` every 3 s and
+closes itself after about 55 s, because the API runs on serverless functions
+with a bounded duration; `EventSource` reconnects on its own, and a reconnect
+with `Last-Event-ID` resumes after that item with no duplicates.
 
 ### `POST /activities/simulate`
 Request: `{ "activity_type": "EXECUTIVE_POST" | null, "competitor_id": "cpt_…" | null }`
@@ -114,15 +116,18 @@ Query: `topic`, `channels`, `limit`. Response: `200 {items: [influencer]}`, sort
 by `relevance_score` desc. Each item has `actions: [{action: "DRAFT_OUTREACH", label: "Draft outreach", agent: "EXECUTION"}]`.
 
 ### `GET /recommendations`
-Query: `status` (default `OPEN`), `limit`. Returns the persisted Strategy
-recommendations, newest run first, for the Strategy panel. Each item includes
-`run_id`, `ordinal`, `next_action` and `run_label`, plus
+Query: `status` (default `OPEN`), `limit` (default 20, max 50). Returns the
+persisted Strategy recommendations, newest run first, for the Strategy panel.
+Each item includes `run_id`, `ordinal`, `next_action`, `created_at` (the run's
+start) and `run_label`, plus
 `actions: [{action: "DO_THIS", label: "Do this", agent: "EXECUTION"}]`.
 
 `run_label` names the run that produced the recommendation, for the Strategy
 panel's grouping header — the intent and the triggering item's type, for
 example `Plan a response · PRICE_CHANGE`. It is derived server-side from the
-run's `intent` and `trigger`; the UI groups by `run_id` when it is absent.
+run's `trigger` (the button's label, then the activity type, or the trigger
+kind for trends and influencers) and falls back to the `intent` for chat runs;
+the UI groups by `run_id` when it is absent.
 
 ## Agent runs
 

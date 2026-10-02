@@ -168,3 +168,11 @@ class CompetitorActivitiesRepository(TenantRepository[CompetitorActivity]):
         )
         value = document.get("ingested_at") if document else None
         return value if isinstance(value, datetime) else None
+
+    async def get_many_for_company(
+        self, activity_ids: list[str], company_id: str
+    ) -> list[CompetitorActivity]:
+        if not activity_ids:
+            return []
+        documents = self.collection.find({"_id": {"$in": activity_ids}, "company_id": company_id})
+        return [self.model_type.model_validate(document) async for document in documents]
