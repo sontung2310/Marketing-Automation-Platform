@@ -31,7 +31,7 @@ approves.
 - [x] 4.1 Draft `evaluation/golden/strategy.jsonl` (≥ 48 cases meeting every evaluation-spec §3.2 minimum, ≤ 30% upstream-mined, `demo-path` tags) and `evaluation/rubrics/strategy.md`; run a fresh-subagent over-fitting review; verify the loader accepts the file and the category counts meet §3.2.
 - [x] 4.2 **Owner approval:** the owner reviews and approves the golden file and rubric; apply requested changes.
 - [x] 4.3 Run the suite with `--repeats 1`, judge it, and generate the 50-sample calibration sheet; **the owner scores it**; verify agreement within ±1 is at least 80% and record it in the rubric.
-- [ ] 4.4 Run the full suite with `--repeats 1` (PoC; owner decision 2026-10-02), judge it, and fix agent behaviour until every evaluation-spec §6 Strategy threshold holds (4-C, 4-D, 4-E, 4-F); commit `evaluation/reports/baseline_strategy.json`.
+- [x] 4.4 Run the full suite with `--repeats 1` (PoC; owner decision 2026-10-02), judge it, and fix agent behaviour until every evaluation-spec §6 Strategy threshold holds (4-C, 4-D, 4-E, 4-F); commit `evaluation/reports/baseline_strategy.json`.
 
 ## 5. Documentation and close-out
 
