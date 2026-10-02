@@ -1,15 +1,17 @@
 # Roadmap — PoC Build Plan
 
-> Parent: [specs.md](specs.md). Work eligible Steps in order: one GitHub issue,
-> `feature/<step-number>-<slug>` branch and PR per Step. Work a Step's
+> Parent: [specs.md](specs.md). Work eligible Steps in order: one OpenSpec change
+> (for system-behaviour work), `feature/<step-number>-<slug>` branch and PR per
+> Step. Work a Step's
 > sub-steps in order; its PR opens only after every sub-step is implemented and
 > verified. The Step PR itself ticks every sub-step box with evidence, so the
 > ticks land on `main` with its merge. Follow AGENTS.md
 > §3 for OpenSpec scope.
 >
-> **Evidence-hold marker:** append `<!-- EVIDENCE-HOLD: #<issue> -->` to the
+> **Evidence-hold marker:** append
+> `<!-- EVIDENCE-HOLD: <which scenario evidence is missing and why> -->` to the
 > end of a sub-step line when its implementation has merged but its
-> success-criteria evidence is outstanding in that issue. Do not select or
+> success-criteria evidence is outstanding. Do not select or
 > tick a marked sub-step as new work.
 >
 > **Success criteria are real test scenarios.** Each scenario is written as
@@ -85,8 +87,8 @@ read-only tools.
 
 **Goal:** the vendored skills load safely, with per-agent allowlists.
 
-- [ ] 3.1 Vendor the 12 skills listed in agents-spec §4.1 into `backend/app/skills/library/`, with `skills.lock.json` (upstream commit and per-skill hash) and `backend/scripts/update_skills.py`.
-- [ ] 3.2 `app/skills/loader.py` (frontmatter parsing, references, the product-context note) plus the `list_skills`/`load_skill` function tools with allowlists and a per-run limit.
+- [x] 3.1 Vendor the 12 skills listed in agents-spec §4.1 into `backend/app/skills/library/`, with `backend/app/skills/skills.lock.json` (upstream commit and per-skill hash) and `backend/scripts/update_skills.py`. Evidence: `tests/unit/test_skills_integrity.py` and `npm run skills:check` in `npm run check`.
+- [x] 3.2 `app/skills/loader.py` (frontmatter parsing, references, the product-context note) plus the `load_skill` function tool and instruction catalogue with allowlists and a per-run limit. Evidence: `tests/unit/test_skills_loader.py` and `tests/unit/test_skills_tools.py`.
 
 **Success criteria**
 
@@ -94,8 +96,8 @@ read-only tools.
 |---|---|---|
 | 3-A | **Given** the vendored skills, **when** the loader starts, **then** all 12 parse with a `name` matching their folder and a non-empty description. | Unit test |
 | 3-B | **Given** the Execution allowlist, **when** `load_skill("pricing")` is called, **then** it returns a "not available to this agent" error. | Unit test |
-| 3-C | **Given** a run context, **when** `load_skill` is called a 4th time, **then** it returns `LIMIT_REACHED`. | Unit test |
-| 3-D | **Given** a hand-edited vendored file, **when** `update_skills.py --check` runs in CI, **then** a hash mismatch fails the build. | CI |
+| 3-C | **Given** a run context, **when** `load_skill` is called after 3 successful loads, **then** it returns `LIMIT_REACHED`. | Unit test |
+| 3-D | **Given** a hand-edited vendored file, **when** `npm run check` (which runs `update_skills.py --check`) runs in CI, **then** a hash mismatch fails the build. | CI |
 
 ## Step 4 — Marketing Strategy Agent + golden dataset
 

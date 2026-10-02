@@ -18,7 +18,7 @@ API ── RunService.start(trigger|message, session)
           ├─ Router → RouteDecision(agent, intent, deliverable_type?, refs)
           ├─ build RunContext (company_id, session_id, trigger_context, prior outputs referenced)
           ├─ Runner.run_streamed(agent, input, context=RunContext, max_turns=…)
-          │     ├─ tools: Intelligence MCP (read), load_skill, list_skills
+          │     ├─ tools: Intelligence MCP (read), load_skill
           │     └─ output_type = StrategyOutput | ExecutionOutput   (Pydantic, strict)
           ├─ stream events → SSE (agent.step / agent.tool / output.final)
           └─ persist run, recommendations / deliverables / proposed_actions
@@ -35,7 +35,7 @@ API ── RunService.start(trigger|message, session)
   clicked activity, trend, influencer or recommendation, as a compact JSON
   block labelled `UNTRUSTED_SOURCE_CONTENT` when it contains third-party text.
 - **Limits.** `max_turns=16`, at most 12 MCP tool calls and at most 3
-  `load_skill` calls per run, enforced in the tool wrappers. When a limit is
+  successful `load_skill` calls per run, enforced in the tool wrappers. When a limit is
   hit, the tool returns a `LIMIT_REACHED` message, and the agent must finish
   with what it has and record a data gap.
 - **Company context first.** Both agents call `get_company_context` at most
@@ -102,7 +102,9 @@ Rules:
 ### 4.1 Vendored subset
 
 The source is `github.com/coreyhaines31/marketingskills`, pinned by commit in
-`backend/app/skills/library/skills.lock.json` (with a hash per skill). Each skill
+`backend/app/skills/skills.lock.json` (with a hash per skill; the upstream MIT
+`LICENSE` is kept beside the skills). `npm run check` runs `update_skills.py --check`, so a hand edit
+fails CI. Each skill
 is copied as-is into `backend/app/skills/library/<name>/`, together with its `references/` folder. Its `evals/`
 folder is kept for mining golden cases.
 
@@ -127,13 +129,20 @@ allowlist, defined in `agents/<agent>/config.py`, not in the skill files.
 ### 4.2 Loader and tools
 
 `app/skills/loader.py` parses the YAML frontmatter (`name`, `description`) and
-body. It exposes two function tools to each agent:
+body; the name must match the skill's folder. `app/skills/tools.py` gives each
+agent one function tool and one instruction helper:
 
-- `list_skills()` returns the allowlisted `[{name, description}]`. The same
-  catalogue is also embedded in the instructions.
+- `render_catalogue(allowlist)` returns the allowlisted `- name: description`
+  lines, which are embedded in the agent's instructions. There is no
+  `list_skills` tool.
 - `load_skill(name: str, reference?: str)` returns the SKILL.md body, or one
-  file from `references/`. It rejects names outside the allowlist with an
-  error, and the call counts toward the limit of 3 per run.
+  file under that skill's `references/` (paths such as `..`, absolute paths or
+  escaping symlinks are rejected). Content is capped at `SKILL_MAX_CHARS`
+  (default 25,000) with a visible truncation note. The result is JSON:
+  `{ok: true, name, description, reference, content, truncated, references}` or
+  `{ok: false, code, message}` with `code` one of `NOT_AVAILABLE`,
+  `INVALID_REFERENCE` or `LIMIT_REACHED`. Only successful loads count toward
+  the limit of 3 per run; the tool never raises into the agent.
 
 Skill text references `.agents/product-marketing.md` as the product-context
 file. The loader appends one note: *"In this platform, product context comes

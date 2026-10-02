@@ -22,8 +22,9 @@
     "format:check": "uv run --directory backend ruff format --check . && npm run format:check -w frontend",
     "build": "npm run build -w frontend",
     "openspec": "openspec",
+    "skills:check": "uv run --directory backend python scripts/update_skills.py --check",
     "openspec:check": "openspec validate --all --strict --no-interactive && node tools/openspec-conflicts.mjs",
-    "check": "npm run typecheck && npm run test && npm run lint && npm run format:check && npm run openspec:check && npm run test:e2e",
+    "check": "npm run typecheck && npm run test && npm run lint && npm run format:check && npm run skills:check && npm run openspec:check && npm run test:e2e",
     "prepare": "husky",
     "test:e2e": "npm run test:e2e -w frontend"
   },

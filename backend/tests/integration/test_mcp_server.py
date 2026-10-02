@@ -12,12 +12,12 @@ from uuid import uuid4
 
 import pytest
 import uvicorn
+from agents import Agent, RunContextWrapper
 from agents.mcp import MCPServerStreamableHttp
 from mcp.types import CallToolResult, TextContent
 from pymongo import ASCENDING
 from pymongo.asynchronous.database import AsyncDatabase
 
-from agents import Agent, RunContextWrapper
 from app.core import db
 from app.core.config import get_settings
 from app.intelligence.models import (
