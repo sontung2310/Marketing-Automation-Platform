@@ -49,10 +49,16 @@ class RunMCPServer(MCPServerStreamableHttp):
             client_session_timeout_seconds=30,
         )
         self.context = context
+        # Reads are idempotent within a run: a repeated identical call reuses the result.
+        self._results: dict[str, CallToolResult] = {}
 
     async def call_tool(
         self, tool_name: str, arguments: dict[str, Any] | None, meta: dict[str, Any] | None = None
     ) -> CallToolResult:
+        key = f"{tool_name}:{json.dumps(arguments or {}, sort_keys=True)}"
+        if (cached := self._results.get(key)) is not None:
+            self._trace(tool_name, arguments, result_payload(cached), duration_ms=0, cached=True)
+            return cached
         if self.context.mcp_calls >= MAX_MCP_CALLS_PER_RUN:
             error = {
                 "code": "LIMIT_REACHED",
@@ -65,15 +71,28 @@ class RunMCPServer(MCPServerStreamableHttp):
         self.context.mcp_calls += 1
         started = time.monotonic()
         result = await super().call_tool(tool_name, arguments, meta)
+        self._results[key] = result
         payload = result_payload(result)
         self.context.retrieved_ids |= collect_ids(payload)
         self.context.tool_results.append(payload)
+        self._trace(tool_name, arguments, payload, round((time.monotonic() - started) * 1000))
+        return result
+
+    def _trace(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any] | None,
+        payload: object,
+        duration_ms: int,
+        cached: bool = False,
+    ) -> None:
         call: dict[str, object] = {
             "tool": tool_name,
             "args_summary": json.dumps(arguments or {})[:ARGS_SUMMARY_CHARS],
-            "duration_ms": round((time.monotonic() - started) * 1000),
+            "duration_ms": duration_ms,
             "result_count": result_count(payload),
         }
+        if cached:
+            call["cached"] = True
         self.context.tool_calls.append(call)
         self.context.emit("agent.tool", call)
-        return result

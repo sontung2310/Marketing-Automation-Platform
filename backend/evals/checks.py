@@ -49,7 +49,8 @@ def evaluate_inputs(case: GoldenCase, record: RunRecord, fixture: FixtureBundle)
             output = StrategyOutput.model_validate(run.output)
         except ValidationError:
             output = None
-    tools = [str(call["tool"]) for call in run.tool_calls] if run else []
+    # A cached repeat (agents/common/mcp.py) never reached the MCP; it is not another call.
+    tools = [str(c["tool"]) for c in run.tool_calls if not c.get("cached")] if run else []
     cited = {e.id for r in output.recommendations for e in r.evidence} if output else set()
     return Evaluated(case, record, output, tools, cited, fixture)
 

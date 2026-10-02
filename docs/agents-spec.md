@@ -37,7 +37,9 @@ API ── RunService.start(trigger|message, session)
 - **Limits.** `max_turns=16`, at most 12 MCP tool calls and at most 3
   successful `load_skill` calls per run, enforced in the tool wrappers. When a limit is
   hit, the tool returns a `LIMIT_REACHED` message, and the agent must finish
-  with what it has and record a data gap.
+  with what it has and record a data gap. A repeated identical MCP call in the
+  same run returns the earlier result without reaching the server or counting
+  toward the limit; the trace marks it `cached: true`.
 - **Company context first.** Both agents call `get_company_context` at most
   once per run. The instructions say to call it before producing any
   customer-facing output. The evals check this.

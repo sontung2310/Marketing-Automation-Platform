@@ -55,3 +55,13 @@ async def test_call_after_the_limit_returns_limit_reached(server: RunMCPServer) 
     assert json.loads(block.text)["error"]["code"] == "LIMIT_REACHED"
     assert server.context.tool_calls == []
     assert server.context.retrieved_ids == set()
+
+
+async def test_a_repeated_identical_call_reuses_the_result(server: RunMCPServer) -> None:
+    first = await server.call_tool("get_company_context", {})
+    again = await server.call_tool("get_company_context", {})
+    other = await server.call_tool("search_trends", {"query": "ai"})
+    ctx = server.context
+    assert again is first and other is not first
+    assert ctx.mcp_calls == 2  # the repeat costs nothing from the run's budget
+    assert [c.get("cached", False) for c in ctx.tool_calls] == [False, True, False]
