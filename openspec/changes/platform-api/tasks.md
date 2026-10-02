@@ -18,7 +18,7 @@
 
 ## 4. Hosting, docs and close
 
-- [ ] 4.1 Add `backend/index.py` and the `/api` rewrite in `vercel.json`; verify locally with `docker compose up` that the UI at :5173 loads real data with fixtures off.
+- [x] 4.1 Add `backend/index.py` and the `/api` rewrite in `vercel.json`; verify locally with `docker compose up` that the UI at :5173 loads real data with fixtures off.
 - [ ] 4.2 The owner creates the Vercel API project (root `backend/`), sets `MONGODB_URI`, `MONGODB_DATABASE`, `DEFAULT_COMPANY_ID` and `OPENAI_API_KEY`, and opens Atlas network access; verify on the PR preview that `GET /api/health` reports `mongo: ok`, the feed, trends and influencers render, and Simulate → `EXECUTIVE_POST` shows a live card (screenshot in the PR).
 - [ ] 4.3 Update api-contract (stream close and resume), specs §4 deployment row, AGENTS §1, `.env.example` and roadmap (6.1, 6.3, 6.6 brought forward and ticked; 6.2, 6.4, 6.5 follow Steps 4–5); verify the docs match the code.
 - [ ] 4.4 Evaluation-spec §6 is not applicable (no agent, skill or MCP change); record that in the PR. Run `npm run check` and `npm run test:integration`; verify both are green and attach the 6-A and 6-B pass lines.
