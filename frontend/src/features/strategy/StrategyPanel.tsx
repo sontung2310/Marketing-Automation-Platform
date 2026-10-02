@@ -26,7 +26,7 @@ const PRIORITY_CLASS: Record<Recommendation["priority"], string> = {
 
 export function StrategyPanel() {
   const recommendations = useRecommendations();
-  const { runs, activeStrategyRunId } = useWorkspace();
+  const { runs, activeStrategyRunId, startRun } = useWorkspace();
   const [openId, setOpenId] = useState<string | null>(null);
 
   const items = useMemo(() => recommendations.data?.items ?? [], [recommendations.data]);
@@ -41,7 +41,11 @@ export function StrategyPanel() {
   }, [items]);
 
   const open = items.find((item) => item.id === openId) ?? null;
-  const activeRun = activeStrategyRunId ? runs[activeStrategyRunId] : undefined;
+  // The latest Strategy run stays tracked after it ends, so a failure keeps its
+  // message and Retry here instead of vanishing (ui-spec §8).
+  const latestRun = activeStrategyRunId ? runs[activeStrategyRunId] : undefined;
+  const activeRun = latestRun?.status === "RUNNING" ? latestRun : undefined;
+  const failedRun = latestRun?.error ? latestRun : undefined;
   const latestStep = activeRun?.steps.at(-1)?.label ?? "Planning";
 
   return (
@@ -58,6 +62,14 @@ export function StrategyPanel() {
         )
       }
     >
+      {failedRun?.error ? (
+        <ErrorState
+          message={failedRun.error.message}
+          retryLabel="Retry run"
+          onRetry={() => startRun(failedRun.request, failedRun.trigger_label, { retry: true })}
+        />
+      ) : null}
+
       {recommendations.isPending ? <SkeletonList rows={3} label="Loading recommendations" /> : null}
 
       {recommendations.isError ? (

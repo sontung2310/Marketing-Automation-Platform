@@ -124,7 +124,7 @@ export function ExecutionTurn({ run }: { run: RunState }) {
           <Button
             variant="quiet"
             className="text-small"
-            onClick={() => startRun(run.request, run.trigger_label)}
+            onClick={() => startRun(run.request, run.trigger_label, { retry: true })}
           >
             Retry run
           </Button>

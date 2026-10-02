@@ -122,7 +122,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (event.type === "run.completed" || event.type === "run.failed") {
           source.close();
           streams.current.delete(runId);
-          setActiveStrategyRunId((active) => (active === runId ? null : active));
           void queryClient.invalidateQueries({ queryKey: queryKeys.recommendations });
         }
       };
@@ -213,8 +212,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [runs, listen]);
 
   const startRun = useCallback(
-    (request: RunRequest, label?: string) => {
-      if (request.message) {
+    (request: RunRequest, label?: string, { retry = false } = {}) => {
+      if (request.message && !retry) {
         setTranscript((current) => [
           ...current,
           { kind: "marketer", id: `msg-${Date.now()}`, text: request.message ?? "" },

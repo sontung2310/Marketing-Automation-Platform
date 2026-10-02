@@ -122,6 +122,14 @@
   width: 440px;
 }
 
+/* The composer grows with its content from two to six body lines, then scrolls
+ * (ui-spec §7). The padding term matches the field's pt-2 + pb-1. */
+@utility composer-autogrow {
+  field-sizing: content;
+  min-height: calc(2lh + var(--spacing) * 3);
+  max-height: calc(6lh + var(--spacing) * 3);
+}
+
 /* Thin scrollbars for the independently scrolling regions. */
 @utility scrollbar-thin {
   scrollbar-width: thin;

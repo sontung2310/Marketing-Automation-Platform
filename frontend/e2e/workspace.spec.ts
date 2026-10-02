@@ -202,6 +202,48 @@ test.describe("7-C a failed run", () => {
   });
 });
 
+test.describe("7-C a failed Strategy run", () => {
+  test("keeps its message and Retry in the Strategy panel", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__fixtureRunFailure = {
+        code: "UPSTREAM_UNAVAILABLE",
+        message: "OpenAI request failed: the model is unavailable.",
+      };
+    });
+    await openWorkspace(page);
+
+    const strategy = page.getByRole("region", { name: "Strategy recommendations" });
+    await page
+      .getByRole("region", { name: "Competitor activity" })
+      .getByRole("article")
+      .filter({ hasText: "PRICE_CHANGE" })
+      .first()
+      .getByRole("button", { name: "Plan a response" })
+      .click();
+
+    const failure = strategy.getByRole("alert");
+    await expect(failure).toContainText("OpenAI request failed: the model is unavailable.");
+    await failure.getByRole("button", { name: "Retry run" }).click();
+    await expect(failure).toBeHidden({ timeout: 10_000 });
+  });
+});
+
+test.describe("7-C retrying a message run", () => {
+  test("does not echo the marketer's message twice", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__fixtureRunFailure = { code: "INTERNAL", message: "Run failed." };
+    });
+    await openWorkspace(page);
+
+    const transcript = page.getByRole("log", { name: "Execution transcript" });
+    await page.getByLabel("Message the Execution agent").fill("Write a LinkedIn post on AI search");
+    await page.getByRole("button", { name: "Send" }).click();
+    await transcript.getByRole("button", { name: "Retry run" }).click();
+    await expect(transcript.getByText("Run failed.")).toHaveCount(1);
+    await expect(transcript.getByText("Write a LinkedIn post on AI search")).toHaveCount(1);
+  });
+});
+
 test.describe("7-D the evidence loop", () => {
   test("Do this prefills the composer without sending, and evidence scrolls to its target", async ({
     page,

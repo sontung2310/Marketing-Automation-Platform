@@ -46,7 +46,8 @@ export interface WorkspaceValue {
   /** The Strategy run currently in flight, shown in the Strategy panel. */
   activeStrategyRunId: string | null;
   /** `label` is what the turn header shows; it defaults to the run's intent. */
-  startRun: (request: RunRequest, label?: string) => void;
+  /** `retry` re-sends a failed run without echoing its message again. */
+  startRun: (request: RunRequest, label?: string, options?: { retry?: boolean }) => void;
   /** Scroll to and flash-highlight an evidence target anywhere on the page. */
   highlightedId: string | null;
   highlightedKind: EvidenceKind | null;
