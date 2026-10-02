@@ -41,7 +41,7 @@ Replaces the configured company's social-listening keywords.
 Request:
 
 ```json
-{ "tracked_keywords": ["AI search", "content strategy", "B2B growth"] }
+{ "tracked_keywords": ["Marketing Strategy", "Digital Marketing Trends", "AI in Marketing"] }
 ```
 
 The list must contain 1–20 non-empty terms. Terms are trimmed and must be
@@ -109,7 +109,13 @@ by `relevance_score` desc. Each item has `actions: [{action: "DRAFT_OUTREACH", l
 ### `GET /recommendations`
 Query: `status` (default `OPEN`), `limit`. Returns the persisted Strategy
 recommendations, newest run first, for the Strategy panel. Each item includes
-`run_id`, `ordinal` and `next_action`, plus `actions: [{action: "DO_THIS", label: "Do this", agent: "EXECUTION"}]`.
+`run_id`, `ordinal`, `next_action` and `run_label`, plus
+`actions: [{action: "DO_THIS", label: "Do this", agent: "EXECUTION"}]`.
+
+`run_label` names the run that produced the recommendation, for the Strategy
+panel's grouping header — the intent and the triggering item's type, for
+example `Plan a response · PRICE_CHANGE`. It is derived server-side from the
+run's `intent` and `trigger`; the UI groups by `run_id` when it is absent.
 
 ## Agent runs
 

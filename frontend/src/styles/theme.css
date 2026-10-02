@@ -11,6 +11,13 @@
   --color-white: #fff;
   --color-primary: #e4362a;
   --color-primary-hover: #c42e22;
+  /*
+   * White on --color-primary is 4.32:1, just under the WCAG AA 4.5:1 that
+   * ui-spec §6 requires, so filled buttons use the darker brand red and press
+   * to --color-primary-strong. --color-primary itself is unchanged and still
+   * carries every accent that is not type on a fill.
+   */
+  --color-primary-strong: #a82619;
   --color-primary-light: #fde8e5;
   --color-secondary: #2fbf8f;
   --color-secondary-light: #e3f7ef;
@@ -34,6 +41,16 @@
   --color-favorable: var(--color-secondary);
   --color-unfavorable: var(--color-error);
   --color-attention: var(--color-warning);
+
+  /*
+   * Status colours for TEXT. The fill tokens above are too light to meet WCAG
+   * AA as type on white, the page ground or their own tints (2.3:1 to 3.3:1),
+   * and ui-spec §6 requires AA. These are the same hues darkened to clear
+   * 4.5:1 on every surface the workspace puts them on.
+   */
+  --color-text-favorable: #0d6b4f;
+  --color-text-attention: #92590b;
+  --color-text-unfavorable: #b91c1c;
 
   /* Type: Inter at exactly five sizes. */
   --font-*: initial;
@@ -76,16 +93,47 @@
 }
 
 /* Named layouts. Arbitrary values are banned in class names, so layouts live here. */
+
+/*
+ * ui-spec §2. One column at 900px and below; at 901–1280 the left listening
+ * region folds into the centre shell as a tab and the right rail stays; above
+ * 1280 all three regions are side by side at the mockup's widths.
+ */
 @utility layout-workspace {
-  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 
   @variant tablet {
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: minmax(0, 1fr) 360px;
   }
 
   @variant desktop {
-    grid-template-columns: 360px minmax(560px, 1fr) 320px;
+    grid-template-columns: 320px minmax(560px, 1fr) 360px;
   }
+}
+
+/* Ordinal, decision, status: the compact recommendation row (ui-spec §3). */
+@utility layout-recommendation-row {
+  grid-template-columns: 16px 1fr auto;
+}
+
+/* The recommendation sheet overlays the right rail at a fixed 440px (ui-spec §3). */
+@utility sheet-width {
+  width: 440px;
+}
+
+/* The composer grows with its content from two to six body lines, then scrolls
+ * (ui-spec §7). The padding term matches the field's pt-2 + pb-1. */
+@utility composer-autogrow {
+  field-sizing: content;
+  min-height: calc(2lh + var(--spacing) * 3);
+  max-height: calc(6lh + var(--spacing) * 3);
+}
+
+/* Thin scrollbars for the independently scrolling regions. */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 
 @layer base {
