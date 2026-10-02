@@ -83,7 +83,7 @@ export function StrategyPanel() {
         />
       ) : null}
 
-      {recommendations.isSuccess && items.length === 0 && !activeRun ? (
+      {recommendations.isSuccess && items.length === 0 && !latestRun?.error && !activeRun ? (
         <EmptyState message="No open recommendations — ask Strategy for a plan." />
       ) : null}
 
