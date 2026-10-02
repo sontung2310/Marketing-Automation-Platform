@@ -3,7 +3,7 @@
 ## 1. 6.1 Company, feed and insights endpoints
 
 - [x] 1.1 Add `Company.tracked_keywords` (1–20 unique trimmed terms) and seed the five data-contract §3.1 keywords; verify `test_seed.py` and `test_seed_rules.py` pass and a re-seed is still idempotent.
-- [ ] 1.2 Add the item-action registry (specs §6) and API schemas for the feed item, trend, influencer, recommendation and company responses; verify a unit test covers every `ActivityType` and the `SOCIAL_POST` channel mapping.
+- [x] 1.2 Add the item-action registry (specs §6) and API schemas for the feed item, trend, influencer, recommendation and company responses; verify a unit test covers every `ActivityType` and the `SOCIAL_POST` channel mapping.
 - [ ] 1.3 Add the repository methods for a cursor page, `unseen_count`, mark-seen, `last_sync_at` and keyword replacement, appended to their files; verify with integration tests against seeded Mongo.
 - [ ] 1.4 Add `orchestration/feed.py` and the routes `GET /company`, `PUT /company/tracked-keywords`, `GET /activities`, `GET /trends`, `GET /influencers` and `GET /recommendations`; verify `tests/integration/test_activities_api.py` proves 6-A (ordering, actions, cursor with no gaps or duplicates, p95 < 1 s), plus the keyword and insights scenarios.
 
