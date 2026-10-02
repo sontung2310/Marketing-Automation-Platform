@@ -130,6 +130,7 @@ Upstream cases may make up **no more than 30%** of any suite.
     "evidence_required_all": ["act_fx_price_01"],
     "evidence_required_any": ["act_fx_price_02", "act_fx_promo_01"],
     "evidence_forbidden": [],
+    "retrieved_any": [],                    // the run fetched one (answers with nothing to cite)
     "skills_any": ["pricing", "competitor-profiling"],
     "recommendations": { "min": 2, "max": 4, "kinds_required": ["COMPETITIVE_RESPONSE"] },
     "deliverable": null,                   // execution: {type, channel, max_chars, min_words, max_words}
@@ -167,18 +168,19 @@ A case **passes** only if every applicable check passes.
 | `company_context_first` | `get_company_context` is called before output, and at most once |
 | `evidence_grounded` | Every cited ID was returned by a tool in this run **and** exists in the fixture. Zero tolerance. |
 | `evidence_required_all/any/forbidden` | Set checks on the cited IDs |
+| `retrieved_any` | The run's tools returned one of these IDs (for answers that cite nothing, such as factual questions) |
 | `skills` | `skills_used ∩ skills_any ≠ ∅` (when specified), and every entry is on the agent's allowlist |
-| `rec_bounds` | Recommendation count, kinds and contiguous ordinals |
+| `rec_bounds` | Recommendation count and kinds (ordinals are renumbered before persistence) |
 | `deliverable_shape` | Type, channel, char/word limits |
 | `originality` | Longest common word-run with the source < 12, and 5-gram Jaccard < 0.15 |
-| `no_invented_numbers` | Every number in the body/rationale appears in the evidence, the company context, the user message or `assumptions` |
+| `no_invented_numbers` | Every number in the body/rationale appears in the evidence, the run's raw tool results or arguments, the company context, the user message, `assumptions` or the 21-day policy |
 | `competitor_naming` | For `CREATE_SIMILAR` cases, no competitor names appear unless the message asked for them |
 | `phrases` | `must_include_any` / `must_not_include`, over the answer, implications, recommendations and `next_action` briefs |
 | `data_gaps` | A `data_gaps` entry contains one of `data_gaps_any` (case-insensitive) |
 | `channels` | Every recommendation's `channel` is in `channels_only` |
 | `each_cites` | Every recommendation cites an ID starting with one of `each_cites_prefix` |
 | `implications` | The implication count is within `implications_min`–`implications_max` |
-| `budget` | Tool calls ≤ `max_tool_calls`, and skill loads ≤ 3 |
+| `budget` | Tool calls ≤ `max_tool_calls` (cached repeats excluded), and skill loads ≤ 3 |
 
 ### 5.2 LLM-as-judge (`judge.py`)
 

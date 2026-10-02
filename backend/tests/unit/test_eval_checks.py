@@ -28,6 +28,7 @@ def base_case(**expect: Any) -> GoldenCase:
             "evidence_required_all": [TRIGGER],
             "evidence_required_any": [TRIGGER, "act_seed_041"],
             "evidence_forbidden": ["act_seed_001"],
+            "retrieved_any": [TRIGGER],
             "skills_any": ["pricing"],
             "recommendations": {"min": 1, "max": 3, "kinds_required": ["COMPETITIVE_RESPONSE"]},
             "must_include_any": ["value"],
@@ -108,6 +109,7 @@ FAILURES: list[tuple[str, dict[str, Any] | None, list[str] | None]] = [
         with_output(lambda o: o["recommendations"][0]["evidence"][0].update(id="act_seed_027")),
         ["act_seed_027"],
     ),
+    ("retrieved_any", base_run(), ["cmp_marketing_eye"]),
     (
         "evidence_forbidden",
         with_output(
@@ -168,6 +170,7 @@ def test_checks_without_expectations_are_not_applicable() -> None:
         evidence_required_all=[],
         evidence_required_any=[],
         evidence_forbidden=[],
+        retrieved_any=[],
         recommendations=None,
         must_include_any=[],
         must_not_include=[],
@@ -232,6 +235,15 @@ def test_dates_are_checked_against_the_shifted_fixture() -> None:
     )
     assert run_checks(base_case(), record(run), fixture)["no_invented_numbers"] is True
     assert run_checks(base_case(), record(run), FIXTURE)["no_invented_numbers"] is False
+
+
+def test_a_cached_repeat_still_counts_as_a_second_context_call() -> None:
+    def repeat(r: dict[str, Any]) -> None:
+        r["tool_calls"].append({"tool": "get_company_context", "cached": True})
+
+    results = run_checks(base_case(), record(with_run(repeat)), FIXTURE)
+    assert results["company_context_first"] is False
+    assert results["budget"] is True  # but it spends no tool-call budget
 
 
 def test_policy_numbers_from_the_instructions_are_allowed() -> None:

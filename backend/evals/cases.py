@@ -12,7 +12,7 @@ from evals.files import read_jsonl
 from evals.fixture import EVALUATION_DIR, FixtureBundle
 
 GOLDEN_DIR = EVALUATION_DIR / "golden"
-Suite = Literal["router", "strategy", "execution"]
+Suite = Literal["strategy"]  # router and execution arrive with Steps 5 and 6
 
 
 class Strict(BaseModel):
@@ -45,10 +45,9 @@ class Expect(Strict):
     evidence_required_all: list[str] = []
     evidence_required_any: list[str] = []
     evidence_forbidden: list[str] = []
+    retrieved_any: list[str] = []  # the run fetched one of these (answers with nothing to cite)
     skills_any: list[str] = []
     recommendations: RecommendationBounds | None = None
-    deliverable: dict[str, object] | None = None
-    proposed_actions_any: list[str] = []
     must_include_any: list[str] = []
     must_not_include: list[str] = []
     data_gaps_any: list[str] = []  # a data_gaps entry mentions one of these (e.g. recency)

@@ -12,7 +12,6 @@ from dataclasses import dataclass
 
 from pydantic import ValidationError
 
-from app.agents.strategy.agent import instructions as strategy_instructions
 from app.agents.strategy.config import SKILL_ALLOWLIST as STRATEGY_SKILLS
 from app.agents.strategy.output import StrategyOutput
 from app.skills.tools import MAX_LOADS_PER_RUN
@@ -25,6 +24,8 @@ from evals.runner import RunRecord
 # A K/M suffix counts only as a whole unit: "275 mentions" is 275, not 275 million.
 NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM](?![A-Za-z])|%)?")
 MIN_CHECKED_NUMBER = 10
+# Numbers the agent's own policy uses ("older than 21 days"); not claims about data.
+POLICY_NUMBERS = "21"
 SCALE = {"k": 1e3, "m": 1e6}
 # "48K followers" for 48,200 is a rounding, not an invention.
 ROUNDING_TOLERANCE = 0.01
@@ -49,8 +50,7 @@ def evaluate_inputs(case: GoldenCase, record: RunRecord, fixture: FixtureBundle)
             output = StrategyOutput.model_validate(run.output)
         except ValidationError:
             output = None
-    # A cached repeat (agents/common/mcp.py) never reached the MCP; it is not another call.
-    tools = [str(c["tool"]) for c in run.tool_calls if not c.get("cached")] if run else []
+    tools = [str(c["tool"]) for c in run.tool_calls] if run else []
     cited = {e.id for r in output.recommendations for e in r.evidence} if output else set()
     return Evaluated(case, record, output, tools, cited, fixture)
 
@@ -82,8 +82,7 @@ def source_values(text: str) -> list[float]:
 
 def no_invented_numbers(e: Evaluated) -> bool:
     assert e.output is not None
-    # The agent's own policy numbers (e.g. "older than 21 days") are not claims about data.
-    sources = [e.case.input.message or "", *e.output.assumptions, strategy_instructions()]
+    sources = [e.case.input.message or "", *e.output.assumptions, POLICY_NUMBERS]
     for record_id in {*e.record.retrieved_ids, *e.cited}:
         if (record := e.fixture.record(record_id)) is not None:
             sources.append(json.dumps(record))
@@ -102,11 +101,10 @@ def rec_bounds(e: Evaluated) -> bool:
     bounds, output = e.case.expect.recommendations, e.output
     assert bounds is not None and output is not None
     recs = output.recommendations
-    ordinals = [r.ordinal for r in recs] == list(range(1, len(recs) + 1))
     kinds = set(bounds.kinds_required) <= {r.kind for r in recs}
     low = bounds.min is None or len(recs) >= bounds.min
     high = bounds.max is None or len(recs) <= bounds.max
-    return ordinals and kinds and low and high
+    return kinds and low and high
 
 
 def phrases(e: Evaluated) -> bool:
@@ -164,8 +162,11 @@ def route_correct(e: Evaluated) -> bool | None:
 
 
 def budget(e: Evaluated) -> bool:
-    skill_loads = len(e.record.run.skills_loaded) if e.record.run else 0
-    return len(e.tools) <= e.case.expect.max_tool_calls and skill_loads <= MAX_LOADS_PER_RUN
+    run = e.record.run
+    skill_loads = len(run.skills_loaded) if run else 0
+    # A cached repeat (agents/common/mcp.py) never reached the MCP, so it spends no budget.
+    calls = sum(not c.get("cached") for c in run.tool_calls) if run else 0
+    return calls <= e.case.expect.max_tool_calls and skill_loads <= MAX_LOADS_PER_RUN
 
 
 Check = Callable[[Evaluated], bool | None]
@@ -205,6 +206,12 @@ CHECKS: dict[str, Check] = {
     "evidence_required_any": when(
         lambda e: e.case.expect.evidence_required_any,
         needs_output(lambda e: bool(set(e.case.expect.evidence_required_any) & e.cited)),
+    ),
+    "retrieved_any": when(
+        lambda e: e.case.expect.retrieved_any,
+        needs_output(
+            lambda e: bool(set(e.case.expect.retrieved_any) & set(e.record.retrieved_ids))
+        ),
     ),
     "evidence_forbidden": when(
         lambda e: e.case.expect.evidence_forbidden,

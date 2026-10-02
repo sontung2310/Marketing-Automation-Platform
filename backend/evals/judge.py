@@ -30,6 +30,7 @@ class JudgeBundle(BaseModel):
     case: dict[str, object]  # id, category, description, input, reference_notes, rubric_focus
     output: dict[str, object]
     evidence: list[dict[str, object]]  # the records the agent's tools returned
+    tool_calls: list[dict[str, object]] = []  # what it searched, so absence claims can be judged
     brand_voice: dict[str, object]
 
 
@@ -75,6 +76,7 @@ def make_bundles(
                 ),
                 output=output,
                 evidence=evidence,
+                tool_calls=record.run.tool_calls if record.run else [],
                 brand_voice=brand_voice,
             )
         )
