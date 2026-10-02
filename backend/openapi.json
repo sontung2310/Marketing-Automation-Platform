@@ -1,0 +1,1885 @@
+{
+  "components": {
+    "schemas": {
+      "ActivityAuthor": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "minLength": 1,
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "title": "ActivityAuthor",
+        "type": "object"
+      },
+      "ActivityItem": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ItemAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "activity_type": {
+            "$ref": "#/components/schemas/ActivityType"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityAuthor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "competitor_id": {
+            "title": "Competitor Id",
+            "type": "string"
+          },
+          "competitor_name": {
+            "title": "Competitor Name",
+            "type": "string"
+          },
+          "detected_at": {
+            "format": "date-time",
+            "title": "Detected At",
+            "type": "string"
+          },
+          "engagement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Engagement"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_mock": {
+            "title": "Is Mock",
+            "type": "boolean"
+          },
+          "is_new": {
+            "title": "Is New",
+            "type": "boolean"
+          },
+          "is_simulated": {
+            "title": "Is Simulated",
+            "type": "boolean"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Price"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "competitor_id",
+          "competitor_name",
+          "activity_type",
+          "channel",
+          "title",
+          "summary",
+          "url",
+          "author",
+          "price",
+          "engagement",
+          "detected_at",
+          "is_mock",
+          "is_simulated",
+          "is_new",
+          "actions"
+        ],
+        "title": "ActivityItem",
+        "type": "object"
+      },
+      "ActivityPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "unseen_count": {
+            "title": "Unseen Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor",
+          "unseen_count"
+        ],
+        "title": "ActivityPage",
+        "type": "object"
+      },
+      "ActivityType": {
+        "enum": [
+          "NEW_BLOG",
+          "SOCIAL_POST",
+          "EXECUTIVE_POST",
+          "NEW_PRODUCT",
+          "PRODUCT_REMOVED",
+          "PRICE_CHANGE",
+          "PROMOTION",
+          "CAMPAIGN_LAUNCH",
+          "PAGE_UPDATE"
+        ],
+        "title": "ActivityType",
+        "type": "string"
+      },
+      "AgentName": {
+        "enum": [
+          "STRATEGY",
+          "EXECUTION"
+        ],
+        "title": "AgentName",
+        "type": "string"
+      },
+      "BrandVoice": {
+        "additionalProperties": false,
+        "properties": {
+          "do": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Do",
+            "type": "array"
+          },
+          "dont": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Dont",
+            "type": "array"
+          },
+          "sample_copy": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Sample Copy",
+            "type": "array"
+          },
+          "tone": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Tone",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tone",
+          "do",
+          "dont",
+          "sample_copy"
+        ],
+        "title": "BrandVoice",
+        "type": "object"
+      },
+      "Channel": {
+        "enum": [
+          "WEBSITE",
+          "LINKEDIN",
+          "X",
+          "INSTAGRAM",
+          "FACEBOOK",
+          "YOUTUBE",
+          "REDDIT",
+          "NEWS"
+        ],
+        "title": "Channel",
+        "type": "string"
+      },
+      "CompanyView": {
+        "properties": {
+          "brand_voice": {
+            "$ref": "#/components/schemas/BrandVoice"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/Channel"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "content_pillars": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Content Pillars",
+            "type": "array"
+          },
+          "icp": {
+            "items": {
+              "$ref": "#/components/schemas/ICP"
+            },
+            "title": "Icp",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "industry": {
+            "title": "Industry",
+            "type": "string"
+          },
+          "is_mock": {
+            "title": "Is Mock",
+            "type": "boolean"
+          },
+          "last_sync_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Sync At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "positioning": {
+            "title": "Positioning",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/Service"
+            },
+            "title": "Services",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "tracked_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tracked Keywords",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "website": {
+            "title": "Website",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "website",
+          "industry",
+          "region",
+          "summary",
+          "icp",
+          "positioning",
+          "services",
+          "brand_voice",
+          "channels",
+          "tracked_keywords",
+          "content_pillars",
+          "is_mock",
+          "updated_at",
+          "last_sync_at"
+        ],
+        "title": "CompanyView",
+        "type": "object"
+      },
+      "DeliverableType": {
+        "enum": [
+          "BLOG_DRAFT",
+          "BLOG_OUTLINE",
+          "LINKEDIN_POST",
+          "X_POST",
+          "INSTAGRAM_POST",
+          "CEO_POST",
+          "EMAIL",
+          "AD_COPY",
+          "RESPONSE_BRIEF",
+          "INFLUENCER_OUTREACH"
+        ],
+        "title": "DeliverableType",
+        "type": "string"
+      },
+      "Engagement": {
+        "additionalProperties": false,
+        "properties": {
+          "comments": {
+            "minimum": 0.0,
+            "title": "Comments",
+            "type": "integer"
+          },
+          "likes": {
+            "minimum": 0.0,
+            "title": "Likes",
+            "type": "integer"
+          },
+          "shares": {
+            "minimum": 0.0,
+            "title": "Shares",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "likes",
+          "comments",
+          "shares"
+        ],
+        "title": "Engagement",
+        "type": "object"
+      },
+      "EvidenceLink": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "url"
+        ],
+        "title": "EvidenceLink",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthReport": {
+        "properties": {
+          "mcp": {
+            "enum": [
+              "ok",
+              "down"
+            ],
+            "title": "Mcp",
+            "type": "string"
+          },
+          "mongo": {
+            "enum": [
+              "ok",
+              "down"
+            ],
+            "title": "Mongo",
+            "type": "string"
+          },
+          "openai": {
+            "enum": [
+              "configured",
+              "missing"
+            ],
+            "title": "Openai",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mongo",
+          "mcp",
+          "openai"
+        ],
+        "title": "HealthReport",
+        "type": "object"
+      },
+      "ICP": {
+        "additionalProperties": false,
+        "properties": {
+          "goals": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Goals",
+            "type": "array"
+          },
+          "pains": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Pains",
+            "type": "array"
+          },
+          "segment": {
+            "minLength": 1,
+            "title": "Segment",
+            "type": "string"
+          }
+        },
+        "required": [
+          "segment",
+          "pains",
+          "goals"
+        ],
+        "title": "ICP",
+        "type": "object"
+      },
+      "InfluencerItem": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ItemAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "audience_region": {
+            "title": "Audience Region",
+            "type": "string"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "engagement_rate": {
+            "title": "Engagement Rate",
+            "type": "number"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceLink"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "followers": {
+            "title": "Followers",
+            "type": "integer"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_mock": {
+            "title": "Is Mock",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "profile_url": {
+            "title": "Profile Url",
+            "type": "string"
+          },
+          "relevance_score": {
+            "title": "Relevance Score",
+            "type": "number"
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "handle",
+          "channel",
+          "profile_url",
+          "followers",
+          "engagement_rate",
+          "topics",
+          "audience_region",
+          "relevance_score",
+          "evidence",
+          "is_mock",
+          "actions"
+        ],
+        "title": "InfluencerItem",
+        "type": "object"
+      },
+      "ItemAction": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ItemActionName"
+          },
+          "agent": {
+            "$ref": "#/components/schemas/AgentName"
+          },
+          "deliverable_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliverableType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "primary": {
+            "default": false,
+            "title": "Primary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action",
+          "label",
+          "agent"
+        ],
+        "title": "ItemAction",
+        "type": "object"
+      },
+      "ItemActionName": {
+        "enum": [
+          "CREATE_SIMILAR",
+          "WHY_IT_MATTERS",
+          "RESPONSE_PLAN",
+          "USE_TREND",
+          "DRAFT_OUTREACH",
+          "DO_THIS"
+        ],
+        "title": "ItemActionName",
+        "type": "string"
+      },
+      "Items_InfluencerItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InfluencerItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Items[InfluencerItem]",
+        "type": "object"
+      },
+      "Items_RecommendationItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RecommendationItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Items[RecommendationItem]",
+        "type": "object"
+      },
+      "Items_TrendItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TrendItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Items[TrendItem]",
+        "type": "object"
+      },
+      "MarkSeenBody": {
+        "properties": {
+          "up_to": {
+            "format": "date-time",
+            "title": "Up To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "up_to"
+        ],
+        "title": "MarkSeenBody",
+        "type": "object"
+      },
+      "MarkSeenResult": {
+        "properties": {
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "updated"
+        ],
+        "title": "MarkSeenResult",
+        "type": "object"
+      },
+      "NextAction": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "const": "EXECUTION",
+            "default": "EXECUTION",
+            "title": "Agent",
+            "type": "string"
+          },
+          "brief": {
+            "minLength": 1,
+            "title": "Brief",
+            "type": "string"
+          },
+          "deliverable_type": {
+            "$ref": "#/components/schemas/DeliverableType"
+          }
+        },
+        "required": [
+          "deliverable_type",
+          "brief"
+        ],
+        "title": "NextAction",
+        "type": "object"
+      },
+      "Price": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "minimum": 0.0,
+            "title": "After",
+            "type": "number"
+          },
+          "before": {
+            "minimum": 0.0,
+            "title": "Before",
+            "type": "number"
+          },
+          "currency": {
+            "maxLength": 3,
+            "minLength": 1,
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "before",
+          "after",
+          "currency"
+        ],
+        "title": "Price",
+        "type": "object"
+      },
+      "RecommendationEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "activity",
+              "trend",
+              "influencer",
+              "company"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 140,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "note"
+        ],
+        "title": "RecommendationEvidence",
+        "type": "object"
+      },
+      "RecommendationItem": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ItemAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Channel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/RecommendationEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "next_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ordinal": {
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "string"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "run_label": {
+            "title": "Run Label",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "skills_used": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Skills Used",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecommendationStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "run_id",
+          "session_id",
+          "ordinal",
+          "kind",
+          "title",
+          "rationale",
+          "priority",
+          "channel",
+          "evidence",
+          "skills_used",
+          "next_action",
+          "status",
+          "created_at",
+          "run_label",
+          "actions"
+        ],
+        "title": "RecommendationItem",
+        "type": "object"
+      },
+      "RecommendationStatus": {
+        "enum": [
+          "OPEN",
+          "IN_PROGRESS",
+          "DONE"
+        ],
+        "title": "RecommendationStatus",
+        "type": "string"
+      },
+      "SamplePost": {
+        "additionalProperties": false,
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "title": {
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "url",
+          "channel"
+        ],
+        "title": "SamplePost",
+        "type": "object"
+      },
+      "Service": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "price_from": {
+            "minimum": 0.0,
+            "title": "Price From",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "price_from"
+        ],
+        "title": "Service",
+        "type": "object"
+      },
+      "SimulateBody": {
+        "properties": {
+          "activity_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "competitor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Competitor Id"
+          }
+        },
+        "title": "SimulateBody",
+        "type": "object"
+      },
+      "TrackedKeywords": {
+        "properties": {
+          "tracked_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tracked Keywords",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tracked_keywords"
+        ],
+        "title": "TrackedKeywords",
+        "type": "object"
+      },
+      "TrackedKeywordsBody": {
+        "properties": {
+          "tracked_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Tracked Keywords",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tracked_keywords"
+        ],
+        "title": "TrackedKeywordsBody",
+        "type": "object"
+      },
+      "TrendDirection": {
+        "enum": [
+          "RISING",
+          "STEADY",
+          "FALLING"
+        ],
+        "title": "TrendDirection",
+        "type": "string"
+      },
+      "TrendItem": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ItemAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Channel"
+          },
+          "computed_at": {
+            "format": "date-time",
+            "title": "Computed At",
+            "type": "string"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/TrendDirection"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_mock": {
+            "title": "Is Mock",
+            "type": "boolean"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "mention_count": {
+            "title": "Mention Count",
+            "type": "integer"
+          },
+          "momentum_pct": {
+            "title": "Momentum Pct",
+            "type": "number"
+          },
+          "sample_posts": {
+            "items": {
+              "$ref": "#/components/schemas/SamplePost"
+            },
+            "title": "Sample Posts",
+            "type": "array"
+          },
+          "sentiment": {
+            "title": "Sentiment",
+            "type": "number"
+          },
+          "topic": {
+            "title": "Topic",
+            "type": "string"
+          },
+          "window_days": {
+            "title": "Window Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "topic",
+          "keywords",
+          "channel",
+          "window_days",
+          "mention_count",
+          "momentum_pct",
+          "direction",
+          "sentiment",
+          "sample_posts",
+          "computed_at",
+          "is_mock",
+          "actions"
+        ],
+        "title": "TrendItem",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Marketing Automation Platform API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/activities": {
+      "get": {
+        "operationId": "list_activities_api_activities_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "activity_types",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Activity Types"
+            }
+          },
+          {
+            "in": "query",
+            "name": "competitor_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Competitor Ids"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channels",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channels"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Activities",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/api/activities/mark-seen": {
+      "post": {
+        "operationId": "mark_seen_api_activities_mark_seen_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkSeenBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkSeenResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Seen",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/api/activities/simulate": {
+      "post": {
+        "operationId": "simulate_api_activities_simulate_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Simulate",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/api/activities/stream": {
+      "get": {
+        "operationId": "stream_api_activities_stream_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "last-event-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/api/company": {
+      "get": {
+        "operationId": "get_company_api_company_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Company",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/api/company/tracked-keywords": {
+      "put": {
+        "operationId": "put_tracked_keywords_api_company_tracked_keywords_put",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackedKeywordsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackedKeywords"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Tracked Keywords",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "meta"
+        ]
+      }
+    },
+    "/api/influencers": {
+      "get": {
+        "operationId": "list_influencers_api_influencers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "topic",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Topic"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channels",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channels"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Items_InfluencerItem_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Influencers",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/api/recommendations": {
+      "get": {
+        "operationId": "list_recommendations_api_recommendations_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/RecommendationStatus",
+              "default": "OPEN"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Items_RecommendationItem_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Recommendations",
+        "tags": [
+          "feed"
+        ]
+      }
+    },
+    "/api/trends": {
+      "get": {
+        "operationId": "list_trends_api_trends_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channels",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channels"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TrendDirection"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Direction"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Items_TrendItem_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Trends",
+        "tags": [
+          "feed"
+        ]
+      }
+    }
+  }
+}

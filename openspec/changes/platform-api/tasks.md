@@ -14,7 +14,7 @@
 
 ## 3. 6.6 Contract sync
 
-- [ ] 3.1 Add `scripts/export_openapi.py` (with `--check`), the committed `backend/openapi.json` and `tools/check-api-types.mjs`, both wired into `npm run check`; verify a deliberately renamed field fails the check, then revert it.
+- [x] 3.1 Add `scripts/export_openapi.py` (with `--check`), the committed `backend/openapi.json` and `tools/check-api-types.mjs`, both wired into `npm run check`; verify a deliberately renamed field fails the check, then revert it.
 
 ## 4. Hosting, docs and close
 
