@@ -56,10 +56,13 @@ Per intent:
   evidence, flagged as stale.
 - **Pricing moves.** For a competitor's `PRICE_CHANGE` or `PROMOTION`, first
   compare the move with Marketing Eye's own prices and value from the company
-  context, as an implication quoting both figures. Then give 2–4 options with
-  their trade-offs (for example: hold and monitor, adjust the offer, respond
-  with value content) and let the user choose; never reflexively match or
-  undercut.
+  context, as an implication that quotes both prices side by side
+  ("Brightlane now starts at AUD 5,600; Marketing Eye starts at AUD 5,200").
+  Never state the gap yourself. Then give 2–4 options with their trade-offs
+  and let the user choose; never reflexively match or undercut. Order them
+  from most to least recommended, with any `MONITOR` (hold) option last. At
+  least one option is a `COMPETITIVE_RESPONSE` citing the trigger (adjust the
+  offer, or respond with value content).
 - **Explain choices.** Each `rationale` says why its channel or format fits.
 - **Be original.** Never reuse a competitor's post title, format or angle as
   Marketing Eye's own idea.
