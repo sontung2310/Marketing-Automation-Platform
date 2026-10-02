@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import actions, health
+from app.api.routes import actions, feed, health
 from app.core.config import get_settings
 from app.core.errors import DomainError
 from app.core.logging import configure_logging
@@ -47,6 +47,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router, prefix="/api")
     app.include_router(actions.router, prefix="/api")
+    app.include_router(feed.router, prefix="/api")
     return app
 
 

@@ -4,13 +4,13 @@
 
 - [x] 1.1 Add `Company.tracked_keywords` (1–20 unique trimmed terms) and seed the five data-contract §3.1 keywords; verify `test_seed.py` and `test_seed_rules.py` pass and a re-seed is still idempotent.
 - [x] 1.2 Add the item-action registry (specs §6) and API schemas for the feed item, trend, influencer, recommendation and company responses; verify a unit test covers every `ActivityType` and the `SOCIAL_POST` channel mapping.
-- [ ] 1.3 Add the repository methods for a cursor page, `unseen_count`, mark-seen, `last_sync_at` and keyword replacement, appended to their files; verify with integration tests against seeded Mongo.
-- [ ] 1.4 Add `orchestration/feed.py` and the routes `GET /company`, `PUT /company/tracked-keywords`, `GET /activities`, `GET /trends`, `GET /influencers` and `GET /recommendations`; verify `tests/integration/test_activities_api.py` proves 6-A (ordering, actions, cursor with no gaps or duplicates, p95 < 1 s), plus the keyword and insights scenarios.
+- [x] 1.3 Add the repository methods for a cursor page, `unseen_count`, mark-seen, `last_sync_at` and keyword replacement, appended to their files; verify with integration tests against seeded Mongo.
+- [x] 1.4 Add `orchestration/feed.py` and the routes `GET /company`, `PUT /company/tracked-keywords`, `GET /activities`, `GET /trends`, `GET /influencers` and `GET /recommendations`; verify `tests/integration/test_activities_api.py` proves 6-A (ordering, actions, cursor with no gaps or duplicates, p95 < 1 s), plus the keyword and insights scenarios.
 
 ## 2. 6.3 Simulate, mark-seen and stream
 
-- [ ] 2.1 Add `POST /activities/simulate` (reusing `simulate_activity`) and `POST /activities/mark-seen`; verify the 201 shape, the real-competitor 422 message and `{updated: n}`.
-- [ ] 2.2 Add `GET /activities/stream` (3 s poll, 15 s heartbeat, 55 s close, `Last-Event-ID` resume); verify an SSE-client integration test proves 6-B (event within 3 s) and that resume emits no duplicates.
+- [x] 2.1 Add `POST /activities/simulate` (reusing `simulate_activity`) and `POST /activities/mark-seen`; verify the 201 shape, the real-competitor 422 message and `{updated: n}`.
+- [x] 2.2 Add `GET /activities/stream` (3 s poll, 15 s heartbeat, 55 s close, `Last-Event-ID` resume); verify an SSE-client integration test proves 6-B (event within 3 s) and that resume emits no duplicates.
 
 ## 3. 6.6 Contract sync
 

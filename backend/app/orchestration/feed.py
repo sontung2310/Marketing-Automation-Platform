@@ -6,11 +6,13 @@ the frontend holds no routing logic.
 
 from __future__ import annotations
 
+import asyncio
 import base64
-from collections.abc import Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from datetime import UTC, datetime
 from enum import StrEnum
 from functools import lru_cache
+from time import monotonic
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel
@@ -392,3 +394,29 @@ async def list_recommendations(
             for recommendation, run in rows
         ]
     )
+
+
+STREAM_POLL_SECONDS = 3.0
+# ponytail: serverless caps a function's duration, so the stream ends itself and
+# EventSource reconnects with Last-Event-ID. Use a change stream on a long-lived host.
+STREAM_MAX_SECONDS = 55.0
+
+
+async def stream_activities(
+    company_id: str,
+    *,
+    last_event_id: str | None,
+    is_disconnected: Callable[[], Awaitable[bool]],
+    poll_seconds: float = STREAM_POLL_SECONDS,
+    max_seconds: float = STREAM_MAX_SECONDS,
+) -> AsyncGenerator[dict[str, str]]:
+    """`activity.created` events for activities detected after the stream opened,
+    or after the `Last-Event-ID` item when a client reconnects."""
+    resumed = await get_activity_detected_at(company_id, last_event_id) if last_event_id else None
+    after = resumed or datetime.now(UTC)
+    deadline = monotonic() + max_seconds
+    while monotonic() < deadline and not await is_disconnected():
+        for item in await activities_after(company_id, after):
+            after = item.detected_at
+            yield {"event": "activity.created", "id": item.id, "data": item.model_dump_json()}
+        await asyncio.sleep(poll_seconds)
