@@ -98,7 +98,8 @@ Australian Marketing Eye.
 - **[`gpt-5.6-luna` unavailable or slow]** → checked in task 1.1; latency is
   measured against the 45 s p95 target in every report.
 - **[OpenAI cost of eval runs]** → develop with `--repeats 1` and
-  `--cases`, use 3 repeats only for the baseline.
+  `--cases`; the PoC baseline also uses 1 repeat (owner decision
+  2026-10-02), and production re-baselines at 3.
 - **[Fixture drift from the seed]** → fixture is versioned; cases pin
   `intelligence_v1`.
 

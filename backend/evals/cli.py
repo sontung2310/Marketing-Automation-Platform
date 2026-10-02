@@ -1,6 +1,6 @@
 """Eval harness CLI (evaluation-spec §2).
 
-    uv run --directory backend python -m evals.cli run --suite strategy --repeats 3
+    uv run --directory backend python -m evals.cli run --suite strategy --repeats 1
     uv run --directory backend python -m evals.cli report <run_dir> [--baseline]
     uv run --directory backend python -m evals.cli calibrate <run_dir> sample|compare
 
@@ -56,7 +56,8 @@ def resolve_run_dir(value: str) -> Path:
     return path if path.is_absolute() else EVALUATION_DIR.parent / path
 
 
-BASELINE_REPEATS = 3  # evaluation-spec §5.3
+# evaluation-spec §5.3: 1 in the PoC to save OpenAI cost (owner, 2026-10-02); 3 for production.
+BASELINE_REPEATS = 1
 
 
 def calibration_path(suite: str) -> Path:

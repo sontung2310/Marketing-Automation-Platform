@@ -115,6 +115,7 @@ def test_a_passing_partial_run_is_not_a_baseline(
 ) -> None:
     run_dir = make_run_dir(tmp_path, scored=True)
     monkeypatch.setattr(cli, "RUBRICS_DIR", tmp_path)
+    monkeypatch.setattr(cli, "BASELINE_REPEATS", 3)  # the production setting
     assert cli.write_report(run_dir)  # every threshold passes on these two cases...
     problems = cli.baseline_problems(run_dir, report_ready=True)
     assert any("repeat" in p for p in problems)  # ...but 1 repeat, not 3

@@ -71,7 +71,7 @@ a score or a report to change a result.
    cases, and the three lowest-scored bundles with their rationales. Say plainly
    whether judging is complete and whether the run is baseline-ready. Write a baseline
    (`report "$RUN_DIR" --baseline`) only when the user asks for one; it refuses unless
-   the run has 3 repeats, every golden case and a passing calibration.
+   the run has the baseline repeat count (`BASELINE_REPEATS`), every golden case and a passing calibration.
 
 ## Calibration
 

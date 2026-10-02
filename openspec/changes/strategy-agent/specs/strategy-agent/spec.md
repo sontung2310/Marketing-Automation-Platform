@@ -132,12 +132,14 @@ recommendation's rationale SHALL say why its channel or format was chosen.
 ### Requirement: Strategy meets its evaluation thresholds
 
 The Strategy suite SHALL meet every Strategy threshold in evaluation-spec §6
-at 3 repeats, including p95 run duration of 45 seconds or less, and the
+at the baseline repeat count (1 in the PoC, owner decision 2026-10-02; 3
+before production), including p95 run duration of 45 seconds or less, and the
 passing report SHALL be committed as the baseline.
 
 #### Scenario: Full suite passes
 
 - **GIVEN** the approved `strategy.jsonl` and fixture `intelligence_v1`
-- **WHEN** the suite runs with 3 repeats and the Claude judge scores it
+- **WHEN** the suite runs at the baseline repeat count and the Claude judge
+  scores it
 - **THEN** every Strategy threshold holds and `baseline_strategy.json` is
   committed

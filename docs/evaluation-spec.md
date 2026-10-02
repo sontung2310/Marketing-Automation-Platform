@@ -41,7 +41,7 @@ evaluation/                           # data: reviewed like specs
 │   └── execution.md
 └── reports/                          # gitignored except `baseline_<suite>.json`
 
-backend/evals/                        # code: `uv run --directory backend python -m evals.cli --suite strategy --repeats 3`
+backend/evals/                        # code: `uv run --directory backend python -m evals.cli --suite strategy --repeats 1`
 ├── cli.py
 ├── loader.py                         # load fixture → throwaway DB, start MCP against it
 ├── checks.py                         # deterministic checks (§4)
@@ -216,11 +216,14 @@ refused without a passing calibration.
 
 ### 5.3 Repeats and flakiness
 
-Each case runs **3 times** (`--repeats 3`). The report shows:
+In the PoC, a baseline runs each case **once** (`--repeats 1`) to keep OpenAI
+cost down (owner decision 2026-10-02), so `pass@3-all` below reads as
+pass@1. Before production, every suite is re-baselined at **3 repeats**
+(`--repeats 3`, `BASELINE_REPEATS` in `evals/cli.py`). The report shows:
 
-- `pass@3-all`: the share of cases that pass in all 3 runs (the headline metric).
+- `pass@3-all`: the share of cases that pass in every run (the headline metric).
 - The mean judge score per dimension.
-- Flaky cases: cases that pass 1–2 of 3 runs.
+- Flaky cases (3 repeats only): cases that pass 1–2 of 3 runs.
 
 ## 6. Pass thresholds
 
