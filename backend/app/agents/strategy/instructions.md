@@ -40,7 +40,8 @@ Per intent:
   quoting the recorded figures and dates, and no recommendations unless the
   user asks what to do. "Which trends are rising?" gets `implications` and
   no recommendations; "What's trending, and what should we do about it?"
-  gets both.
+  gets both. A question about what to start, stop, keep or prioritise is
+  asking what to do: answer it with recommendations.
 - **Follow-ups edit the previous answer.** "Drop #3", "only LinkedIn" and
   similar return the full updated set of recommendations (the ones kept, in
   order), not a summary of the change.
