@@ -15,6 +15,7 @@ from app.agents.execution.guards import longest_shared_run
 from app.agents.execution.run import run_execution
 from app.core.db import Document
 from app.intelligence.models import AgentName, Run, RunStatus
+from app.orchestration.actions import next_weekday_morning
 from app.orchestration.references import RunRepositories
 from app.orchestration.routing import Trigger, TriggerAction, TriggerKind
 from app.orchestration.run_service import AgentFn, RunService
@@ -59,6 +60,14 @@ async def stored_deliverable(database: AsyncDatabase[Document], run: Run) -> Doc
     return stored[0]
 
 
+async def stored_actions(database: AsyncDatabase[Document], run: Run) -> list[Document]:
+    final = next(e for e in run.events if e["type"] == "output.final")
+    ids = final["data"]["proposed_action_ids"]
+    actions = await database["proposed_actions"].find({"_id": {"$in": ids}}).to_list()
+    assert len(actions) == len(ids) and all(a["status"] == "PROPOSED" for a in actions)
+    return actions
+
+
 async def test_5a_create_a_similar_blog(seeded_database: AsyncDatabase[Document]) -> None:
     source = await seeded_database["competitor_activities"].find_one({"_id": BRIGHTLANE_BLOG})
     assert source is not None and source["content_excerpt"]
@@ -72,7 +81,11 @@ async def test_5a_create_a_similar_blog(seeded_database: AsyncDatabase[Document]
     for text in (source["title"], source["content_excerpt"]):
         assert longest_shared_run(body, str(text)) < 12
     assert not re.search(r"\bBrightlane\b", body, re.IGNORECASE)
-    assert (await stored_deliverable(seeded_database, run))["type"] == "BLOG_DRAFT"
+    stored = await stored_deliverable(seeded_database, run)
+    assert stored["type"] == "BLOG_DRAFT"
+    actions = await stored_actions(seeded_database, run)
+    cms = [a for a in actions if a["action_type"] == "create_cms_draft"]
+    assert cms and cms[0]["payload"]["body_markdown"] == stored["body_markdown"]
 
 
 async def test_5b_draft_a_ceo_post(seeded_database: AsyncDatabase[Document]) -> None:
@@ -86,4 +99,12 @@ async def test_5b_draft_a_ceo_post(seeded_database: AsyncDatabase[Document]) -> 
     assert "Morgan Hale" in str(deliverable["author_persona"])
     assert FIRST_PERSON.search(body)
     assert "Maya Chen" not in body  # never speaks as the competitor's CEO
-    assert (await stored_deliverable(seeded_database, run))["type"] == "CEO_POST"
+    stored = await stored_deliverable(seeded_database, run)
+    assert stored["type"] == "CEO_POST"
+    actions = await stored_actions(seeded_database, run)
+    posts = [a for a in actions if a["action_type"] == "schedule_social_post"]
+    assert posts, "schedule_social_post was not proposed"
+    payload = posts[0]["payload"]
+    assert payload["deliverable_id"] == stored["_id"] and payload["channel"] == "LINKEDIN"
+    # No time was given, so the default applies: the next weekday at 09:00 in Sydney.
+    assert payload["scheduled_for"] == next_weekday_morning(run.started_at).isoformat()

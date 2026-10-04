@@ -24,7 +24,7 @@ approves.
 - [x] 3.2 Add `connectors/base.py` (`Connector` protocol) and `connectors/mock/` (one connector per `ActionType`, mock receipts) in an enum-keyed registry; verify each returns its agents-spec §8 receipt shape.
 - [x] 3.3 Add the repository `transition` and `orchestration/actions.py` (`ActionService` approve/discard with the state machine, D7); verify with unit tests that only `PROPOSED` transitions and that a connector error yields `FAILED`.
 - [x] 3.4 Add `api/routes/actions.py` (`POST /actions/{id}/approve` with `payload_overrides`, `POST /actions/{id}/discard`); verify `tests/integration/test_actions.py` against MongoDB over HTTP covers 5-D: approve → `EXECUTED` with a receipt, a second approve → `409`, a discarded action → `409`, an unknown ID → `404`, and a bad override → `422`.
-- [ ] 3.5 Re-run the live test with actions; verify 5-A proposes `create_cms_draft` and 5-B proposes `schedule_social_post` for the next weekday at 09:00 Sydney, and save the evidence.
+- [x] 3.5 Re-run the live test with actions; verify 5-A proposes `create_cms_draft` and 5-B proposes `schedule_social_post` for the next weekday at 09:00 Sydney, and save the evidence.
 
 ## 4. 5.4 Golden dataset, calibration and baseline
 
