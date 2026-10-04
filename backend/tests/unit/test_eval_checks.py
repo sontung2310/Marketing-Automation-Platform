@@ -12,7 +12,7 @@ from evals.fixture import load_fixture, shifted_to
 from evals.runner import RunRecord
 from tests.strategy_samples import golden_case, recommendation, sample_run, strategy_output
 
-FIXTURE = load_fixture("intelligence_v1")
+FIXTURE = load_fixture("intelligence_v2")
 TRIGGER = "act_seed_026"  # Brightlane price change: before 5200, after 5600
 
 

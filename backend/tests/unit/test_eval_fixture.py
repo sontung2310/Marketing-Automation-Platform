@@ -1,4 +1,4 @@
-"""Eval fixture intelligence_v1: loads, holds the adversarial records, and is reproducible."""
+"""Eval fixture intelligence_v2: loads, holds the adversarial records, and is reproducible."""
 
 import json
 
@@ -16,13 +16,13 @@ ADVERSARIAL_IDS = {
 
 
 def test_fixture_loads_with_every_adversarial_record() -> None:
-    fixture = load_fixture("intelligence_v1")
+    fixture = load_fixture("intelligence_v2")
     assert fixture.ids() >= ADVERSARIAL_IDS
     assert fixture.record("act_fx_inject_01") is not None
     assert fixture.record("act_missing") is None
 
 
 def test_committed_fixture_matches_a_fresh_build() -> None:
-    committed = json.loads(fixture_path("intelligence_v1").read_text("utf-8"))
-    rebuilt = json.loads(build("intelligence_v1").model_dump_json(by_alias=True))
+    committed = json.loads(fixture_path("intelligence_v2").read_text("utf-8"))
+    rebuilt = json.loads(build("intelligence_v2").model_dump_json(by_alias=True))
     assert committed == rebuilt

@@ -1,7 +1,7 @@
 """Build an eval fixture from the committed seed plus the adversarial records.
 
 Run from the repository root with:
-    uv run --directory backend python scripts/snapshot_fixture.py --version intelligence_v1
+    uv run --directory backend python scripts/snapshot_fixture.py --version intelligence_v2
 
 The output is deterministic, so re-running it on an unchanged seed rewrites the same file.
 A changed seed or adversarial file needs a new version (evaluation-spec §7.5).
@@ -36,7 +36,7 @@ def build(version: str) -> FixtureBundle:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--version", default="intelligence_v1")
+    parser.add_argument("--version", default="intelligence_v2")
     args = parser.parse_args()
     fixture = build(args.version)
     ids = [r.id for r in (*fixture.competitor_activities, *fixture.trends, *fixture.influencers)]

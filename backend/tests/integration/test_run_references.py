@@ -56,7 +56,7 @@ async def test_sessions_are_created_then_reused_per_company(
 async def test_eval_fixture_installs_shifted_to_now() -> None:
     if get_settings().mongodb_uri is None:
         pytest.skip("MONGODB_URI is not configured")
-    fixture = load_fixture("intelligence_v1")
+    fixture = load_fixture("intelligence_v2")
     async with throwaway_database("ma_fixture") as database:
         await install_fixture(database, shifted_to(fixture, datetime.now(UTC)))
         assert await database["competitor_activities"].count_documents({}) == len(

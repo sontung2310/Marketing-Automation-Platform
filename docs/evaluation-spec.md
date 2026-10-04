@@ -36,7 +36,7 @@ evaluation/                           # data: reviewed like specs
 │   └── execution.jsonl
 ├── fixtures/
 │   ├── adversarial_v1.json           # eval-only adversarial records (injections, stale data)
-│   └── intelligence_v1.json          # frozen DB snapshot (seed + adversarial records)
+│   └── intelligence_v2.json          # frozen DB snapshot (seed + adversarial records); v1 is the Step 4 baseline's
 ├── rubrics/
 │   ├── strategy.md                   # judge rubric, anchored 1–5
 │   ├── strategy.calibration.json     # latest owner calibration (gates the baseline)
@@ -117,7 +117,7 @@ Upstream cases may make up **no more than 30%** of any suite.
   "id": "ST-RESP-PRICE_CHANGE-01",
   "suite": "strategy",                     // router | strategy | execution
   "category": "ST-RESP-PRICE_CHANGE",
-  "fixture": "intelligence_v1",
+  "fixture": "intelligence_v2",
   "description": "Brightlane cuts its content retainer 20%; plan a response",
   "input": {
     "message": null,

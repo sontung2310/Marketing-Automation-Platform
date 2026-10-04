@@ -43,7 +43,7 @@ async def test_runner_records_each_repeat_with_retrieved_ids() -> None:
     records = await run_suite(
         "strategy",
         cases,
-        load_fixture("intelligence_v1"),
+        load_fixture("intelligence_v2"),
         now=datetime.now(UTC),
         repeats=2,
         agent_factory=stub_factory,

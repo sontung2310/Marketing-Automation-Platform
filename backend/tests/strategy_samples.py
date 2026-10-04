@@ -47,7 +47,7 @@ def golden_case_data(**overrides: object) -> dict[str, object]:
         "id": "ST-T",
         "suite": "strategy",
         "category": "ST-TEST",
-        "fixture": "intelligence_v1",
+        "fixture": "intelligence_v2",
         "description": "test case",
         "input": {"message": "What should we post?"},
         "expect": {"status": ["OK"]},
