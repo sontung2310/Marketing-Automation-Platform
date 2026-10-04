@@ -139,9 +139,10 @@ def report(args: argparse.Namespace) -> int:
     if problems := baseline_problems(run_dir, ready):
         sys.stderr.write("evals: not a baseline: " + "; ".join(problems) + "\n")
         return 1
-    baseline = REPORTS_DIR / f"baseline_{read_meta(run_dir).suite}.json"
-    baseline.write_text((run_dir / "report.json").read_text("utf-8"), encoding="utf-8")
-    sys.stdout.write(f"evals: wrote {baseline.name}\n")
+    for suffix in ("json", "md"):  # the record, and a copy people can read
+        baseline = REPORTS_DIR / f"baseline_{read_meta(run_dir).suite}.{suffix}"
+        baseline.write_text((run_dir / f"report.{suffix}").read_text("utf-8"), encoding="utf-8")
+        sys.stdout.write(f"evals: wrote {baseline.name}\n")
     return 0
 
 

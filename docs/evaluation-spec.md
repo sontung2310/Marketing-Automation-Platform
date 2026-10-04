@@ -39,7 +39,7 @@ evaluation/                           # data: reviewed like specs
 ├── rubrics/
 │   ├── strategy.md                   # judge rubric, anchored 1–5
 │   └── execution.md
-└── reports/                          # gitignored except `baseline_<suite>.json`
+└── reports/                          # gitignored except `baseline_<suite>.json` (+ readable `.md`)
 
 backend/evals/                        # code: `uv run --directory backend python -m evals.cli --suite strategy --repeats 1`
 ├── cli.py
@@ -246,7 +246,8 @@ pass@1. Before production, every suite is re-baselined at **3 repeats**
    (or a separate review pass) check each `expect` block for over-fitting.
    Cases assert behaviour, not exact wording.
 2. **Baseline.** The first passing run is committed as
-   `evaluation/reports/baseline_<suite>.json`.
+   `evaluation/reports/baseline_<suite>.json`, with a readable copy in
+   `baseline_<suite>.md`.
 3. **Regression gate.** Any PR that touches `app/agents/`, `app/skills/`,
    instruction files, the MCP tools or model env defaults must run the
    affected suite(s). The PR description pastes the report summary. No PR may
