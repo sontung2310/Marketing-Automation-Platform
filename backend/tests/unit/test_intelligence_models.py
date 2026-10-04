@@ -30,6 +30,7 @@ def _company() -> Company:
         brand_voice=BrandVoice(
             tone=["clear"], do=["help"], dont=["hype"], sample_copy=["Be useful."]
         ),
+        spokesperson={"name": "Sam Lee", "role": "CEO", "voice_notes": ["Lead with insight."]},
         channels=[Channel.LINKEDIN],
         content_pillars=["Growth"],
         is_mock=True,
@@ -49,6 +50,14 @@ def test_company_rejects_malformed_prefixed_id(bad_id: str) -> None:
     with pytest.raises(ValidationError):
         payload = _company().model_dump(by_alias=True)
         payload["_id"] = bad_id
+        Company.model_validate(payload)
+
+
+def test_company_requires_a_spokesperson() -> None:
+    payload = _company().model_dump(by_alias=True)
+    del payload["spokesperson"]
+
+    with pytest.raises(ValidationError, match="spokesperson"):
         Company.model_validate(payload)
 
 

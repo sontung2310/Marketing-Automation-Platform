@@ -24,6 +24,17 @@
       "dont": ["Use empty hype", "Overpromise results", "Talk down to the reader"],
       "sample_copy": ["Make the next decision easier.", "Good marketing sounds like a useful conversation."]
     },
+    "spokesperson": {
+      "name": "Morgan Hale",
+      "role": "Founder and CEO",
+      "voice_notes": [
+        "Write in the first person as Morgan, sparingly: lead with an insight, not with yourself.",
+        "Use \"we\" when crediting the team or describing Marketing Eye's work.",
+        "Measured and advisory: no hype words such as thrilled, excited to announce or game-changer.",
+        "Ground every point in client experience or the company context; never invent figures.",
+        "End with a question or a practical takeaway for B2B leaders, not a sales pitch."
+      ]
+    },
     "channels": ["LINKEDIN", "X", "WEBSITE"],
     "content_pillars": ["B2B growth", "Brand clarity", "Content craft", "Marketing leadership"],
     "is_mock": true,

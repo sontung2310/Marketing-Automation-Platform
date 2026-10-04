@@ -156,6 +156,14 @@ class BrandVoice(ModelBase):
     sample_copy: list[str] = Field(min_length=1)
 
 
+class Spokesperson(ModelBase):
+    """Whose first-person voice CEO posts use; voice_notes hold the tone rules."""
+
+    name: str = Field(min_length=1)
+    role: str = Field(min_length=1)
+    voice_notes: list[str] = Field(min_length=1)
+
+
 class Company(PrefixedModel):
     id_prefix: ClassVar[str] = "cmp_"
     name: str = Field(min_length=1)
@@ -167,6 +175,7 @@ class Company(PrefixedModel):
     positioning: str = Field(min_length=1)
     services: list[Service] = Field(min_length=1)
     brand_voice: BrandVoice
+    spokesperson: Spokesperson
     channels: list[Channel] = Field(min_length=1)
     content_pillars: list[str] = Field(min_length=1)
     is_mock: bool
@@ -455,7 +464,7 @@ class ProposedAction(PrefixedModel):
     payload: dict[str, object]
     status: ProposedActionStatus
     receipt: dict[str, object] | None = None
-    proposed_at: datetime
+    created_at: datetime
     updated_at: datetime
 
     @field_validator("deliverable_id")
@@ -465,7 +474,7 @@ class ProposedAction(PrefixedModel):
             raise ValueError("deliverable_id must start with 'del_'")
         return value
 
-    @field_validator("proposed_at", "updated_at")
+    @field_validator("created_at", "updated_at")
     @classmethod
     def action_timestamps_are_aware(cls, value: datetime) -> datetime:
         return ensure_aware(value)

@@ -36,6 +36,14 @@ def test_seed_bundle_meets_documented_minimums() -> None:
     assert coverage.au_influencer_ratio >= 0.6
 
 
+def test_seed_company_has_a_fictional_spokesperson() -> None:
+    spokesperson = load_seed_bundle(now=SEED_AUTHORED_AT).companies[0].spokesperson
+
+    assert spokesperson.name == "Morgan Hale"
+    assert "CEO" in spokesperson.role
+    assert any("first person" in note for note in spokesperson.voice_notes)
+
+
 def test_seed_bundle_rebases_timestamps_at_load_time() -> None:
     future = datetime.now(UTC) + timedelta(days=90)
     authored_bundle = load_seed_bundle(now=SEED_AUTHORED_AT)
