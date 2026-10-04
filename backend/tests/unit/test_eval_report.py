@@ -167,3 +167,13 @@ def test_calibration_counts_only_bundles_scored_by_both() -> None:
     assert (result.compared, result.agreement, result.passed) == (10, 1.0, False)
     everything = {b: score(b, 5) for b in owner}
     assert calibrate_judge("strategy", owner, everything).passed
+
+
+def test_the_per_category_bar_needs_three_repeats() -> None:
+    def names(repeats: int) -> set[str]:
+        records = [good_record(c.id, r) for c in CASES for r in range(1, repeats + 1)]
+        report = build_report("strategy", CASES, records, FIXTURE, {}, repeats)
+        return {m.name for m in report.metrics}
+
+    assert "pass_all_per_category" not in names(1)
+    assert "pass_all_per_category" in names(3)

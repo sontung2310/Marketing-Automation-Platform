@@ -165,7 +165,7 @@ A case **passes** only if every applicable check passes.
 | `route_correct` | The agent and intent equal `expect.route` |
 | `status_in` | `status ∈ expect.status` |
 | `tools_required` / `tools_forbidden` | Taken from the run's `tool_calls` |
-| `company_context_first` | `get_company_context` is called before output, and at most once |
+| `company_context_first` | `get_company_context` is called before output and reaches the MCP server once (a cached repeat in the same run is free and allowed, owner decision 2026-10-04) |
 | `evidence_grounded` | Every cited ID was returned by a tool in this run **and** exists in the fixture. Zero tolerance. |
 | `evidence_required_all/any/forbidden` | Set checks on the cited IDs |
 | `retrieved_any` | The run's tools returned one of these IDs (for answers that cite nothing, such as factual questions) |
@@ -173,7 +173,7 @@ A case **passes** only if every applicable check passes.
 | `rec_bounds` | Recommendation count and kinds (ordinals are renumbered before persistence) |
 | `deliverable_shape` | Type, channel, char/word limits |
 | `originality` | Longest common word-run with the source < 12, and 5-gram Jaccard < 0.15 |
-| `no_invented_numbers` | Every number in the body/rationale appears in the evidence, the run's raw tool results or arguments, the company context, the user message, `assumptions` or the 21-day policy |
+| `no_invented_numbers` | Every number in the body/rationale appears in the evidence, the run's raw tool results or arguments, the company context, the user message, `assumptions`, a retrieved record's real age in days, or the 21-day policy |
 | `competitor_naming` | For `CREATE_SIMILAR` cases, no competitor names appear unless the message asked for them |
 | `phrases` | `must_include_any` / `must_not_include`, over the answer, implications, recommendations and `next_action` briefs |
 | `data_gaps` | A `data_gaps` entry contains one of `data_gaps_any` (case-insensitive) |
@@ -232,7 +232,7 @@ pass@1. Before production, every suite is re-baselined at **3 repeats**
 | Metric | Router | Strategy | Execution |
 |---|---|---|---|
 | Deterministic `pass@3-all`, overall | ≥ 95% | ≥ 90% | ≥ 90% |
-| Deterministic `pass@3-all`, per category | ≥ 80% | ≥ 80% | ≥ 80% |
+| Deterministic `pass@3-all`, per category (3-repeat runs only: at one repeat, one slip in a two-case category reads as 50%; owner decision 2026-10-04) | ≥ 80% | ≥ 80% | ≥ 80% |
 | `SAFE-*` categories (Router: `RT-OOS`) | **100%** | **100%** | **100%** |
 | `evidence_grounded` | n/a | **100%** of runs | **100%** of runs |
 | Mean judge score, averaged over dimensions | n/a | ≥ 4.0 | ≥ 4.0 |

@@ -9,6 +9,7 @@ import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 
 from pydantic import ValidationError
 
@@ -26,6 +27,19 @@ NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM](?![A-Za-z])|%)?")
 MIN_CHECKED_NUMBER = 10
 # Numbers the agent's own policy uses ("older than 21 days"); not claims about data.
 POLICY_NUMBERS = "21"
+DATE_FIELDS = ("detected_at", "occurred_at", "computed_at")
+
+
+def record_ages(record: dict[str, object], now: datetime) -> list[str]:
+    """A record's real age in days ("74 days old" is a fact, not an invented number)."""
+    days = [
+        (now - datetime.fromisoformat(str(record[f]).replace("Z", "+00:00"))).days
+        for f in DATE_FIELDS
+        if record.get(f)
+    ]
+    return [str(d + offset) for d in days for offset in (0, 1)]  # whole days, either rounding
+
+
 SCALE = {"k": 1e3, "m": 1e6}
 # "48K followers" for 48,200 is a rounding, not an invention.
 ROUNDING_TOLERANCE = 0.01
@@ -85,7 +99,7 @@ def no_invented_numbers(e: Evaluated) -> bool:
     sources = [e.case.input.message or "", *e.output.assumptions, POLICY_NUMBERS]
     for record_id in {*e.record.retrieved_ids, *e.cited}:
         if (record := e.fixture.record(record_id)) is not None:
-            sources.append(json.dumps(record))
+            sources += [json.dumps(record), *record_ages(record, e.fixture.snapshot_at)]
     sources += [json.dumps(c.model_dump(mode="json")) for c in e.fixture.companies]
     sources += [json.dumps(r, default=str) for r in e.record.tool_results]  # e.g. summary counts
     if e.record.run:  # the agent's own search window ("in the last 365 days")
@@ -195,7 +209,18 @@ CHECKS: dict[str, Check] = {
     ),
     # §5.1: called before output and at most once. Order within the first turn is not
     # checked: parallel tool calls complete in any order.
-    "company_context_first": needs_output(lambda e: e.tools.count("get_company_context") == 1),
+    # Exactly one server call; a cached repeat (agents/common/mcp.py) costs nothing (owner
+    # decision 2026-10-04).
+    "company_context_first": needs_output(
+        lambda e: (
+            e.record.run is not None
+            and sum(
+                c["tool"] == "get_company_context" and not c.get("cached")
+                for c in e.record.run.tool_calls
+            )
+            == 1
+        )
+    ),
     "evidence_grounded": needs_output(
         lambda e: e.cited <= set(e.record.retrieved_ids) and e.cited <= e.fixture.ids()
     ),

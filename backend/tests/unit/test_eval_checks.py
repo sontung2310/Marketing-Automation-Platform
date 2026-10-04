@@ -1,7 +1,7 @@
 """Deterministic eval checks: one passing and one failing case per check."""
 
 from collections.abc import Callable
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 import pytest
@@ -237,13 +237,21 @@ def test_dates_are_checked_against_the_shifted_fixture() -> None:
     assert run_checks(base_case(), record(run), FIXTURE)["no_invented_numbers"] is False
 
 
-def test_a_cached_repeat_still_counts_as_a_second_context_call() -> None:
+def test_a_cached_repeat_is_not_a_second_context_call() -> None:
     def repeat(r: dict[str, Any]) -> None:
         r["tool_calls"].append({"tool": "get_company_context", "cached": True})
 
     results = run_checks(base_case(), record(with_run(repeat)), FIXTURE)
-    assert results["company_context_first"] is False
-    assert results["budget"] is True  # but it spends no tool-call budget
+    assert results["company_context_first"] is True and results["budget"] is True
+
+
+def test_a_real_age_is_allowed_and_a_wrong_one_is_not() -> None:
+    detected = datetime.fromisoformat(str(FIXTURE.record(TRIGGER)["detected_at"]))  # type: ignore[index]
+    age = (FIXTURE.snapshot_at - detected).days
+    ok = with_output(lambda o: o.update(answer=f"The price change is {age} days old."))
+    wrong = with_output(lambda o: o.update(answer=f"The price change is {age + 40} days old."))
+    assert run_checks(base_case(), record(ok), FIXTURE)["no_invented_numbers"] is True
+    assert run_checks(base_case(), record(wrong), FIXTURE)["no_invented_numbers"] is False
 
 
 def test_policy_numbers_from_the_instructions_are_allowed() -> None:

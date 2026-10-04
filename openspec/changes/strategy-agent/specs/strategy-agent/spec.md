@@ -11,7 +11,8 @@ only in evidence retrieved during the run, for every Strategy intent.
 
 A Strategy run SHALL return `StrategyOutput` (agents-spec §6.2) with status
 `OK`, `NEEDS_CLARIFICATION`, `REFUSED` or `INSUFFICIENT_DATA`. It SHALL call
-`get_company_context` once, before producing output, and SHALL respect the
+`get_company_context` before producing output, reaching the MCP server once (a
+repeated identical call in the same run is answered from the run's cache), and SHALL respect the
 run limits (16 turns, 12 MCP calls, 3 skill loads). Every cited evidence ID
 SHALL have been returned by a tool in the same run; if not, the system SHALL
 re-prompt once naming the unknown IDs and SHALL fail the run with

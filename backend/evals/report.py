@@ -25,6 +25,9 @@ THRESHOLDS: dict[str, dict[str, float]] = {
         "p95_latency_s_max": 45.0,
     },
 }
+# At one repeat a single slip in a two-case category reads as 50%, so the per-category bar
+# only means "keeps failing" from 3 repeats (owner decision 2026-10-04, evaluation-spec §6).
+PER_CATEGORY_MIN_REPEATS = 3
 
 
 class CaseResult(BaseModel):
@@ -184,6 +187,7 @@ def build_report(
             and (actual <= limit if name.endswith("_max") else actual >= limit),
         )
         for name, limit in limits.items()
+        if name != "pass_all_per_category" or repeats >= PER_CATEGORY_MIN_REPEATS
         for actual in [actuals[name]]
     ]
     lowest = sorted(scores.values(), key=lambda s: statistics.fmean(s.scores.values()))[:3]
