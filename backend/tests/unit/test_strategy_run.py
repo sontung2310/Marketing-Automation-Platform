@@ -8,10 +8,10 @@ import pytest
 from agents import Runner, Usage
 
 from app.agents.common.context import RunContext
+from app.agents.common.errors import UngroundedOutputError
 from app.agents.common.intents import Intent
 from app.agents.strategy import run as strategy_run
 from app.agents.strategy.output import StrategyOutput
-from app.agents.strategy.validation import UngroundedOutputError
 from app.core.errors import UpstreamUnavailableError
 from app.intelligence.models import RunStatus
 from tests.strategy_samples import recommendation, strategy_output

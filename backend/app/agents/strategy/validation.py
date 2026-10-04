@@ -1,18 +1,10 @@
 """Post-validation of StrategyOutput (agents-spec §6.2), run in code after the SDK parses it."""
 
+from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
 from app.agents.strategy.output import StrategyOutput
-from app.core.errors import DomainError
 
 MAX_TITLE_CHARS = 90
 MAX_NOTE_CHARS = 140
-
-
-class UngroundedOutputError(DomainError):
-    code = "UNGROUNDED_OUTPUT"
-
-
-class InvalidOutputError(DomainError):
-    code = "INVALID_OUTPUT"
 
 
 def unknown_ids(output: StrategyOutput, retrieved: set[str]) -> list[str]:
