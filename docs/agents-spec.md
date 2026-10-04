@@ -41,8 +41,11 @@ API ── RunService.start(trigger|message, session)
   successful `load_skill` calls per run, enforced in the tool wrappers. When a limit is
   hit, the tool returns a `LIMIT_REACHED` message, and the agent must finish
   with what it has and record a data gap. A repeated identical MCP call in the
-  same run returns the earlier result without reaching the server or counting
-  toward the limit; the trace marks it `cached: true`.
+  same run, made after the first one returned, gets the earlier result without
+  reaching the server or counting toward the limit; the trace marks it
+  `cached: true`. Identical calls issued in the same model turn run
+  concurrently and are not deduplicated (rare and harmless: each is one
+  bounded read).
 - **Company context first.** Both agents call `get_company_context` once per
   run (a cached repeat never reaches the server). The instructions say to call it before producing any
   customer-facing output. The evals check this.
@@ -283,9 +286,16 @@ class StrategyOutput(BaseModel):
 
 **Post-validation.** This runs in code after the SDK parses the output.
 
-- Every `evidence.id` must appear in this run's tool results. Unknown IDs
-  cause a single repair re-prompt ("these IDs were not retrieved: …"). If the
-  repair fails, the run is marked FAILED with the code `UNGROUNDED_OUTPUT`.
+- Every `evidence.id` must appear in this run's tool results, or be the
+  trigger record's ID (resolved for this company and given to the agent in its
+  input) or an ID the session's previous answer cited. Unknown IDs cause a
+  single repair re-prompt ("these IDs were not retrieved: …"). If the repair
+  fails, the run is marked FAILED with the code `UNGROUNDED_OUTPUT`.
+- Contract problems the agent must fix itself (an empty title or rationale, an
+  ID whose prefix does not match its kind, an unloaded skill in `skills_used`,
+  a missing `next_action`, or recommendations on an `INSUFFICIENT_DATA`
+  answer) share that one repair; if they remain, the run fails with
+  `INVALID_OUTPUT`.
 - Ordinals must be unique and contiguous from 1.
 - The output is persisted to `recommendations` with its `rec_` IDs.
 

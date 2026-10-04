@@ -34,10 +34,12 @@ agent selection until the Step 6 classifier exists.
 
 Each run SHALL belong to a session (created when absent) and SHALL persist its
 agent, intent, trigger, route, status, ordered events with increasing `seq`,
-tool calls, skills loaded, structured output, token usage, error and
-timestamps. The event log SHALL contain `run.started`, one or more
+tool calls, skills loaded, structured output, token usage (successful runs;
+failed-run usage is roadmap 8.3), error and timestamps. The event log SHALL contain `run.started`, one or more
 `agent.step`/`agent.tool` events, then `output.final` and `run.completed`, or
-`run.failed` on error. The session SHALL record the latest run.
+`run.failed` on error. The session SHALL record its latest successful run, so
+a failure, refusal or clarification never replaces the answer follow-ups build
+on.
 
 #### Scenario: A completed run has an ordered event log
 

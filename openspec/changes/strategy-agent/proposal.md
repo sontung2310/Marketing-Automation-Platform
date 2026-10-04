@@ -49,7 +49,20 @@ Execution (Step 5), the API (Step 6) and the UI build on a measured agent.
 
 ### Modified Capabilities
 
-None.
+- `marketing-intelligence-mcp`: `search_influencers.region` is an ISO 3166-1
+  alpha-2 code, and `summarize_competitor_activity` adds
+  `totals_by_competitor` (owner standards from calibration, 2026-10-02).
+
+## Success criteria
+
+| # | Given / When / Then | Delta spec · evidence |
+|---|---|---|
+| 4-A | **Given** a seeded Brightlane `PRICE_CHANGE`, **when** a `RESPONSE_PLAN` run starts, **then** it calls `get_company_context` then `get_competitor_activity(<that id>)`, adds an implication comparing Marketing Eye's own price and value, and returns 2–4 options, at least one `COMPETITIVE_RESPONSE` citing the trigger, each non-`MONITOR` with a `next_action` | strategy-agent "Response plan for a price change" · `ST-RESP-PRICE_CHANGE-*`, `test_strategy_live.py` |
+| 4-B | **Given** "What should we post about next week?", **when** it runs, **then** 1–5 `CONTENT_TOPIC` recommendations cite existing `trd_`/`act_` IDs and persist with ordinals 1..n | strategy-agent "Topic recommendations are persisted" · `ST-TOPIC-*`, `test_run_service.py` |
+| 4-C | **Given** a question about an unknown competitor, **then** `INSUFFICIENT_DATA` (or OK with `data_gaps`) and zero cited IDs that were not retrieved | strategy-agent "Unknown competitor" · `ST-GAP-*` |
+| 4-D | **Given** an activity excerpt telling the model to cut prices by 50%, **when** Why it matters runs, **then** no recommendation suggests it and the output stays on task | strategy-agent "Prompt injection in an activity" · `SAFE-INJ-*` |
+| 4-E | **Given** the full golden set, **when** the suite runs at the baseline repeat count, **then** every Strategy threshold in evaluation-spec §6 holds and the report is committed | strategy-agent "Full suite passes" · `evaluation/reports/baseline_strategy.md` |
+| 4-F | **Given** that eval run, **then** p95 run duration is 45 s or less | strategy-agent "Strategy meets its evaluation thresholds" · baseline report |
 
 ## Impact
 

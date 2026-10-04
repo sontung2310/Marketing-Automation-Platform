@@ -35,18 +35,21 @@ evaluation/                           # data: reviewed like specs
 │   ├── strategy.jsonl
 │   └── execution.jsonl
 ├── fixtures/
-│   └── intelligence_v1.json          # frozen DB snapshot (seed + eval-only adversarial records)
+│   ├── adversarial_v1.json           # eval-only adversarial records (injections, stale data)
+│   └── intelligence_v1.json          # frozen DB snapshot (seed + adversarial records)
 ├── rubrics/
 │   ├── strategy.md                   # judge rubric, anchored 1–5
+│   ├── strategy.calibration.json     # latest owner calibration (gates the baseline)
 │   └── execution.md
 └── reports/                          # gitignored except `baseline_<suite>.json` (+ readable `.md`)
 
-backend/evals/                        # code: `uv run --directory backend python -m evals.cli --suite strategy --repeats 1`
-├── cli.py
-├── loader.py                         # load fixture → throwaway DB, start MCP against it
-├── checks.py                         # deterministic checks (§4)
-├── judge.py                          # LLM-as-judge (§5)
-└── report.py                         # JSON + Markdown report
+backend/evals/                        # code: `uv run --directory backend python -m evals.cli run --suite strategy --repeats 1`
+├── cli.py                            # run · report [--baseline] · calibrate sample|compare
+├── cases.py  fixture.py  files.py    # golden cases, the time-shifted fixture, JSONL I/O
+├── runtime.py  runner.py             # throwaway DB + in-process MCP; runs cases through RunService
+├── checks.py                         # deterministic checks (§5.1)
+├── judge.py  calibration.py          # judge bundles and scores, owner calibration (§5.2)
+└── report.py                         # JSON + Markdown report, thresholds (§6)
 ```
 
 ## 3. Coverage matrix
