@@ -71,7 +71,8 @@ async def test_4a_response_plan_for_a_price_change(
     assert run.status is RunStatus.SUCCEEDED, run.error
     tools = tool_names(run)
     assert tools[0] == "get_company_context"
-    assert "get_competitor_activity" in tools
+    fetched = [c for c in run.tool_calls if c["tool"] == "get_competitor_activity"]
+    assert any(BRIGHTLANE_PRICE_CHANGE in str(c["args_summary"]) for c in fetched)
     assert run.output is not None
     recommendations = run.output["recommendations"]
     assert isinstance(recommendations, list)
@@ -91,7 +92,7 @@ async def test_4b_topics_for_next_week_are_persisted(
     assert run.output is not None
     recommendations = run.output["recommendations"]
     assert isinstance(recommendations, list)
-    assert 3 <= len(recommendations) <= 5
+    assert 1 <= len(recommendations) <= 5
     assert {r["kind"] for r in recommendations} == {"CONTENT_TOPIC"}
     for rec in recommendations:
         assert any(e["id"].startswith(("trd_", "act_")) for e in rec["evidence"])

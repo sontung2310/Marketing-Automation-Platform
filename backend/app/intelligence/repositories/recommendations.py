@@ -20,7 +20,10 @@ class RecommendationsRepository(Repository[Recommendation]):
                 [("run_id", ASCENDING), ("ordinal", ASCENDING)],
                 name="run_ordinal_unique",
                 unique=True,
-            )
+            ),
+            IndexModel(
+                [("session_id", ASCENDING), ("status", ASCENDING)], name="session_status"
+            ),  # supersede_open
         ]
 
     async def get_for_company(
@@ -56,3 +59,6 @@ class RecommendationsRepository(Repository[Recommendation]):
             },
             {"$set": {"status": RecommendationStatus.SUPERSEDED.value}},
         )
+
+    async def delete_for_run(self, run_id: str) -> None:
+        await self.collection.delete_many({"run_id": run_id})

@@ -35,6 +35,12 @@ def usage_summary(usage: Usage) -> dict[str, object]:
     }
 
 
+def raise_upstream(context: RunContext) -> None:
+    """An MCP failure the SDK turned into tool text still fails the run (nothing swallowed)."""
+    if context.upstream_error is not None:
+        raise context.upstream_error
+
+
 async def run_strategy(
     context: RunContext, message: str | None, *, mcp_url: str | None = None
 ) -> AgentOutcome:
@@ -52,6 +58,7 @@ async def run_strategy(
             agent, items, context=context, max_turns=MAX_TURNS, run_config=config
         )
         usage.add(result.context_wrapper.usage)
+        raise_upstream(context)
         output = result.final_output_as(StrategyOutput)
         context.emit("agent.step", {"label": "Checking evidence"})
         unknown = unknown_ids(output, context.retrieved_ids)
@@ -61,11 +68,14 @@ async def run_strategy(
             items = result.to_input_list()
             items.append({"role": "user", "content": repair_message(unknown, problems)})
             # The repair shares the run's turn budget (agents-spec §1: max_turns=16).
-            turns_left = max(1, MAX_TURNS - len(result.raw_responses))
+            turns_left = MAX_TURNS - len(result.raw_responses)
+            if turns_left < 1:
+                ensure_valid(output, context.retrieved_ids, context.skill_budget.skills)
             result = await Runner.run(
                 agent, items, context=context, max_turns=turns_left, run_config=config
             )
             usage.add(result.context_wrapper.usage)
+            raise_upstream(context)
             output = result.final_output_as(StrategyOutput)
             ensure_valid(output, context.retrieved_ids, context.skill_budget.skills)
     return AgentOutcome(

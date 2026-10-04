@@ -174,3 +174,48 @@ async def test_follow_up_reuses_evidence_and_supersedes_old_recommendations(
         async for doc in seeded_database["recommendations"].find({}, {"run_id": 1, "status": 1})
     }
     assert statuses == {first.id: "SUPERSEDED", second.id: "OPEN"}
+
+
+async def test_only_a_successful_answer_replaces_the_last_one(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    async def clarifying_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        output = strategy_output().model_copy(update={"status": "NEEDS_CLARIFICATION"})
+        return AgentOutcome(RunStatus.NEEDS_CLARIFICATION, output, {})
+
+    first = await service(seeded_database, answering_agent).start(
+        COMPANY, message="What should we post?", agent=AgentName.STRATEGY
+    )
+    await service(seeded_database, clarifying_agent).start(
+        COMPANY, message="LinkedIn", agent=AgentName.STRATEGY, session_id=first.session_id
+    )
+    session = await RunRepositories.for_database(seeded_database).sessions.get(first.session_id)
+    assert session is not None and session.last_run_id == first.id
+
+
+async def test_an_empty_answer_supersedes_and_a_failed_supersede_leaves_no_set(
+    seeded_database: AsyncDatabase[Document],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def empty_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        return AgentOutcome(RunStatus.SUCCEEDED, strategy_output(), {})
+
+    first = await service(seeded_database, answering_agent).start(
+        COMPANY, message="What should we post?", agent=AgentName.STRATEGY
+    )
+    await service(seeded_database, empty_agent).start(
+        COMPANY, message="Drop #1 and #2", agent=AgentName.STRATEGY, session_id=first.session_id
+    )
+    recs = seeded_database["recommendations"]
+    assert await recs.count_documents({"run_id": first.id, "status": "OPEN"}) == 0
+
+    async def broken(*args: object, **kwargs: object) -> None:
+        raise ConnectionError("Mongo blip")
+
+    repositories = RunRepositories.for_database(seeded_database)
+    monkeypatch.setattr(repositories.recommendations, "supersede_open", broken)
+    failed = await RunService(repositories, {AgentName.STRATEGY: answering_agent}).start(
+        COMPANY, message="What should we post?", agent=AgentName.STRATEGY
+    )
+    assert failed.status is RunStatus.FAILED
+    assert await recs.count_documents({"run_id": failed.id}) == 0

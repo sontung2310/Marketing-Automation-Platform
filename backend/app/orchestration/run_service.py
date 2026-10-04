@@ -117,8 +117,9 @@ class RunService:
             }
         )
         await self.repositories.runs.upsert(run)
-        if run.status is not RunStatus.FAILED:
-            # Follow-ups build on the last answer, so a failed run must not replace it.
+        if run.status is RunStatus.SUCCEEDED:
+            # Follow-ups build on the last successful answer; a failure, refusal or
+            # clarification must not replace it.
             await self.repositories.sessions.upsert(
                 session.model_copy(update={"last_run_id": run.id})
             )

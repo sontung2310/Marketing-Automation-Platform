@@ -35,6 +35,10 @@ def test_missing_fixture_id_is_named_before_any_run(tmp_path: Path) -> None:
     cases = parse_cases(write(tmp_path, case("ST-GONE", "act_does_not_exist")))
     with pytest.raises(CaseFileError, match=r"ST-GONE.*act_does_not_exist"):
         check_fixture_ids(cases, load_fixture("intelligence_v1"))
+    expect = {"status": ["OK"], "retrieved_any": ["act_typo"]}
+    retrieved = golden_case_data(id="ST-TYPO", input={"message": "Hi"}, expect=expect)
+    with pytest.raises(CaseFileError, match=r"ST-TYPO.*act_typo"):
+        check_fixture_ids(parse_cases(write(tmp_path, retrieved)), load_fixture("intelligence_v1"))
 
 
 def test_duplicate_ids_and_bad_lines_are_rejected(tmp_path: Path) -> None:

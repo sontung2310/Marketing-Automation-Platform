@@ -12,6 +12,7 @@ from app.agents.common.intents import Intent
 from app.agents.strategy import run as strategy_run
 from app.agents.strategy.output import StrategyOutput
 from app.agents.strategy.validation import UngroundedOutputError
+from app.core.errors import UpstreamUnavailableError
 from app.intelligence.models import RunStatus
 from tests.strategy_samples import recommendation, strategy_output
 
@@ -30,7 +31,9 @@ class FakeMCP:
         return None
 
 
-def fake_runner(monkeypatch: pytest.MonkeyPatch, outputs: list[StrategyOutput]) -> list[Any]:
+def fake_runner(
+    monkeypatch: pytest.MonkeyPatch, outputs: list[StrategyOutput], turns: int = 5
+) -> list[Any]:
     inputs: list[Any] = []
 
     async def run(agent: object, items: Any, **kwargs: object) -> SimpleNamespace:
@@ -39,7 +42,7 @@ def fake_runner(monkeypatch: pytest.MonkeyPatch, outputs: list[StrategyOutput]) 
         return SimpleNamespace(
             final_output_as=lambda _type: output,
             to_input_list=lambda: [{"role": "user", "content": "first"}],
-            raw_responses=[object()] * 5,  # five model turns used
+            raw_responses=[object()] * turns,  # model turns used
             context_wrapper=SimpleNamespace(usage=Usage(requests=1, total_tokens=10)),
         )
 
@@ -80,3 +83,21 @@ async def test_second_ungrounded_answer_fails(monkeypatch: pytest.MonkeyPatch) -
     fake_runner(monkeypatch, [bad, bad])
     with pytest.raises(UngroundedOutputError):
         await strategy_run.run_strategy(context(), "Plan a response")
+
+
+async def test_an_mcp_failure_the_sdk_swallowed_still_fails_the_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_runner(monkeypatch, [strategy_output(recommendation(1, "act_1"))])
+    ctx = context()
+    ctx.upstream_error = UpstreamUnavailableError("MCP connection dropped")
+    with pytest.raises(UpstreamUnavailableError):
+        await strategy_run.run_strategy(ctx, "What should we post?")
+
+
+async def test_no_repair_once_the_turn_budget_is_spent(monkeypatch: pytest.MonkeyPatch) -> None:
+    bad = strategy_output(recommendation(1, "act_invented"))
+    inputs = fake_runner(monkeypatch, [bad, bad], turns=16)
+    with pytest.raises(UngroundedOutputError):
+        await strategy_run.run_strategy(context(), "Plan a response")
+    assert len(inputs) == 1  # never a 17th turn

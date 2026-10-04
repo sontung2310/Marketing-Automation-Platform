@@ -80,3 +80,18 @@ async def test_an_error_result_is_not_reused(monkeypatch: pytest.MonkeyPatch) ->
     await server.call_tool("search_trends", {})
     await server.call_tool("search_trends", {})
     assert server.context.mcp_calls == 2  # the retry reached the server
+
+
+async def test_a_raising_call_is_traced_and_fails_the_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def dropped(
+        self: MCPServerStreamableHttp, name: str, args: dict[str, Any] | None, meta: object = None
+    ) -> CallToolResult:
+        raise ConnectionError("MCP connection dropped")
+
+    monkeypatch.setattr(MCPServerStreamableHttp, "call_tool", dropped)
+    server = RunMCPServer(context(), "http://mcp.test/mcp")
+    with pytest.raises(ConnectionError):
+        await server.call_tool("search_trends", {})
+    assert server.context.upstream_error is not None
+    assert server.context.upstream_error.code == "UPSTREAM_UNAVAILABLE"
+    assert [c["tool"] for c in server.context.tool_calls] == ["search_trends"]

@@ -73,7 +73,7 @@ class GoldenCase(Strict):
 
     def referenced_ids(self) -> set[str]:
         ids = set(self.expect.evidence_required_all + self.expect.evidence_required_any)
-        ids |= set(self.expect.evidence_forbidden)
+        ids |= set(self.expect.evidence_forbidden) | set(self.expect.retrieved_any)
         if self.input.trigger is not None:
             ids.add(self.input.trigger.ref_id)
         # Follow-ups may re-cite what the history cited, so those IDs must exist too.

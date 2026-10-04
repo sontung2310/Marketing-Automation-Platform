@@ -8,6 +8,7 @@ from agents.mcp import MCPServerStreamableHttp
 from mcp.types import CallToolResult, TextContent
 
 from app.agents.common.context import MAX_MCP_CALLS_PER_RUN, RunContext
+from app.agents.common.errors import run_error
 
 ARGS_SUMMARY_CHARS = 200
 
@@ -70,7 +71,12 @@ class RunMCPServer(MCPServerStreamableHttp):
             )
         self.context.mcp_calls += 1
         started = time.monotonic()
-        result = await super().call_tool(tool_name, arguments, meta)
+        try:
+            result = await super().call_tool(tool_name, arguments, meta)
+        except Exception as exc:
+            self.context.upstream_error = run_error(exc)
+            self._trace(tool_name, arguments, None, round((time.monotonic() - started) * 1000))
+            raise
         payload = result_payload(result)
         if not (isinstance(payload, dict) and "error" in payload):
             self._results[key] = result  # a failed call (e.g. a DB blip) stays retryable
