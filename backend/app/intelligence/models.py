@@ -464,6 +464,7 @@ class ProposedAction(PrefixedModel):
     payload: dict[str, object]
     status: ProposedActionStatus
     receipt: dict[str, object] | None = None
+    error: str | None = None  # why a FAILED action failed
     created_at: datetime
     updated_at: datetime
 

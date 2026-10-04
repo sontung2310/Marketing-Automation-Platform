@@ -1,13 +1,18 @@
 """Proposed actions: payloads built in code from the deliverable (agents-spec §8, design D3)."""
 
+import logging
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
+import pydantic
+
 from app.agents.execution.output import ActionProposal
+from app.connectors.base import Connector
 from app.connectors.payloads import validate_payload
+from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.intelligence.models import (
     ActionType,
     Channel,
@@ -16,6 +21,9 @@ from app.intelligence.models import (
     ProposedAction,
     ProposedActionStatus,
 )
+from app.intelligence.repositories import ProposedActionsRepository
+
+logger = logging.getLogger(__name__)
 
 SCHEDULE_ZONE = ZoneInfo("Australia/Sydney")
 SCHEDULE_TIME = time(9)
@@ -154,3 +162,81 @@ def build_actions(
             )
         )
     return actions
+
+
+class ActionService:
+    """Approve or discard a PROPOSED action (agents-spec §8 state machine)."""
+
+    def __init__(
+        self,
+        actions: ProposedActionsRepository,
+        connectors: Mapping[ActionType, Connector],
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+    ) -> None:
+        self.actions = actions
+        self.connectors = connectors
+        self.clock = clock
+
+    async def approve(
+        self, action_id: str, overrides: Mapping[str, object] | None = None
+    ) -> ProposedAction:
+        action = await self._proposed(action_id)
+        try:
+            payload = validate_payload(action.action_type, action.payload | dict(overrides or {}))
+        except pydantic.ValidationError as exc:
+            raise ValidationError(
+                "The action payload is not valid", {"errors": exc.errors(include_url=False)}
+            ) from exc
+        approved = await self.actions.transition(
+            action_id,
+            ProposedActionStatus.PROPOSED,
+            {
+                "status": ProposedActionStatus.APPROVED,
+                "payload": payload,
+                "updated_at": self.clock(),
+            },
+        )
+        if approved is None:
+            raise self._conflict(action_id)  # another request approved or discarded it first
+        try:
+            receipt = await self.connectors[action.action_type].execute(payload)
+        except Exception:
+            logger.exception("Connector failed for %s", action_id)
+            outcome: dict[str, object] = {
+                "status": ProposedActionStatus.FAILED,
+                "error": f"The {action.action_type} connector failed. The error has been logged.",
+            }
+        else:
+            outcome = {"status": ProposedActionStatus.EXECUTED, "receipt": receipt}
+        done = await self.actions.transition(
+            action_id, ProposedActionStatus.APPROVED, outcome | {"updated_at": self.clock()}
+        )
+        if done is None:
+            raise ConflictError(f"{action_id} changed while it ran", {"action_id": action_id})
+        return done
+
+    async def discard(self, action_id: str) -> ProposedAction:
+        await self._proposed(action_id)
+        discarded = await self.actions.transition(
+            action_id,
+            ProposedActionStatus.PROPOSED,
+            {"status": ProposedActionStatus.DISCARDED, "updated_at": self.clock()},
+        )
+        if discarded is None:
+            raise self._conflict(action_id)
+        return discarded
+
+    async def _proposed(self, action_id: str) -> ProposedAction:
+        action = await self.actions.get(action_id)
+        if action is None:
+            raise NotFoundError(f"{action_id} was not found", {"action_id": action_id})
+        if action.status is not ProposedActionStatus.PROPOSED:
+            raise self._conflict(action_id, action.status)
+        return action
+
+    @staticmethod
+    def _conflict(action_id: str, status: object = None) -> ConflictError:
+        detail = f" (it is {status})" if status else ""
+        return ConflictError(
+            f"{action_id} is no longer awaiting approval{detail}", {"action_id": action_id}
+        )
