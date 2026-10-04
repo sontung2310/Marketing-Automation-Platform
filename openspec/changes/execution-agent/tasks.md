@@ -6,8 +6,8 @@ approves.
 
 ## 1. 5.1 Execution agent
 
-- [ ] 1.1 Add `Company.spokesperson` (required) with a fictional Marketing Eye founder and CEO in the seed, and rename `ProposedAction.proposed_at` to `created_at`; verify seed validation fails without a spokesperson and `get_company_context` returns it in the MCP integration test.
-- [ ] 1.2 Move Strategy's run–validate–repair-once loop into `agents/common/repair.py` (design D1) and switch Strategy to it; verify every `tests/unit/test_strategy_*.py` and `test_run_mcp.py` pass unchanged.
+- [x] 1.1 Add `Company.spokesperson` (required) with a fictional Marketing Eye founder and CEO in the seed, and rename `ProposedAction.proposed_at` to `created_at`; verify seed validation fails without a spokesperson and `get_company_context` returns it in the MCP integration test.
+- [x] 1.2 Move Strategy's run–validate–repair-once loop into `agents/common/repair.py` (design D1) and switch Strategy to it; verify every `tests/unit/test_strategy_*.py` and `test_run_mcp.py` pass unchanged.
 - [ ] 1.3 Add the deliverable-type registry (D2) and make trigger evidence IDs citable in the run service (D5); verify with unit tests that every `CREATE_SIMILAR` activity/channel pair, `FROM_RECOMMENDATION` and `INFLUENCER_OUTREACH` resolve, and that a recommendation trigger's evidence IDs join `retrieved_ids`.
 - [ ] 1.4 Add `ExecutionOutput` (agent-facing `ActionProposal`, D3), `agents/execution/instructions.md` rendered with the skill catalogue, the agent builder and `run_execution` on the shared loop, with grounding, type and status-shape problems; verify the instructions contain every agents-spec §2 and §7.3 element, and that unit tests over stubbed outputs repair once then fail with `UNGROUNDED_OUTPUT` or `INVALID_OUTPUT`.
 - [ ] 1.5 Add `persist_execution` (deliverable only at this point) to `PERSISTERS` and register the Execution agent; verify with an integration test against MongoDB that an `OK` run stores one deliverable linked to the run, its ID is in `output.final`, and a `NEEDS_CLARIFICATION` run stores nothing.
