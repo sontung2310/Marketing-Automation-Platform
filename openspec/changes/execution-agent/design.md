@@ -135,7 +135,10 @@ sparingly and "we" to credit the team. Use no hype words. Keep the tone
 measured and advisory. Company posts use `brand_voice` ("we" or impersonal),
 and the instructions say so. Tone is judged by the brand-voice dimension
 rather than a code check. A cheap code check would be fragile: counting "I"
-penalises legitimate first person.
+penalises legitimate first person. The guards check only that first person
+is present: a `CEO_POST` that never says "I", "me" or "my" is a soft
+`channel_fit` problem. The first live run produced a fully impersonal CEO
+post, which read "I sparingly" as "no I".
 
 ### D9. The eval suite is added through the existing registries
 

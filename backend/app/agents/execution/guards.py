@@ -26,6 +26,8 @@ WORD = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
 # "a 500-word blog", "300 words" or "1,200 to 1,500 words": the user set the length.
 USER_LENGTH = re.compile(r"\d[\d,]*\s*-?\s*words?\b", re.IGNORECASE)
 THREAD = re.compile(r"\bthread\b", re.IGNORECASE)
+# Presence only: counting "I" would penalise good first person (design D8).
+FIRST_PERSON = re.compile(r"\b(?:I|I'm|I've|I'd|[Mm]y|[Mm]e)\b")
 
 QualityField = Literal["originality", "channel_fit"]
 
@@ -180,6 +182,17 @@ def guard_problems(deliverable: ExecutionDeliverable, inputs: GuardInputs) -> li
         GuardProblem("channel_fit", text, hard=False)
         for text in length_problems(deliverable, inputs.message)
     ]
+    if deliverable.type is DeliverableType.CEO_POST and not FIRST_PERSON.search(
+        deliverable.body_markdown
+    ):
+        problems.append(
+            GuardProblem(
+                "channel_fit",
+                "a CEO_POST speaks in the first person as the spokesperson, but this one "
+                "never says I, me or my",
+                hard=False,
+            )
+        )
     if inputs.intent is Intent.CREATE_SIMILAR:
         text = f"{deliverable.title}\n{deliverable.body_markdown}"
         problems += [

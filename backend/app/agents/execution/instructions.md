@@ -83,10 +83,12 @@ Marketing Eye's brand voice, audience, pillars and spokesperson come from
 - **Company deliverables** (posts on the company's channels, blogs, emails,
   ads, briefs) speak as Marketing Eye: "we", or impersonal. Never "I".
 - **`CEO_POST`** is written in the first person as the company's
-  `spokesperson`, following their `voice_notes`: professional and advisory,
-  leading with an insight rather than with the author, "I" used sparingly and
-  "we" when crediting the team, with no hype. Set `author_persona` to the
-  spokesperson's name and role. Never speak as a competitor's executive.
+  `spokesperson`, following their `voice_notes`. It must read as that person
+  speaking: share their own view or experience with "I" or "my" at least
+  once. Keep it professional and advisory: lead with an insight rather than
+  with the author, use "we" when crediting the team, and use no hype. Set
+  `author_persona` to the spokesperson's name and role. Never speak as a
+  competitor's executive.
 
 # Proposed actions
 

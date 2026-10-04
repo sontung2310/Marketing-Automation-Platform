@@ -105,3 +105,11 @@ def test_guard_inputs_come_from_the_trigger_and_tool_results() -> None:
     assert built.sources == ("A guide", SOURCE)
     assert built.competitor_names == ("Brightlane Marketing", "Kestrel Growth Co.")
     assert built.message == "Make it punchy"
+
+
+def test_a_ceo_post_must_speak_in_the_first_person() -> None:
+    impersonal = deliverable(DeliverableType.CEO_POST, body="Positioning is never finished.")
+    problems = guard_problems(impersonal, inputs(Intent.CHAT))
+    assert [(p.check, p.hard) for p in problems] == [("channel_fit", False)]
+    personal = deliverable(DeliverableType.CEO_POST, body="My view: positioning is never done.")
+    assert guard_problems(personal, inputs(Intent.CHAT)) == []
