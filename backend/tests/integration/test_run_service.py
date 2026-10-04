@@ -13,6 +13,7 @@ from app.intelligence.models import AgentName, Run, RunStatus
 from app.orchestration.references import RunRepositories
 from app.orchestration.routing import Trigger, TriggerAction, TriggerKind
 from app.orchestration.run_service import AgentFn, RunService
+from tests.execution_samples import clarification, execution_output
 from tests.strategy_samples import recommendation, strategy_output
 
 pytestmark = pytest.mark.integration
@@ -31,8 +32,15 @@ async def failing_agent(context: RunContext, message: str | None) -> AgentOutcom
     raise UpstreamUnavailableError("MCP is down")
 
 
-def service(database: AsyncDatabase[Document], agent: AgentFn) -> RunService:
-    agents = {AgentName.STRATEGY: agent, AgentName.EXECUTION: agent}
+async def drafting_agent(context: RunContext, message: str | None) -> AgentOutcome:
+    cited = (str(context.trigger_context["id"]),) if context.trigger_context else ()
+    return AgentOutcome(RunStatus.SUCCEEDED, execution_output(evidence_ids=cited))
+
+
+def service(
+    database: AsyncDatabase[Document], agent: AgentFn, execution: AgentFn = drafting_agent
+) -> RunService:
+    agents = {AgentName.STRATEGY: agent, AgentName.EXECUTION: execution}
     return RunService(RunRepositories.for_database(database), agents)
 
 
@@ -230,7 +238,11 @@ async def test_do_this_can_cite_the_recommendation_evidence(
         retrieved.append(set(context.retrieved_ids))
         return await answering_agent(context, message)
 
-    runs = service(seeded_database, recording_agent)
+    async def recording_drafter(context: RunContext, message: str | None) -> AgentOutcome:
+        retrieved.append(set(context.retrieved_ids))
+        return await drafting_agent(context, message)
+
+    runs = service(seeded_database, recording_agent, recording_drafter)
     strategy = await runs.start(COMPANY, message="What should we post?", agent=AgentName.STRATEGY)
     final = next(e for e in strategy.events if e["type"] == "output.final")
     second = final["data"]["recommendation_ids"][1]
@@ -238,3 +250,47 @@ async def test_do_this_can_cite_the_recommendation_evidence(
     await runs.start(COMPANY, trigger=trigger)  # a new session: only the trigger grounds it
     assert retrieved[1] >= {second, "act_2"}
     assert "act_1" not in retrieved[1]  # recommendation 1's evidence is not this trigger's
+
+
+async def social_post_trigger(database: AsyncDatabase[Document]) -> Trigger:
+    activities = await RunRepositories.for_database(database).activities.search_for_company(
+        COMPANY, detected_since=datetime(2000, 1, 1, tzinfo=UTC), limit=100
+    )
+    activity = next(
+        a for a in activities if a.activity_type == "SOCIAL_POST" and a.channel == "LINKEDIN"
+    )
+    return Trigger(
+        kind=TriggerKind.FEED_ACTION, ref_id=activity.id, action=TriggerAction.CREATE_SIMILAR
+    )
+
+
+async def test_execution_run_persists_its_deliverable(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    trigger = await social_post_trigger(seeded_database)
+    run = await service(seeded_database, answering_agent).start(COMPANY, trigger=trigger)
+
+    assert (run.agent, run.intent, run.status) == (
+        AgentName.EXECUTION,
+        "CREATE_SIMILAR",
+        RunStatus.SUCCEEDED,
+    )
+    final = next(e for e in run.events if e["type"] == "output.final")
+    stored = [doc async for doc in seeded_database["deliverables"].find({"run_id": run.id})]
+    assert [doc["_id"] for doc in stored] == [final["data"]["deliverable_id"]]
+    assert stored[0]["type"] == "LINKEDIN_POST"
+
+
+async def test_execution_clarification_stores_nothing(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    async def asking_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        return AgentOutcome(RunStatus.NEEDS_CLARIFICATION, clarification())
+
+    run = await service(seeded_database, answering_agent, asking_agent).start(
+        COMPANY, message="Write it", agent=AgentName.EXECUTION
+    )
+    assert run.status is RunStatus.NEEDS_CLARIFICATION
+    final = next(e for e in run.events if e["type"] == "output.final")
+    assert final["data"]["deliverable_id"] is None
+    assert await seeded_database["deliverables"].count_documents({}) == 0

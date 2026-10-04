@@ -3,9 +3,11 @@
 from collections.abc import Awaitable, Callable
 
 from app.agents.common.context import AgentOutcome
+from app.agents.execution.output import ExecutionOutput
 from app.agents.strategy.output import StrategyOutput
 from app.intelligence.models import (
     AgentName,
+    Deliverable,
     Recommendation,
     RecommendationStatus,
     Run,
@@ -46,5 +48,22 @@ async def persist_strategy(
     return {"recommendation_ids": [rec.id for rec in recommendations]}
 
 
-# Step 5 adds Execution (deliverables and proposed actions).
-PERSISTERS: dict[AgentName, Persister] = {AgentName.STRATEGY: persist_strategy}
+async def persist_execution(
+    repositories: RunRepositories, run: Run, outcome: AgentOutcome
+) -> dict[str, object]:
+    output = outcome.output
+    if not isinstance(output, ExecutionOutput):
+        raise TypeError(f"Execution runs return ExecutionOutput, got {type(output).__name__}")
+    if outcome.status is not RunStatus.SUCCEEDED or output.deliverable is None:
+        return {"deliverable_id": None}  # refusals and clarifications deliver nothing
+    deliverable = Deliverable.model_validate(
+        output.deliverable.model_dump() | {"id": Deliverable.new_id(), "run_id": run.id}
+    )
+    await repositories.deliverables.insert_many([deliverable])
+    return {"deliverable_id": deliverable.id}
+
+
+PERSISTERS: dict[AgentName, Persister] = {
+    AgentName.STRATEGY: persist_strategy,
+    AgentName.EXECUTION: persist_execution,
+}

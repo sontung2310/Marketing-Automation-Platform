@@ -11,6 +11,7 @@ from app.core.errors import NotFoundError
 from app.intelligence.models import Session
 from app.intelligence.repositories import (
     CompetitorActivitiesRepository,
+    DeliverablesRepository,
     InfluencersRepository,
     RecommendationsRepository,
     RunsRepository,
@@ -26,6 +27,7 @@ class RunRepositories:
     trends: TrendsRepository
     influencers: InfluencersRepository
     recommendations: RecommendationsRepository
+    deliverables: DeliverablesRepository
     sessions: SessionsRepository
     runs: RunsRepository
 
@@ -36,6 +38,7 @@ class RunRepositories:
             trends=TrendsRepository(database),
             influencers=InfluencersRepository(database),
             recommendations=RecommendationsRepository(database),
+            deliverables=DeliverablesRepository(database),
             sessions=SessionsRepository(database),
             runs=RunsRepository(database),
         )
