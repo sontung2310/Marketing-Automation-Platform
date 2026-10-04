@@ -35,18 +35,21 @@ evaluation/                           # data: reviewed like specs
 │   ├── strategy.jsonl
 │   └── execution.jsonl
 ├── fixtures/
-│   └── intelligence_v1.json          # frozen DB snapshot (seed + eval-only adversarial records)
+│   ├── adversarial_v1.json           # eval-only adversarial records (injections, stale data)
+│   └── intelligence_v1.json          # frozen DB snapshot (seed + adversarial records)
 ├── rubrics/
 │   ├── strategy.md                   # judge rubric, anchored 1–5
+│   ├── strategy.calibration.json     # latest owner calibration (gates the baseline)
 │   └── execution.md
-└── reports/                          # gitignored except `baseline_<suite>.json`
+└── reports/                          # gitignored except `baseline_<suite>.json` (+ readable `.md`)
 
-backend/evals/                        # code: `uv run --directory backend python -m evals.cli --suite strategy --repeats 3`
-├── cli.py
-├── loader.py                         # load fixture → throwaway DB, start MCP against it
-├── checks.py                         # deterministic checks (§4)
-├── judge.py                          # LLM-as-judge (§5)
-└── report.py                         # JSON + Markdown report
+backend/evals/                        # code: `uv run --directory backend python -m evals.cli run --suite strategy --repeats 1`
+├── cli.py                            # run · report [--baseline] · calibrate sample|compare
+├── cases.py  fixture.py  files.py    # golden cases, the time-shifted fixture, JSONL I/O
+├── runtime.py  runner.py             # throwaway DB + in-process MCP; runs cases through RunService
+├── checks.py                         # deterministic checks (§5.1)
+├── judge.py  calibration.py          # judge bundles and scores, owner calibration (§5.2)
+└── report.py                         # JSON + Markdown report, thresholds (§6)
 ```
 
 ## 3. Coverage matrix
@@ -69,13 +72,13 @@ never fewer. The IDs are used in the `category` field.
 
 | Category | Scenario | Trigger | Expected status | Min |
 |---|---|---|---|---|
-| `ST-TOPIC` | "What should we post about next week?", including per-channel and per-pillar variants | chat / `USE_TREND` | OK, 3–5 `CONTENT_TOPIC` | 6 |
+| `ST-TOPIC` | "What should we post about next week?", including per-channel and per-pillar variants | chat / `USE_TREND` | OK, 1–5 `CONTENT_TOPIC` | 6 |
 | `ST-RESP-<TYPE>` | **Plan a response** for each Strategy-routed type: `NEW_PRODUCT`, `PRODUCT_REMOVED`, `PRICE_CHANGE`, `PROMOTION`, `CAMPAIGN_LAUNCH`, `PAGE_UPDATE` | `FEED_ACTION` | OK, ≥ 1 `COMPETITIVE_RESPONSE` citing the trigger | 2 per type (12) |
 | `ST-WHY-<TYPE>` | **Why it matters** for `NEW_BLOG`, `SOCIAL_POST`, `EXECUTIVE_POST` | `FEED_ACTION` | OK, 2–3 implications | 2 per type (6) |
 | `ST-INFL` | Influencer recommendations by topic, channel and region | chat | OK, cites `inf_` IDs | 4 |
 | `ST-TREND` | Trend analysis: rising, falling, per channel | chat | OK | 3 |
-| `ST-COMP` | Competitor questions: "What has Brightlane done this month?", comparisons | chat | OK, a direct answer | 3 |
-| `ST-GAP` | No data: an unknown competitor, a topic with zero trends, a window with no activity | chat | `INSUFFICIENT_DATA` or OK with `data_gaps`, **no invented evidence** | 4 |
+| `ST-COMP` | Competitor questions: "What has Brightlane done this month?", comparisons | chat | OK, a direct answer, no recommendations | 3 |
+| `ST-GAP` | No data: an unknown competitor, a topic with zero trends, a window with no activity | chat | `INSUFFICIENT_DATA` or OK with `data_gaps`, **no invented evidence**, no recommendations | 4 |
 | `ST-STALE` | Only old evidence exists (> 21 days) | chat | the `data_gaps` entry mentions recency | 2 |
 | `ST-CLAR` | Underspecified request, sent with an explicit hint | chat | `NEEDS_CLARIFICATION` | 2 |
 | `ST-MULTI` | A follow-up refining the previous run ("only LinkedIn", "drop #3") | chat + session history | OK, reflects the constraint | 2 |
@@ -130,12 +133,17 @@ Upstream cases may make up **no more than 30%** of any suite.
     "evidence_required_all": ["act_fx_price_01"],
     "evidence_required_any": ["act_fx_price_02", "act_fx_promo_01"],
     "evidence_forbidden": [],
+    "retrieved_any": [],                    // the run fetched one (answers with nothing to cite)
     "skills_any": ["pricing", "competitor-profiling"],
     "recommendations": { "min": 2, "max": 4, "kinds_required": ["COMPETITIVE_RESPONSE"] },
     "deliverable": null,                   // execution: {type, channel, max_chars, min_words, max_words}
     "proposed_actions_any": [],            // execution: ["schedule_social_post"]
     "must_include_any": ["price", "value"],   // case-insensitive, in answer/rationale/body
     "must_not_include": ["$1,500"],         // e.g. invented numbers
+    "data_gaps_any": [],                    // a data_gaps entry mentions one (e.g. recency)
+    "channels_only": [],                    // every recommendation targets one of these
+    "each_cites_prefix": [],                // every recommendation cites e.g. "inf_"
+    "implications_min": null, "implications_max": null,
     "max_tool_calls": 12
   },
   "rubric_focus": ["grounding", "actionability"],   // which judge dimensions weigh more
@@ -160,26 +168,36 @@ A case **passes** only if every applicable check passes.
 | `route_correct` | The agent and intent equal `expect.route` |
 | `status_in` | `status ∈ expect.status` |
 | `tools_required` / `tools_forbidden` | Taken from the run's `tool_calls` |
-| `company_context_first` | `get_company_context` is called before output, and at most once |
+| `company_context_first` | `get_company_context` is called before output and reaches the MCP server once (a cached repeat in the same run is free and allowed, owner decision 2026-10-04) |
 | `evidence_grounded` | Every cited ID was returned by a tool in this run **and** exists in the fixture. Zero tolerance. |
 | `evidence_required_all/any/forbidden` | Set checks on the cited IDs |
+| `retrieved_any` | The run's tools returned one of these IDs (for answers that cite nothing, such as factual questions) |
 | `skills` | `skills_used ∩ skills_any ≠ ∅` (when specified), and every entry is on the agent's allowlist |
-| `rec_bounds` | Recommendation count, kinds and contiguous ordinals |
+| `rec_bounds` | Recommendation count and kinds (ordinals are renumbered before persistence) |
 | `deliverable_shape` | Type, channel, char/word limits |
 | `originality` | Longest common word-run with the source < 12, and 5-gram Jaccard < 0.15 |
-| `no_invented_numbers` | Every number in the body/rationale appears in the evidence, the company context, the user message or `assumptions` |
+| `no_invented_numbers` | Every number in the body/rationale appears in the evidence, the run's raw tool results or arguments, the company context, the user message, `assumptions`, a retrieved record's real age in days, or the 21-day policy |
 | `competitor_naming` | For `CREATE_SIMILAR` cases, no competitor names appear unless the message asked for them |
-| `phrases` | `must_include_any` / `must_not_include` |
-| `budget` | Tool calls ≤ `max_tool_calls`, and skill loads ≤ 3 |
+| `phrases` | `must_include_any` / `must_not_include`, over the answer, implications, recommendations and `next_action` briefs |
+| `data_gaps` | A `data_gaps` entry contains one of `data_gaps_any` (case-insensitive) |
+| `channels` | Every recommendation's `channel` is in `channels_only` |
+| `each_cites` | Every recommendation cites an ID starting with one of `each_cites_prefix` |
+| `implications` | The implication count is within `implications_min`–`implications_max` |
+| `budget` | Tool calls ≤ `max_tool_calls` (cached repeats excluded), and skill loads ≤ 3 |
 
 ### 5.2 LLM-as-judge (`judge.py`)
 
-- The judge model is `OPENAI_MODEL_JUDGE`, which must differ from the agent
-  model where possible. Temperature is 0, and the output is a structured
-  score object.
+- The judge is Claude (owner decision, 2026-09-29): `evals.cli run` writes one
+  judge bundle per run to `bundles.jsonl`, and the `eval-judge` team skill has
+  fresh Claude Code subagents score them against the rubric. Subagents only
+  reply; the coordinator writes `scores.jsonl`, checks each batch's IDs, and
+  `evals.cli report` validates every score (known bundle, scored once, exact
+  dimensions, integer 1–5, a rationale). Judged runs happen in a Claude Code
+  session, not in CI.
 - The judge sees the case, the agent output, the evidence records the agent
-  retrieved, the company brand voice and `reference_notes`. It never sees
-  other agents' scores.
+  retrieved (dates shifted to the run, as the agent saw them), the tool calls it
+  made (so it can tell whether an absence claim followed a search), the company
+  brand voice and `reference_notes`. It never sees other scores.
 - It runs only if the deterministic `schema_valid` check passes.
 
 Dimensions are scored 1–5, and each rubric file anchors every score with
@@ -195,27 +213,33 @@ examples.
 | Channel craft (hook, structure, CTA and format norms) | | ✓ |
 | Originality vs source (angle, not just wording) | | ✓ |
 
-**Judge calibration.** Before a suite's first baseline, a human scores 15
-cases, and the judge must agree within ±1 on at least 80% of dimension
-scores. Record the calibration in `evaluation/rubrics/<suite>.md`.
+**Judge calibration.** Before a suite's first baseline, the owner scores 50
+sampled runs (`evals.cli calibrate <run> sample`, owner decision
+2026-09-29), and the judge must agree within ±1 on at least 80% of dimension
+scores over runs both scored. `calibrate <run> compare` records the result in
+`evaluation/rubrics/<suite>.md` and `<suite>.calibration.json`; a baseline is
+refused without a passing calibration.
 
 ### 5.3 Repeats and flakiness
 
-Each case runs **3 times** (`--repeats 3`). The report shows:
+In the PoC, a baseline runs each case **once** (`--repeats 1`) to keep OpenAI
+cost down (owner decision 2026-10-02), so `pass@3-all` below reads as
+pass@1. Before production, every suite is re-baselined at **3 repeats**
+(`--repeats 3`, `BASELINE_REPEATS` in `evals/cli.py`). The report shows:
 
-- `pass@3-all`: the share of cases that pass in all 3 runs (the headline metric).
+- `pass@3-all`: the share of cases that pass in every run (the headline metric).
 - The mean judge score per dimension.
-- Flaky cases: cases that pass 1–2 of 3 runs.
+- Flaky cases (3 repeats only): cases that pass 1–2 of 3 runs.
 
 ## 6. Pass thresholds
 
 | Metric | Router | Strategy | Execution |
 |---|---|---|---|
 | Deterministic `pass@3-all`, overall | ≥ 95% | ≥ 90% | ≥ 90% |
-| Deterministic `pass@3-all`, per category | ≥ 80% | ≥ 80% | ≥ 80% |
+| Deterministic `pass@3-all`, per category (3-repeat runs only: at one repeat, one slip in a two-case category reads as 50%; owner decision 2026-10-04) | ≥ 80% | ≥ 80% | ≥ 80% |
 | `SAFE-*` categories (Router: `RT-OOS`) | **100%** | **100%** | **100%** |
 | `evidence_grounded` | n/a | **100%** of runs | **100%** of runs |
-| Mean judge score per dimension | n/a | ≥ 4.0 | ≥ 4.0 |
+| Mean judge score, averaged over dimensions | n/a | ≥ 4.0 | ≥ 4.0 |
 | No single judge dimension mean below | n/a | 3.5 | 3.5 |
 | Cases tagged `demo-path` | 100% | 100% | 100% |
 | p95 run latency | ≤ 3 s | ≤ 45 s | ≤ 60 s |
@@ -226,7 +250,8 @@ Each case runs **3 times** (`--repeats 3`). The report shows:
    (or a separate review pass) check each `expect` block for over-fitting.
    Cases assert behaviour, not exact wording.
 2. **Baseline.** The first passing run is committed as
-   `evaluation/reports/baseline_<suite>.json`.
+   `evaluation/reports/baseline_<suite>.json`, with a readable copy in
+   `baseline_<suite>.md`.
 3. **Regression gate.** Any PR that touches `app/agents/`, `app/skills/`,
    instruction files, the MCP tools or model env defaults must run the
    affected suite(s). The PR description pastes the report summary. No PR may

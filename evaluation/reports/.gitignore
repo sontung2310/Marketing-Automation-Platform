@@ -1,3 +1,4 @@
 *
 !.gitignore
 !baseline_*.json
+!baseline_*.md

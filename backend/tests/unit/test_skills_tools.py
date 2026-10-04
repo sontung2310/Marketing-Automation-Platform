@@ -1,5 +1,6 @@
 """Scenarios 3-B and 3-C: allowlists, run budget and the load_skill tool."""
 
+import asyncio
 import json
 
 import pytest
@@ -37,7 +38,7 @@ def test_execution_cannot_load_pricing_and_keeps_its_budget() -> None:
     assert isinstance(result, SkillError)
     assert result.code is SkillErrorCode.NOT_AVAILABLE
     assert "not available to this agent" in result.message
-    assert budget.used == 0
+    assert budget.loaded == []
 
 
 def test_loaded_skill_carries_the_product_context_note() -> None:
@@ -68,7 +69,7 @@ def test_invalid_reference_is_an_error_and_free() -> None:
     result = load_skill("pricing", "../social/SKILL.md", allowlist=STRATEGY, budget=budget)
     assert isinstance(result, SkillError)
     assert result.code is SkillErrorCode.INVALID_REFERENCE
-    assert budget.used == 0
+    assert budget.loaded == []
 
 
 def test_oversized_content_is_truncated(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -82,6 +83,19 @@ def test_oversized_content_is_truncated(monkeypatch: pytest.MonkeyPatch) -> None
     assert result.truncated
     assert "[Truncated at 100 characters.]" in result.content
     assert len(result.content) < 100 + 200
+
+
+async def test_parallel_tool_calls_cannot_exceed_the_budget() -> None:
+    budget = SkillLoadBudget()
+    tool = make_load_skill_tool(STRATEGY, budget)
+    ctx = ToolContext(context=None, tool_name="load_skill", tool_call_id="1", tool_arguments="")
+    calls = [
+        tool.on_invoke_tool(ctx, json.dumps({"name": name, "reference": None}))
+        for name in sorted(STRATEGY)[:6]
+    ]
+    results = [json.loads(raw) for raw in await asyncio.gather(*calls)]
+    assert len(budget.loaded) == 3
+    assert [r.get("code") for r in results].count("LIMIT_REACHED") == 3
 
 
 async def test_tool_returns_json_error_instead_of_raising() -> None:

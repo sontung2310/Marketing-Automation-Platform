@@ -11,10 +11,10 @@ from app.intelligence.models import (
     Channel,
     CompetitorActivity,
 )
-from app.intelligence.repositories.base import Document, Repository, company_feed_indexes
+from app.intelligence.repositories.base import Document, TenantRepository, company_feed_indexes
 
 
-class CompetitorActivitiesRepository(Repository[CompetitorActivity]):
+class CompetitorActivitiesRepository(TenantRepository[CompetitorActivity]):
     collection_name = "competitor_activities"
 
     def __init__(self, database: AsyncDatabase[Document]) -> None:
@@ -22,12 +22,6 @@ class CompetitorActivitiesRepository(Repository[CompetitorActivity]):
 
     def index_models(self) -> list[IndexModel]:
         return company_feed_indexes()
-
-    async def get_for_company(self, activity_id: str, company_id: str) -> CompetitorActivity | None:
-        document = await self.collection.find_one({"_id": activity_id, "company_id": company_id})
-        if document is None:
-            return None
-        return self.model_type.model_validate(document)
 
     async def search_for_company(
         self,

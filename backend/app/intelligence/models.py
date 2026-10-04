@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from ulid import ULID
 
 
 class ActivityType(StrEnum):
@@ -69,6 +70,7 @@ class RecommendationStatus(StrEnum):
     OPEN = "OPEN"
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"
+    SUPERSEDED = "SUPERSEDED"  # a later Strategy run in the same session replaced it
 
 
 class ProposedActionStatus(StrEnum):
@@ -113,6 +115,10 @@ class PrefixedModel(ModelBase):
         if not value.startswith(cls.id_prefix) or len(value) == len(cls.id_prefix):
             raise ValueError(f"id must start with {cls.id_prefix!r}")
         return value
+
+    @classmethod
+    def new_id(cls) -> str:
+        return f"{cls.id_prefix}{ULID()}"
 
 
 class TenantModel(PrefixedModel):

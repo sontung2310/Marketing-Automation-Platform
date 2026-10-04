@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generic, TypeVar, cast
 
@@ -9,7 +10,7 @@ from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.collection import AsyncCollection
 from pymongo.asynchronous.database import AsyncDatabase
 
-from app.intelligence.models import ModelBase, Provenance, SourceSystem
+from app.intelligence.models import ModelBase, Provenance, SourceSystem, TenantModel
 
 Document = dict[str, object]
 ModelT = TypeVar("ModelT", bound=ModelBase)
@@ -65,6 +66,13 @@ class Repository(Generic[ModelT]):
             return []
         documents = self.collection.find({}).limit(limit)
         return [self.model_type.model_validate(document) async for document in documents]
+
+    async def insert_many(self, models: Sequence[ModelT]) -> None:
+        """One write for records that must appear together (new IDs, no upsert)."""
+        if models:
+            await self.collection.insert_many(
+                [cast(Document, m.model_dump(by_alias=True, mode="python")) for m in models]
+            )
 
     async def upsert(self, model: ModelT) -> UpsertResult:
         result = await self.collection.replace_one(
@@ -128,3 +136,16 @@ def company_feed_indexes() -> list[IndexModel]:
             name="activity_text",
         ),
     ]
+
+
+TenantModelT = TypeVar("TenantModelT", bound=TenantModel)
+
+
+class TenantRepository(Repository[TenantModelT]):
+    """Repositories whose records carry `company_id`."""
+
+    async def get_for_company(self, document_id: str, company_id: str) -> TenantModelT | None:
+        document = await self.collection.find_one({"_id": document_id, "company_id": company_id})
+        if document is None:
+            return None
+        return self.model_type.model_validate(document)

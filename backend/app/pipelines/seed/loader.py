@@ -248,10 +248,10 @@ def _load(path: Path, target: type[list[TModel]]) -> list[TModel]:
 def _rebase_datetimes(bundle: SeedBundle, *, now: datetime) -> SeedBundle:
     """Shift every datetime in the typed bundle by its load-time offset."""
 
-    return _shift_datetime_values(bundle, offset=now - SEED_AUTHORED_AT)
+    return shift_datetimes(bundle, offset=now - SEED_AUTHORED_AT)
 
 
-def _shift_datetime_values(model: TModel, *, offset: timedelta) -> TModel:
+def shift_datetimes(model: TModel, *, offset: timedelta) -> TModel:
     """Recursively shift datetime fields while preserving Pydantic model types."""
 
     return model.model_copy(
@@ -265,7 +265,7 @@ def _shift_datetime_value(value: object, *, offset: timedelta) -> object:
     if isinstance(value, datetime):
         return value + offset
     if isinstance(value, BaseModel):
-        return _shift_datetime_values(value, offset=offset)
+        return shift_datetimes(value, offset=offset)
     if isinstance(value, list):
         return [_shift_datetime_value(item, offset=offset) for item in value]
     if isinstance(value, dict):

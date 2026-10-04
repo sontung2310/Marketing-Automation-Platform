@@ -1,6 +1,6 @@
 """The `load_skill` agent tool: allowlisted, budgeted, and never raising into the agent."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Literal
 
@@ -42,9 +42,14 @@ class SkillError(BaseModel):
 
 @dataclass
 class SkillLoadBudget:
-    """Successful loads in one agent run; create one per run."""
+    """Successful loads in one agent run (skill or skill/reference); create one per run."""
 
-    used: int = 0
+    loaded: list[str] = field(default_factory=list)
+
+    @property
+    def skills(self) -> set[str]:
+        """Skill names loaded so far (a reference load counts for its skill)."""
+        return {entry.split("/")[0] for entry in self.loaded}
 
 
 def render_catalogue(allowlist: frozenset[str]) -> str:
@@ -61,7 +66,7 @@ def load_skill(
             code=SkillErrorCode.NOT_AVAILABLE,
             message=f"Skill {name!r} is not available to this agent. Use: {sorted(allowlist)}.",
         )
-    if budget.used >= MAX_LOADS_PER_RUN:
+    if len(budget.loaded) >= MAX_LOADS_PER_RUN:
         return SkillError(
             code=SkillErrorCode.LIMIT_REACHED,
             message=f"All {MAX_LOADS_PER_RUN} skill loads are used. Finish with what you have.",
@@ -71,7 +76,7 @@ def load_skill(
         text = read_reference(skill, reference) if reference else skill.body
     except InvalidReferenceError as exc:
         return SkillError(code=SkillErrorCode.INVALID_REFERENCE, message=str(exc))
-    budget.used += 1
+    budget.loaded.append(f"{name}/{reference}" if reference else name)
     max_chars = get_settings().skill_max_chars
     truncated = len(text) > max_chars
     if truncated:
@@ -89,7 +94,8 @@ def load_skill(
 def make_load_skill_tool(allowlist: frozenset[str], budget: SkillLoadBudget) -> FunctionTool:
     """Build the per-run `load_skill` tool bound to one agent's allowlist and budget."""
 
-    def load_skill_tool(name: str, reference: str | None = None) -> str:
+    # async: the SDK runs sync tools in threads, where parallel calls race the budget.
+    async def load_skill_tool(name: str, reference: str | None = None) -> str:
         """Load a marketing skill's instructions, or one of its reference files.
 
         Args:

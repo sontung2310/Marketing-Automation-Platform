@@ -17,10 +17,10 @@ API ── RunService.start(trigger|message, session)
           │
           ├─ Router → RouteDecision(agent, intent, deliverable_type?, refs)
           ├─ build RunContext (company_id, session_id, trigger_context, prior outputs referenced)
-          ├─ Runner.run_streamed(agent, input, context=RunContext, max_turns=…)
+          ├─ Runner.run(agent, input, context=RunContext, max_turns=…)  (own AsyncOpenAI client per run)
           │     ├─ tools: Intelligence MCP (read), load_skill
           │     └─ output_type = StrategyOutput | ExecutionOutput   (Pydantic, strict)
-          ├─ stream events → SSE (agent.step / agent.tool / output.final)
+          ├─ events → run log (agent.tool from the MCP wrapper, output.final); live SSE in Step 6.2
           └─ persist run, recommendations / deliverables / proposed_actions
 ```
 
@@ -31,15 +31,23 @@ API ── RunService.start(trigger|message, session)
 - **`RunContext`** (a dataclass that is not sent to the LLM) holds
   `company_id`, `session_id`, `run_id`, a tool-call counter and the
   skill-load counter.
-- **Trigger context** is the only data injected into the prompt. It holds the
-  clicked activity, trend, influencer or recommendation, as a compact JSON
-  block labelled `UNTRUSTED_SOURCE_CONTENT` when it contains third-party text.
+- **Run input** is today's date, the intent, the trigger context, the
+  session's previous answer (for follow-ups) and the message. The trigger
+  context holds the clicked activity, trend, influencer or recommendation as a
+  compact JSON block; it and the previous answer are labelled
+  `UNTRUSTED_SOURCE_CONTENT`. The date lets the agent apply the 21-day
+  staleness rule.
 - **Limits.** `max_turns=16`, at most 12 MCP tool calls and at most 3
   successful `load_skill` calls per run, enforced in the tool wrappers. When a limit is
   hit, the tool returns a `LIMIT_REACHED` message, and the agent must finish
-  with what it has and record a data gap.
-- **Company context first.** Both agents call `get_company_context` at most
-  once per run. The instructions say to call it before producing any
+  with what it has and record a data gap. A repeated identical MCP call in the
+  same run, made after the first one returned, gets the earlier result without
+  reaching the server or counting toward the limit; the trace marks it
+  `cached: true`. Identical calls issued in the same model turn run
+  concurrently and are not deduplicated (rare and harmless: each is one
+  bounded read).
+- **Company context first.** Both agents call `get_company_context` once per
+  run (a cached repeat never reaches the server). The instructions say to call it before producing any
   customer-facing output. The evals check this.
 
 ## 2. Instruction files
@@ -71,11 +79,11 @@ its prefixed `id`, which the agents cite as evidence.
 |---|---|---|
 | `get_company_context` | — | The `companies` document: summary, ICP, positioning, services, brand voice, pillars, channels |
 | `list_competitors` | — | `{results: [{id, name, website, is_fictional, channels}]}` |
-| `search_competitor_activity` | `query?: str`, `competitor_ids?: [str]`, `activity_types?: [str]`, `channels?: [str]`, `since_days?: int = 30`, `limit?: int = 10 (max 25)` | `{results: [activities]}`, newest first. `query` uses the Mongo text index. Records include `id`, `competitor_name`, `activity_type`, `channel`, `title`, `summary`, `url`, `detected_at`, `is_mock`, `is_simulated`. |
+| `search_competitor_activity` | `query?: str`, `competitor_ids?: [str]`, `activity_types?: [str]`, `channels?: [str]`, `since_days?: int = 30`, `limit?: int = 10 (max 25)` | `{results: [activities]}`, newest first. `query` uses the Mongo text index. Records include `id`, `competitor_name`, `activity_type`, `channel`, `title`, `summary`, `url`, `price` (`PRICE_CHANGE` and `PROMOTION` only), `detected_at`, `is_mock`, `is_simulated`. |
 | `get_competitor_activity` | `activity_id: str` | Full record, including `content_excerpt`, `price`, `author` and `engagement` |
-| `summarize_competitor_activity` | `since_days?: int = 30` | Counts by competitor × type, plus the 3 most recent items per competitor (cheap overview) |
+| `summarize_competitor_activity` | `since_days?: int = 30` | Counts by competitor × type, `totals_by_competitor` (most active first), plus the 3 most recent items per competitor (cheap overview) |
 | `search_trends` | `query?: str`, `channels?: [Channel]`, `direction?: TrendDirection`, `limit?: int = 10 (max 25)` | `{results: [trends]}`, sorted by `momentum_pct` desc |
-| `search_influencers` | `topic?: str`, `channels?: [Channel]`, `region?: str`, `min_followers?: int`, `limit?: int = 10 (max 25)` | `{results: [influencers]}`, sorted by `relevance_score` desc |
+| `search_influencers` | `topic?: str`, `channels?: [Channel]`, `region?: str` (ISO 3166-1 alpha-2, e.g. `AU`), `min_followers?: int`, `limit?: int = 10 (max 25)` | `{results: [influencers]}`, sorted by `relevance_score` desc |
 | `get_influencer` | `influencer_id: str` | Full record |
 | `get_recommendation` | `recommendation_id: str` | A persisted recommendation (lets Execution re-read it if needed) |
 
@@ -231,12 +239,12 @@ Intent-specific expectations:
 
 | Intent | Must retrieve | Output shape |
 |---|---|---|
-| `TOPIC_RECOMMENDATION` | trends + competitor activity (recent) | 3–5 recommendations of kind `CONTENT_TOPIC` |
-| `RESPONSE_PLAN` | the triggering activity (`get_competitor_activity`) + related activity by the same competitor | 2–4 recommendations. At least one must be kind `COMPETITIVE_RESPONSE`, and at least one may be "no action / monitor", with justification. |
-| `WHY_IT_MATTERS` | the triggering activity + related trends | 2–3 `implications` + 1–2 recommendations |
-| `INFLUENCER_RECOMMENDATION` | influencers (+ trends for topic fit) | 3–5 recommendations of kind `INFLUENCER_PARTNERSHIP`, each citing an `inf_` ID |
-| `TREND_ANALYSIS` | trends | `implications` + 2–3 recommendations |
-| `COMPETITOR_QUESTION` | competitor activity (summary or filtered) | a direct `answer` + optional recommendations |
+| `TOPIC_RECOMMENDATION` | trends + competitor activity (recent) | 1–5 recommendations of kind `CONTENT_TOPIC`: only as many as the evidence strongly supports |
+| `RESPONSE_PLAN` | the triggering activity (`get_competitor_activity`) + related activity by the same competitor | 1–4 recommendations. At least one must be kind `COMPETITIVE_RESPONSE`, and at least one may be "no action / monitor", with justification. For `PRICE_CHANGE` and `PROMOTION`: first an implication comparing the move with Marketing Eye's own prices and value, then 2–4 recommendations as options with their trade-offs (for example hold and monitor, adjust the offer, respond with value content). |
+| `WHY_IT_MATTERS` | the triggering activity + related trends | 2–3 `implications` + 1–2 recommendations (one is usually enough) |
+| `INFLUENCER_RECOMMENDATION` | influencers (`search_influencers` is required) (+ trends for topic fit) | 1–5 recommendations of kind `INFLUENCER_PARTNERSHIP`, each citing an `inf_` ID |
+| `TREND_ANALYSIS` | trends | `implications` + up to 3 recommendations, only when the user asks what to do |
+| `COMPETITOR_QUESTION` | competitor activity (summary or filtered) | a direct `answer` quoting recorded figures and dates; recommendations only when the user asks what to do |
 
 ### 6.2 Output schema
 
@@ -279,9 +287,16 @@ class StrategyOutput(BaseModel):
 
 **Post-validation.** This runs in code after the SDK parses the output.
 
-- Every `evidence.id` must appear in this run's tool results. Unknown IDs
-  cause a single repair re-prompt ("these IDs were not retrieved: …"). If the
-  repair fails, the run is marked FAILED with the code `UNGROUNDED_OUTPUT`.
+- Every `evidence.id` must appear in this run's tool results, or be the
+  trigger record's ID (resolved for this company and given to the agent in its
+  input) or an ID the session's previous answer cited. Unknown IDs cause a
+  single repair re-prompt ("these IDs were not retrieved: …"). If the repair
+  fails, the run is marked FAILED with the code `UNGROUNDED_OUTPUT`.
+- Contract problems the agent must fix itself (an empty title or rationale, an
+  ID whose prefix does not match its kind, an unloaded skill in `skills_used`,
+  a missing `next_action`, or recommendations on an `INSUFFICIENT_DATA`
+  answer) share that one repair; if they remain, the run fails with
+  `INVALID_OUTPUT`.
 - Ordinals must be unique and contiguous from 1.
 - The output is persisted to `recommendations` with its `rec_` IDs.
 
@@ -290,6 +305,15 @@ class StrategyOutput(BaseModel):
 - **No fabrication.** Numbers, dates, prices and names come from tool
   results. If the data is missing, return `INSUFFICIENT_DATA` or add a
   `data_gaps` entry.
+- **Quality over quantity.** Return only the recommendations the evidence
+  strongly supports; never pad to reach a count. Each `rationale` says why its
+  channel or format was chosen.
+- **Answer what was asked.** A factual question gets a direct answer quoting
+  the recorded figures and dates, without recommendations unless the user asks
+  what to do. An `INSUFFICIENT_DATA` answer carries no recommendations
+  (post-validation rejects one that does).
+- **Absence needs a search.** Never say something does not exist (an
+  influencer, a trend, an activity) without having searched for it in the run.
 - **Recency.** If the newest relevant evidence is more than 21 days old, say
   so in `data_gaps`.
 - **Mock awareness.** If recommendations rest mainly on `is_mock`/`is_simulated`

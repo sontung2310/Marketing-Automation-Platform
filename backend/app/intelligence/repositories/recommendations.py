@@ -3,7 +3,7 @@
 from pymongo import ASCENDING, IndexModel
 from pymongo.asynchronous.database import AsyncDatabase
 
-from app.intelligence.models import Recommendation
+from app.intelligence.models import Recommendation, RecommendationStatus
 from app.intelligence.repositories.base import Document, Repository
 from app.intelligence.repositories.sessions import SessionsRepository
 
@@ -20,7 +20,10 @@ class RecommendationsRepository(Repository[Recommendation]):
                 [("run_id", ASCENDING), ("ordinal", ASCENDING)],
                 name="run_ordinal_unique",
                 unique=True,
-            )
+            ),
+            IndexModel(
+                [("session_id", ASCENDING), ("status", ASCENDING)], name="session_status"
+            ),  # supersede_open
         ]
 
     async def get_for_company(
@@ -45,3 +48,17 @@ class RecommendationsRepository(Repository[Recommendation]):
         if not documents:
             return None
         return self.model_type.model_validate(documents[0])
+
+    async def supersede_open(self, session_id: str, *, keep_run_id: str) -> None:
+        """Mark the session's other OPEN recommendations SUPERSEDED."""
+        await self.collection.update_many(
+            {
+                "session_id": session_id,
+                "run_id": {"$ne": keep_run_id},
+                "status": RecommendationStatus.OPEN.value,
+            },
+            {"$set": {"status": RecommendationStatus.SUPERSEDED.value}},
+        )
+
+    async def delete_for_run(self, run_id: str) -> None:
+        await self.collection.delete_many({"run_id": run_id})

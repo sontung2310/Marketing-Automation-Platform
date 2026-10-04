@@ -83,13 +83,17 @@ declared return type MUST admit both its success response and this error
 envelope. List/search tools SHALL use a default `limit` of 10, return no more
 than 25 results when a larger limit is requested, and return `VALIDATION_ERROR`
 for `limit < 1`. Tools accepting `since_days` MUST return `VALIDATION_ERROR`
-for values outside 1 through 365. Free-text `query`, `topic` and `region`
-arguments MUST be at most 200 characters, and `competitor_ids` MUST contain
+for values outside 1 through 365. Free-text `query` and `topic` arguments
+MUST be at most 200 characters, `region` MUST be an ISO 3166-1 alpha-2 code
+such as `AU` (so "Australia" is rejected rather than silently matching
+nothing), and `competitor_ids` MUST contain
 at most 25 values; violations return `VALIDATION_ERROR`. A valid list/search request with no matches SHALL return
 `{results: [], note: "No records matched …"}` and MUST NOT fabricate a
 fallback record. When `summarize_competitor_activity` has no activity in its
 window, it SHALL return its normal JSON summary with empty `counts` and
-`recent_items` arrays and the no-match note.
+`recent_items` arrays, an empty `totals_by_competitor` object and the no-match
+note. Otherwise `totals_by_competitor` gives each competitor's activity count,
+most active first.
 
 Repository failures SHALL be logged with the tool name and returned as a
 non-`is_error` `{error: {code: "UPSTREAM_UNAVAILABLE", message}}` envelope.
@@ -137,8 +141,15 @@ non-`is_error` `{error: {code: "UPSTREAM_UNAVAILABLE", message}}` envelope.
 
 - **GIVEN** no activity falls within the requested summary window
 - **WHEN** a client calls `summarize_competitor_activity`
-- **THEN** the response has empty `counts` and `recent_items` arrays and the
-  no-match note, without an error or fabricated activity
+- **THEN** the response has empty `counts` and `recent_items` arrays, an empty
+  `totals_by_competitor` and the no-match note, without an error or
+  fabricated activity
+
+#### Scenario: A country name is not a region code
+
+- **GIVEN** the service is running
+- **WHEN** a client calls `search_influencers(region="Australia")`
+- **THEN** the response is an error object with code `VALIDATION_ERROR`
 
 #### Scenario: A repository failure is a logged recoverable envelope
 

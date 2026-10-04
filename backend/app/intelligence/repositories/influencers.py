@@ -4,10 +4,10 @@ from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.intelligence.models import Channel, Influencer
-from app.intelligence.repositories.base import Document, Repository
+from app.intelligence.repositories.base import Document, TenantRepository
 
 
-class InfluencersRepository(Repository[Influencer]):
+class InfluencersRepository(TenantRepository[Influencer]):
     collection_name = "influencers"
 
     def __init__(self, database: AsyncDatabase[Document]) -> None:
@@ -26,12 +26,6 @@ class InfluencersRepository(Repository[Influencer]):
             ),
             IndexModel([("name", "text"), ("topics", "text")], name="influencer_text"),
         ]
-
-    async def get_for_company(self, influencer_id: str, company_id: str) -> Influencer | None:
-        document = await self.collection.find_one({"_id": influencer_id, "company_id": company_id})
-        if document is None:
-            return None
-        return self.model_type.model_validate(document)
 
     async def search_for_company(
         self,

@@ -17,7 +17,10 @@ endpoints accept an optional `company_id` query parameter for future tenancy.
 
 Codes: `VALIDATION_ERROR` (422), `NOT_FOUND` (404), `CONFLICT` (409),
 `UPSTREAM_UNAVAILABLE` (503: Mongo, MCP or OpenAI unreachable), `INTERNAL`
-(500). The UI shows `message` verbatim.
+(500). The UI shows `message` verbatim. A failed run's `run.failed` event and
+`error` field may also carry `UNGROUNDED_OUTPUT` (it cited evidence no tool
+returned, even after one repair), `INVALID_OUTPUT` (it broke the output
+contract, even after one repair) or `CANCELLED` (client disconnect or timeout).
 
 The Marketing Intelligence MCP reuses the `VALIDATION_ERROR` and `NOT_FOUND`
 code strings in its text-JSON tool envelopes; this does not change the
@@ -147,7 +150,7 @@ Event types. `data` is JSON, and every event has `run_id`, `seq` and `ts`.
 |---|---|---|
 | `run.started` | `{agent, intent, route}` | Run header |
 | `agent.step` | `{label}`, e.g. "Loading company context", "Searching competitor activity", "Loading skill: social" | Progress list |
-| `agent.tool` | `{tool, args_summary, duration_ms, result_count}` | Collapsible trace |
+| `agent.tool` | `{tool, args_summary, duration_ms, result_count, cached?}` (`cached: true` when a repeated identical call reused the run's earlier result) | Collapsible trace |
 | `agent.text_delta` | `{text}` (optional, for `message`/`answer` only) | Live headline |
 | `output.final` | `StrategyOutput` or `ExecutionOutput`, plus persisted IDs (`recommendation_ids` / `deliverable_id`, `proposed_action_ids`) | Result cards |
 | `run.failed` | `{code, message}` | Error state |

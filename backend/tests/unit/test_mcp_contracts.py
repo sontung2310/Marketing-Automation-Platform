@@ -111,6 +111,7 @@ def test_compact_projections_keep_the_documented_fields() -> None:
         "title",
         "summary",
         "url",
+        "price",
         "detected_at",
         "is_mock",
         "is_simulated",
@@ -119,6 +120,8 @@ def test_compact_projections_keep_the_documented_fields() -> None:
         compact_activity_result.model_dump()
     )
     assert "note" not in compact_summary_result.model_dump()
+    totals = compact_summary_result.model_dump()["totals_by_competitor"]
+    assert sum(totals.values()) == sum(count.count for count in summary.counts)
 
 
 @pytest.mark.asyncio

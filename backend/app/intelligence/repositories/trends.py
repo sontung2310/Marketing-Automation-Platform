@@ -4,10 +4,10 @@ from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.intelligence.models import Channel, Trend, TrendDirection
-from app.intelligence.repositories.base import Document, Repository
+from app.intelligence.repositories.base import Document, TenantRepository
 
 
-class TrendsRepository(Repository[Trend]):
+class TrendsRepository(TenantRepository[Trend]):
     collection_name = "trends"
 
     def __init__(self, database: AsyncDatabase[Document]) -> None:

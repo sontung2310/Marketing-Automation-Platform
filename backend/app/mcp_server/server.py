@@ -13,6 +13,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import Field
 from starlette.applications import Starlette
 
+from app.core.db import Database
 from app.core.errors import DomainError, UpstreamUnavailableError
 from app.intelligence.models import ActivityType, Channel, ModelBase, TrendDirection
 from app.intelligence.repositories.activities import CompetitorActivitiesRepository
@@ -90,6 +91,17 @@ class McpRepositories:
         self.trends = trends
         self.influencers = influencers
         self.recommendations = recommendations
+
+    @classmethod
+    def for_database(cls, database: Database) -> McpRepositories:
+        return cls(
+            companies=CompaniesRepository(database),
+            competitors=CompetitorsRepository(database),
+            activities=CompetitorActivitiesRepository(database),
+            trends=TrendsRepository(database),
+            influencers=InfluencersRepository(database),
+            recommendations=RecommendationsRepository(database),
+        )
 
 
 def build_mcp_server(
@@ -224,7 +236,8 @@ def build_mcp_server(
         return _results_or_note(trends)
 
     @server.tool(
-        description="Search configured-company influencers with optional raw JSON filters.",
+        description="Search configured-company influencers with optional raw JSON filters. "
+        "`region` is a two-letter country code such as AU.",
         structured_output=False,
     )
     @_tool_boundary("search_influencers")
