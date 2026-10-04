@@ -15,3 +15,6 @@ class DeliverablesRepository(Repository[Deliverable]):
 
     def index_models(self) -> list[IndexModel]:
         return [IndexModel([("run_id", ASCENDING)], name="run")]
+
+    async def delete(self, deliverable_id: str) -> None:
+        await self.collection.delete_one({"_id": deliverable_id})

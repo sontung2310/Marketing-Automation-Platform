@@ -10,6 +10,7 @@ from app.agents.common.context import AgentOutcome, RunContext
 from app.core.db import Document
 from app.core.errors import NotFoundError, UpstreamUnavailableError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus
+from app.intelligence.repositories import ProposedActionsRepository
 from app.orchestration.references import RunRepositories
 from app.orchestration.routing import Trigger, TriggerAction, TriggerKind
 from app.orchestration.run_service import AgentFn, RunService
@@ -279,6 +280,11 @@ async def test_execution_run_persists_its_deliverable(
     stored = [doc async for doc in seeded_database["deliverables"].find({"run_id": run.id})]
     assert [doc["_id"] for doc in stored] == [final["data"]["deliverable_id"]]
     assert stored[0]["type"] == "LINKEDIN_POST"
+    actions = [doc async for doc in seeded_database["proposed_actions"].find({})]
+    assert [doc["_id"] for doc in actions] == final["data"]["proposed_action_ids"]
+    assert actions[0]["status"] == "PROPOSED"
+    assert actions[0]["payload"]["deliverable_id"] == stored[0]["_id"]
+    assert final["data"]["proposed_actions"][0]["id"] == actions[0]["_id"]
 
 
 async def test_execution_clarification_stores_nothing(
@@ -294,3 +300,18 @@ async def test_execution_clarification_stores_nothing(
     final = next(e for e in run.events if e["type"] == "output.final")
     assert final["data"]["deliverable_id"] is None
     assert await seeded_database["deliverables"].count_documents({}) == 0
+
+
+async def test_a_failed_action_insert_leaves_no_deliverable(
+    seeded_database: AsyncDatabase[Document], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def broken_insert(self: object, models: object) -> None:
+        raise ConnectionError("write failed")
+
+    monkeypatch.setattr(ProposedActionsRepository, "insert_many", broken_insert)
+    trigger = await social_post_trigger(seeded_database)
+    run = await service(seeded_database, answering_agent).start(COMPANY, trigger=trigger)
+
+    assert run.status is RunStatus.FAILED
+    assert await seeded_database["deliverables"].count_documents({}) == 0
+    assert await seeded_database["proposed_actions"].count_documents({}) == 0

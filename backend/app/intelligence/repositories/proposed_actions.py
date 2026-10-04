@@ -20,3 +20,6 @@ class ProposedActionsRepository(Repository[ProposedAction]):
                 name="deliverable_status",
             )
         ]
+
+    async def delete_for_deliverable(self, deliverable_id: str) -> None:
+        await self.collection.delete_many({"deliverable_id": deliverable_id})

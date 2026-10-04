@@ -20,7 +20,7 @@ approves.
 
 ## 3. 5.3 Proposed actions and mock connectors
 
-- [ ] 3.1 Add the payload registry keyed by `ActionType` with the next-weekday 09:00 Australia/Sydney default (D3), and persist actions in `persist_execution` all-or-nothing (D6); verify with unit tests that a Friday maps to Monday 09:00 Sydney, a user-given `when` wins, and invalid payloads are rejected, and with an integration test that a failed action insert leaves no deliverable.
+- [x] 3.1 Add the payload registry keyed by `ActionType` with the next-weekday 09:00 Australia/Sydney default (D3), and persist actions in `persist_execution` all-or-nothing (D6); verify with unit tests that a Friday maps to Monday 09:00 Sydney, a user-given `when` wins, and invalid payloads are rejected, and with an integration test that a failed action insert leaves no deliverable.
 - [ ] 3.2 Add `connectors/base.py` (`Connector` protocol) and `connectors/mock/` (one connector per `ActionType`, mock receipts) in an enum-keyed registry; verify each returns its agents-spec §8 receipt shape.
 - [ ] 3.3 Add the repository `transition` and `orchestration/actions.py` (`ActionService` approve/discard with the state machine, D7); verify with unit tests that only `PROPOSED` transitions and that a connector error yields `FAILED`.
 - [ ] 3.4 Add `api/routes/actions.py` (`POST /actions/{id}/approve` with `payload_overrides`, `POST /actions/{id}/discard`); verify `tests/integration/test_actions.py` against MongoDB over HTTP covers 5-D: approve → `EXECUTED` with a receipt, a second approve → `409`, a discarded action → `409`, an unknown ID → `404`, and a bad override → `422`.

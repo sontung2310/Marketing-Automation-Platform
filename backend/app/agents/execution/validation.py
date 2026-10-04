@@ -2,10 +2,27 @@
 
 from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
 from app.agents.execution.output import ExecutionOutput
-from app.intelligence.models import DeliverableType
+from app.intelligence.models import ActionType, DeliverableType
 
 MAX_ACTIONS = 2
 MAX_VARIANTS = 3
+
+_SOCIAL = frozenset({ActionType.SCHEDULE_SOCIAL_POST, ActionType.ADD_TO_CONTENT_CALENDAR})
+_CMS = frozenset({ActionType.CREATE_CMS_DRAFT, ActionType.ADD_TO_CONTENT_CALENDAR})
+_EMAIL = frozenset({ActionType.CREATE_EMAIL_DRAFT, ActionType.ADD_TO_CONTENT_CALENDAR})
+# The actions that fit each deliverable (the instructions' table).
+ACTIONS_FOR: dict[DeliverableType, frozenset[ActionType]] = {
+    DeliverableType.LINKEDIN_POST: _SOCIAL,
+    DeliverableType.X_POST: _SOCIAL,
+    DeliverableType.INSTAGRAM_POST: _SOCIAL,
+    DeliverableType.CEO_POST: _SOCIAL,
+    DeliverableType.BLOG_DRAFT: _CMS,
+    DeliverableType.BLOG_OUTLINE: _CMS,
+    DeliverableType.EMAIL: _EMAIL,
+    DeliverableType.INFLUENCER_OUTREACH: _EMAIL,
+    DeliverableType.AD_COPY: frozenset({ActionType.ADD_TO_CONTENT_CALENDAR}),
+    DeliverableType.RESPONSE_BRIEF: frozenset({ActionType.ADD_TO_CONTENT_CALENDAR}),
+}
 
 
 def unknown_ids(output: ExecutionOutput, retrieved: set[str]) -> list[str]:
@@ -32,6 +49,13 @@ def contract_problems(
             problems.append("the deliverable needs a title and a body")
         if len(deliverable.variants) > MAX_VARIANTS:
             problems.append(f"give at most {MAX_VARIANTS} variants")
+        if unfit := sorted(
+            {a.action_type for a in output.proposed_actions} - ACTIONS_FOR[deliverable.type]
+        ):
+            problems.append(
+                f"{', '.join(unfit)} does not fit a {deliverable.type}; propose only "
+                f"{', '.join(sorted(ACTIONS_FOR[deliverable.type]))}"
+            )
         if deliverable.type is DeliverableType.CEO_POST and not deliverable.author_persona:
             problems.append("a CEO_POST names its author_persona (the company spokesperson)")
     if output.status == "NEEDS_CLARIFICATION" and not output.clarification_options:

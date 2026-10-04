@@ -80,7 +80,11 @@ class RunService:
         try:
             outcome = await self.agents[route.agent](context, message)
             persister = PERSISTERS.get(route.agent)
-            saved = await persister(self.repositories, run, outcome) if persister else {}
+            saved = (
+                await persister(self.repositories, run, outcome, context.trigger_context)
+                if persister
+                else {}
+            )
         except asyncio.CancelledError:
             run = self._failed(run, context, CancelledRunError("The run was cancelled"))
             await asyncio.shield(self._finish(run, context, session))

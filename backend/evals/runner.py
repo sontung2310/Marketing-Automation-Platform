@@ -55,7 +55,7 @@ async def seed_history(repositories: RunRepositories, company_id: str, case: Gol
         finished_at=now,
     )
     await repositories.runs.upsert(run)
-    await persist_strategy(repositories, run, AgentOutcome(RunStatus.SUCCEEDED, output))
+    await persist_strategy(repositories, run, AgentOutcome(RunStatus.SUCCEEDED, output), None)
     await repositories.sessions.upsert(session.model_copy(update={"last_run_id": run.id}))
     return session.id
 

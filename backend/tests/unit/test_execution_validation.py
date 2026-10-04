@@ -4,6 +4,7 @@ import pytest
 
 from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
 from app.agents.execution.validation import (
+    ACTIONS_FOR,
     contract_problems,
     ensure_valid,
     normalise,
@@ -57,3 +58,13 @@ def test_normalise_counts_words() -> None:
     output = normalise(execution_output(deliverable(body="One two three four")))
     assert output.deliverable is not None and output.deliverable.word_count == 4
     assert normalise(clarification()) == clarification()
+
+
+def test_actions_must_fit_the_deliverable() -> None:
+    email = execution_output(deliverable(DeliverableType.EMAIL))  # proposes a social post
+    problems = contract_problems(email, None, LOADED)
+    assert problems == [
+        "schedule_social_post does not fit a EMAIL; propose only "
+        "add_to_content_calendar, create_email_draft"
+    ]
+    assert set(ACTIONS_FOR) == set(DeliverableType)  # every type has its actions

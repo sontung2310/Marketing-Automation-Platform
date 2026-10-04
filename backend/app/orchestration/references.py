@@ -13,6 +13,7 @@ from app.intelligence.repositories import (
     CompetitorActivitiesRepository,
     DeliverablesRepository,
     InfluencersRepository,
+    ProposedActionsRepository,
     RecommendationsRepository,
     RunsRepository,
     SessionsRepository,
@@ -28,6 +29,7 @@ class RunRepositories:
     influencers: InfluencersRepository
     recommendations: RecommendationsRepository
     deliverables: DeliverablesRepository
+    proposed_actions: ProposedActionsRepository
     sessions: SessionsRepository
     runs: RunsRepository
 
@@ -39,6 +41,7 @@ class RunRepositories:
             influencers=InfluencersRepository(database),
             recommendations=RecommendationsRepository(database),
             deliverables=DeliverablesRepository(database),
+            proposed_actions=ProposedActionsRepository(database),
             sessions=SessionsRepository(database),
             runs=RunsRepository(database),
         )
