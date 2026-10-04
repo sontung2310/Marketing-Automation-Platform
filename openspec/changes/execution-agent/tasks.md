@@ -15,7 +15,7 @@ approves.
 ## 2. 5.2 Guards and repair
 
 - [x] 2.1 Add `agents/execution/guards.py`: originality (12-word run, 5-gram Jaccard, short-source rule), the channel-limit registry, the competitor-name scan and `word_count` overwrite (D4); verify with unit tests covering each guard's pass and fail paths, including a 12-word copy and an 11-word near-copy.
-- [ ] 2.2 Wire the guards into the repair loop with hard/soft severities: a hard failure after the repair fails the run (`UNORIGINAL_OUTPUT`), and a soft one becomes `FLAG` with a note; verify with stubbed-output unit tests that a copy is never returned and a surviving length breach reports `channel_fit: FLAG`.
+- [x] 2.2 Wire the guards into the repair loop with hard/soft severities: a hard failure after the repair fails the run (`UNORIGINAL_OUTPUT`), and a soft one becomes `FLAG` with a note; verify with stubbed-output unit tests that a copy is never returned and a surviving length breach reports `channel_fit: FLAG`.
 - [ ] 2.3 Add `tests/integration/test_execution_live.py` (real MCP and OpenAI over the seeded database): `CREATE_SIMILAR` on a `NEW_BLOG` and on a LinkedIn `EXECUTIVE_POST`; verify the deliverable sides of 5-A and 5-B and save the run outputs as evidence.
 
 ## 3. 5.3 Proposed actions and mock connectors

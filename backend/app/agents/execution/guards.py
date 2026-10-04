@@ -11,7 +11,7 @@ from typing import Literal
 
 from app.agents.common.context import RunContext
 from app.agents.common.intents import Intent
-from app.agents.execution.output import ExecutionDeliverable
+from app.agents.execution.output import ExecutionDeliverable, ExecutionOutput
 from app.core.errors import DomainError
 from app.intelligence.models import DeliverableType
 
@@ -91,8 +91,7 @@ def originality_problems(body: str, sources: Iterable[str]) -> list[GuardProblem
             problems.append(
                 GuardProblem(
                     "originality",
-                    f"the body repeats a {run}-word run from the source; rewrite it in "
-                    "your own words and take a different angle",
+                    f"the body repeats a {run}-word run from a competitor's text",
                     hard=True,
                 )
             )
@@ -101,8 +100,8 @@ def originality_problems(body: str, sources: Iterable[str]) -> list[GuardProblem
             problems.append(
                 GuardProblem(
                     "originality",
-                    f"the body is too close to the source (5-gram overlap {similarity:.2f}); "
-                    "take a different angle and structure",
+                    f"the body is too close to a competitor's text "
+                    f"(5-gram overlap {similarity:.2f})",
                     hard=True,
                 )
             )
@@ -186,12 +185,30 @@ def guard_problems(deliverable: ExecutionDeliverable, inputs: GuardInputs) -> li
         problems += [
             GuardProblem(
                 "originality",
-                f"do not name the competitor {name}; write about the idea, not them",
+                f"it names the competitor {name}, which the user did not ask for",
                 hard=False,
             )
             for name in named_competitors(text, inputs.competitor_names, inputs.message)
         ]
     return problems
+
+
+def flag(output: ExecutionOutput, problems: list[GuardProblem]) -> ExecutionOutput:
+    """Soft problems the repair left: never PASS what code found failing (agents-spec §7.3)."""
+    soft = [p for p in problems if not p.hard]
+    check = output.quality_check
+    if not soft or check is None:
+        return output
+    update: dict[str, object] = {p.check: "FLAG" for p in soft}
+    update["notes"] = [*check.notes, *(p.message for p in soft)]
+    return output.model_copy(update={"quality_check": check.model_copy(update=update)})
+
+
+def ensure_original(problems: list[GuardProblem]) -> None:
+    if hard := [p.message for p in problems if p.hard]:
+        raise UnoriginalOutputError(
+            "The draft still copies a competitor; no copy is returned", {"problems": hard}
+        )
 
 
 def activity_texts(record: Mapping[str, object]) -> list[str]:

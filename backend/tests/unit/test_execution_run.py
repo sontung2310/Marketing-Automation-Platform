@@ -11,6 +11,7 @@ from app.agents.common.context import RunContext
 from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
 from app.agents.common.intents import Intent
 from app.agents.execution import run as execution_run
+from app.agents.execution.guards import UnoriginalOutputError
 from app.agents.execution.output import ExecutionOutput
 from app.intelligence.models import DeliverableType, RunStatus
 from tests.execution_samples import clarification, deliverable, execution_output
@@ -99,3 +100,66 @@ async def test_clarification_maps_to_its_run_status(monkeypatch: pytest.MonkeyPa
     ctx.intent, ctx.trigger_context = Intent.CHAT, None
     outcome = await execution_run.run_execution(ctx, "Write it")
     assert outcome.status is RunStatus.NEEDS_CLARIFICATION
+
+
+SOURCE = (
+    "Most B2B content calendars fail because they start with formats instead of buyers. "
+    "Before you plan a single post, list the ten questions your best customers asked during "
+    "their last buying cycle. Group them by stage: problem, options and decision."
+)
+OWN = (
+    "Marketing Eye sees the same pattern with every growing firm we advise. Strong plans "
+    "come from listening first, writing second and measuring what changes in sales "
+    "conversations over the following quarter, so the work keeps earning its place."
+)
+
+
+def similar_to_source() -> RunContext:
+    ctx = similar_post()
+    ctx.trigger_context = {
+        "id": "act_1",
+        "activity_type": "SOCIAL_POST",
+        "channel": "LINKEDIN",
+        "title": "Plan from buyer questions",
+        "content_excerpt": SOURCE,
+        "competitor_name": "Brightlane Marketing",
+    }
+    return ctx
+
+
+def post(body: str) -> ExecutionOutput:
+    return execution_output(deliverable(body=body))
+
+
+async def test_a_copy_is_repaired(monkeypatch: pytest.MonkeyPatch) -> None:
+    inputs = fake_runner(monkeypatch, [post(f"{OWN} {SOURCE}"), post(OWN)])
+    outcome = await execution_run.run_execution(similar_to_source(), None)
+    assert "Quality: the body repeats" in inputs[1][-1]["content"]
+    assert isinstance(outcome.output, ExecutionOutput) and outcome.output.deliverable
+    assert outcome.output.deliverable.body_markdown == OWN
+
+
+async def test_a_copy_is_never_returned(monkeypatch: pytest.MonkeyPatch) -> None:
+    copy = post(f"{OWN} {SOURCE}")
+    fake_runner(monkeypatch, [copy, copy])
+    with pytest.raises(UnoriginalOutputError):
+        await execution_run.run_execution(similar_to_source(), None)
+
+
+async def test_a_surviving_length_breach_is_flagged(monkeypatch: pytest.MonkeyPatch) -> None:
+    long_post = post(f"{OWN} " * 15)  # over 3,000 characters
+    fake_runner(monkeypatch, [long_post, long_post])
+    outcome = await execution_run.run_execution(similar_to_source(), None)
+    assert isinstance(outcome.output, ExecutionOutput) and outcome.output.quality_check
+    check = outcome.output.quality_check
+    assert (check.channel_fit, check.originality) == ("FLAG", "PASS")
+    assert any("at most 3000 characters" in note for note in check.notes)
+
+
+async def test_a_surviving_competitor_name_is_flagged(monkeypatch: pytest.MonkeyPatch) -> None:
+    naming = post(f"Unlike Brightlane, we listen first. {OWN}")
+    fake_runner(monkeypatch, [naming, naming])
+    outcome = await execution_run.run_execution(similar_to_source(), None)
+    assert isinstance(outcome.output, ExecutionOutput) and outcome.output.quality_check
+    assert outcome.output.quality_check.originality == "FLAG"
+    assert outcome.status is RunStatus.SUCCEEDED
