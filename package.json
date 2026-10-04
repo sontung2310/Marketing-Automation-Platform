@@ -12,6 +12,7 @@
   "scripts": {
     "dev:api": "uv run --directory backend uvicorn app.api.main:app --reload --port 8000",
     "dev:web": "npm run dev -w frontend",
+    "dev:web:fixtures": "VITE_USE_FIXTURES=1 npm run dev -w frontend",
     "typecheck": "uv run --directory backend mypy && npm run typecheck -w frontend",
     "test": "uv run --directory backend pytest && npm run test -w frontend && node --test \"tools/*.test.mjs\"",
     "test:integration": "uv run --directory backend pytest -m integration",
@@ -23,8 +24,9 @@
     "openspec": "openspec",
     "skills:check": "uv run --directory backend python scripts/update_skills.py --check",
     "openspec:check": "openspec validate --all --strict --no-interactive && node tools/openspec-conflicts.mjs",
-    "check": "npm run typecheck && npm run test && npm run lint && npm run format:check && npm run skills:check && npm run openspec:check",
-    "prepare": "husky"
+    "check": "npm run typecheck && npm run test && npm run lint && npm run format:check && npm run skills:check && npm run openspec:check && npm run test:e2e",
+    "prepare": "husky",
+    "test:e2e": "npm run test:e2e -w frontend"
   },
   "devDependencies": {
     "@fission-ai/openspec": "1.13.1",

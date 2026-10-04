@@ -173,10 +173,11 @@ These never call an LLM. The UI sends `trigger = {kind, ref_id, action}`.
 
 ### 5.2 Chat routing (classifier)
 
-The chat composer has an agent selector: `AUTO` (the default), `STRATEGY` or
-`EXECUTION`. With an explicit selection, the router only validates and
-extracts references. With `AUTO`, a small router agent (`OPENAI_MODEL_ROUTER`,
-structured output) decides:
+`POST /runs` accepts an optional `agent_hint` (`AUTO`, `STRATEGY` or
+`EXECUTION`); with an explicit hint the router only validates and extracts
+references. The workspace never sends one — its composer belongs to Execution
+alone (ui-spec §3) — so in the PoC every chat message routes through `AUTO`,
+where a small router agent (`OPENAI_MODEL_ROUTER`, structured output) decides:
 
 ```python
 class RouteDecision(BaseModel):
