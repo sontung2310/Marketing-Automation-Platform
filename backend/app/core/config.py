@@ -28,7 +28,6 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr | None = None
     openai_model_agent: str = "gpt-5.6-luna"
     openai_model_router: str | None = None
-    openai_model_judge: str | None = None
 
     mcp_url: str = "http://localhost:8001/mcp"
     mcp_allowed_hosts: list[str] = ["localhost:*", "127.0.0.1:*", "[::1]:*", "mcp:8001"]

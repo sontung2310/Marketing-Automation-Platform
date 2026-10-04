@@ -17,10 +17,10 @@ API ── RunService.start(trigger|message, session)
           │
           ├─ Router → RouteDecision(agent, intent, deliverable_type?, refs)
           ├─ build RunContext (company_id, session_id, trigger_context, prior outputs referenced)
-          ├─ Runner.run_streamed(agent, input, context=RunContext, max_turns=…)
+          ├─ Runner.run(agent, input, context=RunContext, max_turns=…)  (own AsyncOpenAI client per run)
           │     ├─ tools: Intelligence MCP (read), load_skill
           │     └─ output_type = StrategyOutput | ExecutionOutput   (Pydantic, strict)
-          ├─ stream events → SSE (agent.step / agent.tool / output.final)
+          ├─ events → run log (agent.tool from the MCP wrapper, output.final); live SSE in Step 6.2
           └─ persist run, recommendations / deliverables / proposed_actions
 ```
 
@@ -31,17 +31,20 @@ API ── RunService.start(trigger|message, session)
 - **`RunContext`** (a dataclass that is not sent to the LLM) holds
   `company_id`, `session_id`, `run_id`, a tool-call counter and the
   skill-load counter.
-- **Trigger context** is the only data injected into the prompt. It holds the
-  clicked activity, trend, influencer or recommendation, as a compact JSON
-  block labelled `UNTRUSTED_SOURCE_CONTENT` when it contains third-party text.
+- **Run input** is today's date, the intent, the trigger context, the
+  session's previous answer (for follow-ups) and the message. The trigger
+  context holds the clicked activity, trend, influencer or recommendation as a
+  compact JSON block; it and the previous answer are labelled
+  `UNTRUSTED_SOURCE_CONTENT`. The date lets the agent apply the 21-day
+  staleness rule.
 - **Limits.** `max_turns=16`, at most 12 MCP tool calls and at most 3
   successful `load_skill` calls per run, enforced in the tool wrappers. When a limit is
   hit, the tool returns a `LIMIT_REACHED` message, and the agent must finish
   with what it has and record a data gap. A repeated identical MCP call in the
   same run returns the earlier result without reaching the server or counting
   toward the limit; the trace marks it `cached: true`.
-- **Company context first.** Both agents call `get_company_context` at most
-  once per run. The instructions say to call it before producing any
+- **Company context first.** Both agents call `get_company_context` once per
+  run (a cached repeat never reaches the server). The instructions say to call it before producing any
   customer-facing output. The evals check this.
 
 ## 2. Instruction files

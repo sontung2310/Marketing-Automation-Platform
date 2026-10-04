@@ -192,7 +192,8 @@ A case **passes** only if every applicable check passes.
   dimensions, integer 1–5, a rationale). Judged runs happen in a Claude Code
   session, not in CI.
 - The judge sees the case, the agent output, the evidence records the agent
-  retrieved (dates shifted to the run, as the agent saw them), the company
+  retrieved (dates shifted to the run, as the agent saw them), the tool calls it
+  made (so it can tell whether an absence claim followed a search), the company
   brand voice and `reference_notes`. It never sees other scores.
 - It runs only if the deterministic `schema_valid` check passes.
 

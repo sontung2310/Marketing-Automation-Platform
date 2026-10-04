@@ -131,7 +131,7 @@ specs.
 | Package/env manager | `uv` |
 | API | FastAPI, Pydantic v2, SSE via `sse-starlette` |
 | Agents | **OpenAI Agents SDK** (`openai-agents`), with structured outputs (`output_type`) |
-| Models | Set by env: `OPENAI_MODEL_AGENT`, `OPENAI_MODEL_ROUTER`, `OPENAI_MODEL_JUDGE`. No model names hard-coded. |
+| Models | Set by env: `OPENAI_MODEL_AGENT`, `OPENAI_MODEL_ROUTER`. No model names hard-coded. The eval judge is Claude, run in Claude Code (evaluation-spec §5.2), so it needs no model setting. |
 | Intelligence MCP | Official `mcp` Python SDK 2.x (`MCPServer`) over streamable HTTP. Agents connect with `MCPServerStreamableHttp`. |
 | Database | Existing MongoDB cluster (URI in `.env`), accessed with the PyMongo async API |
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS v4. The Tailwind theme (`src/styles/theme.css`) holds the CompetitorScope Design System tokens, and its components are rebuilt as Tailwind components. |
@@ -273,4 +273,4 @@ in [roadmap.md](roadmap.md).
 | Q1 | Which database or cluster holds CompetitorScope `changes` now that production writes to "RM Mongo"? | **Resolved for the PoC (2026-09-22):** CompetitorScope `changes` is in `competitors_monitoring_test.changes`. The reachable cluster has no "RM Mongo" database, so this is the frozen source contract; re-verify only if production access or the source cluster changes. |
 | Q2 | May the PoC create its own database (`marketing_automation`) on the existing cluster, for normalized and app data? | **Resolved:** yes. Write normalized and app data to the owned `marketing_automation` database. `competitors_monitoring_test`, `influencer_discovery` and `pace_database` remain read-only source databases. |
 | Q3 | Does the Pace `ai_posts` collection exist with enough recent volume to derive trends? | **Resolved (2026-09-22):** no. It has 37 documents and 0 in the preceding 14 days, below the 50-post threshold. Trends use the seeded set (`is_mock: true`) while below that threshold, then automatically switch to the deterministic Pace aggregation in data-contract §4.3 once the threshold is met. |
-| Q4 | Brand-voice source for Marketing Eye | **Provisionally provided (2026-09-22):** the supplied profile is for **Marketing Eye US** (`www.marketingeye.com`, United States, B2B). Use it as the source material for the company-context seed after confirming whether it replaces the current `Marketing Eye`/AU demo tenant or is an additional tenant profile. |
+| Q4 | Brand-voice source for Marketing Eye | **Resolved (2026-09-29):** the demo tenant is the Australian **Marketing Eye** (marketingeye.com.au). The company-context seed is its source; the US profile supplied on 2026-09-22 is not used. |

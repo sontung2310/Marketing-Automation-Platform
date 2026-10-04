@@ -104,10 +104,10 @@ read-only tools.
 **Goal:** Strategy produces grounded recommendations for every Strategy
 intent. Its golden dataset is authored and passing.
 
-- [ ] 4.1 `orchestration/run_service.py`: RunContext, deterministic trigger routing, reference resolution, session and run persistence, and the event log. No HTTP yet; it is callable in-process.
-- [ ] 4.2 The Strategy agent: instructions, `StrategyOutput`, MCP and skill tools, limits, post-validation (grounding repair), and recommendation persistence.
-- [ ] 4.3 The eval harness (`backend/evals/`: loader, checks, judge, report) and fixture `evaluation/fixtures/intelligence_v1.json` (seed + adversarial records).
-- [ ] 4.4 **Golden dataset `evaluation/golden/strategy.jsonl`** (≥ 48 cases covering evaluation-spec §3.2), rubric `strategy.md`, judge calibration and the committed baseline.
+- [x] 4.1 `orchestration/run_service.py`: RunContext, deterministic trigger routing, reference resolution, session and run persistence, and the event log. No HTTP yet; it is callable in-process. Evidence: `tests/unit/test_routing.py`, `tests/integration/test_run_service.py` and `test_run_references.py`.
+- [x] 4.2 The Strategy agent: instructions, `StrategyOutput`, MCP and skill tools, limits, post-validation (grounding repair), and recommendation persistence. Evidence: `tests/unit/test_strategy_*.py`, `test_run_mcp.py` and the live `tests/integration/test_strategy_live.py`.
+- [x] 4.3 The eval harness (`backend/evals/`: loader, checks, judge, report) and fixture `evaluation/fixtures/intelligence_v1.json` (seed + adversarial records). Evidence: `tests/unit/test_eval_*.py` and `tests/integration/test_eval_runner.py`.
+- [x] 4.4 **Golden dataset `evaluation/golden/strategy.jsonl`** (≥ 48 cases covering evaluation-spec §3.2), rubric `strategy.md`, judge calibration and the committed baseline. Evidence: 50 owner-approved cases (`tests/unit/test_golden_strategy.py`), calibration 91% (`evaluation/rubrics/strategy.calibration.json`) and `evaluation/reports/baseline_strategy.md` (every §6 threshold met: 50/50 cases, judge mean 4.06, p95 18.0 s).
 
 **Success criteria**
 
