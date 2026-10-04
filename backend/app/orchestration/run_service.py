@@ -56,8 +56,9 @@ class RunService:
             previous_output=previous.output if previous else None,
         )
         if trigger_context is not None:
-            # The trigger record was resolved for this company, so the agent may cite it.
-            context.retrieved_ids.add(str(trigger_context["id"]))
+            # The trigger record was resolved for this company, so the agent may cite it, and
+            # the evidence it carries (a recommendation's), which was grounded when produced.
+            context.retrieved_ids |= collect_ids(trigger_context)
         if context.previous_output is not None:
             # Follow-ups ("drop #3") may re-cite what the last answer already grounded.
             context.retrieved_ids |= collect_ids(context.previous_output)

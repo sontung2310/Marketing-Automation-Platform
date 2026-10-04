@@ -219,3 +219,22 @@ async def test_an_empty_answer_supersedes_and_a_failed_supersede_leaves_no_set(
     )
     assert failed.status is RunStatus.FAILED
     assert await recs.count_documents({"run_id": failed.id}) == 0
+
+
+async def test_do_this_can_cite_the_recommendation_evidence(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    retrieved: list[set[str]] = []
+
+    async def recording_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        retrieved.append(set(context.retrieved_ids))
+        return await answering_agent(context, message)
+
+    runs = service(seeded_database, recording_agent)
+    strategy = await runs.start(COMPANY, message="What should we post?", agent=AgentName.STRATEGY)
+    final = next(e for e in strategy.events if e["type"] == "output.final")
+    second = final["data"]["recommendation_ids"][1]
+    trigger = Trigger(kind=TriggerKind.RECOMMENDATION, ref_id=second, action=TriggerAction.DO_THIS)
+    await runs.start(COMPANY, trigger=trigger)  # a new session: only the trigger grounds it
+    assert retrieved[1] >= {second, "act_2"}
+    assert "act_1" not in retrieved[1]  # recommendation 1's evidence is not this trigger's
