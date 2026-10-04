@@ -37,4 +37,4 @@ approves.
 
 - [x] 5.1 Update `evaluation-spec` §5.2 (Claude judge, bundles, skill) and the calibration size (50), `specs.md` Q4 (Australian Marketing Eye), `agents-spec` §1/§6 details settled in implementation, `data-contract` if run fields change, and tick roadmap 4.1–4.4 with evidence; verify the docs match the code.
 - [x] 5.2 Run `npm run check` and `npm run test:integration`; verify both are green.
-- [ ] 5.3 Ask the owner to approve opening the Step PR; then open it with the eval report summary and 4-A–4-F evidence, and run the fair review.
+- [x] 5.3 Ask the owner to approve opening the Step PR; then open it with the eval report summary and 4-A–4-F evidence, and run the fair review.
