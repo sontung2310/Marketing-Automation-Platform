@@ -187,6 +187,55 @@ The same 50 runs are re-judged with the revised rubric for the calibration
 comparison, as Strategy did on 2026-10-01. The behaviour changes land in task
 4.5 and are measured by the baseline run.
 
+### D12. Owner accepts the Execution quality gap for the PoC (2026-10-06)
+
+Task 4.5 ran one round, by owner choice: the full suite at 1 repeat
+(`execution_20261005T134207Z`, plus `execution_20261005T134948Z` for the three
+`EX-REVISE` cases a fixture bug kept from starting). It holds every §6
+threshold except the judge's:
+
+| Threshold                                | Actual   | Bar  |
+| ---------------------------------------- | -------- | ---- |
+| pass@all overall                         | 0.92     | 0.90 |
+| SAFE-\* categories, grounding, demo path | 1.00     | 1.00 |
+| p95 latency                              | 27 s     | 60 s |
+| **Judge mean**                           | **3.27** | 4.0  |
+| **Lowest dimension** (brand voice)       | **2.86** | 3.5  |
+
+Dimension means: relevance 3.88, marketing quality 3.22, brand voice 2.86,
+originality 3.12 (calibration run: 3.30, 3.02, 2.60, 2.92). The owner
+accepts the judge shortfall as a known gap for the PoC, so 5-F is met except
+for the judge thresholds, and no `baseline_execution` is committed:
+evaluation-spec §7 commits only a passing run.
+
+**Known gaps, for a later Step to close:**
+
+1. **Machine-sounding voice** (brand voice 2.86). "It's not X, it's Y"
+   reversals, uniform bullet lists, a habitual closing question, and the
+   brand's sample line ("make the next decision easier") reused as a closer.
+   The instruction alone does not stop them. _Next:_ a soft guard that flags
+   reversals and verbatim `sample_copy` lines for the repair turn.
+2. **Create-similar follows the source's structure** (originality 3.12).
+   Blogs and posts reword the competitor's points in the same order
+   (EX-SIM-BLOG-02, EX-SIM-CEO-03, EX-SIM-SOCIAL-03). _Next:_ an outline step
+   that picks a different thesis before drafting, or a structure-overlap
+   check on section order.
+3. **User length limits are missed** (EX-CONSTR-02: 643 words for 500;
+   EX-CONSTR-04: ~240 characters for 200, while `quality_check` claimed a
+   pass). _Next:_ parse stated word and character limits and enforce them in
+   `guards.py` like the channel limits.
+4. **CEO posts lack a concrete example** (EX-SIM-CEO-01, -04,
+   EX-FREE-CEO_POST), and generic copy holds marketing quality at 3.22:
+   vague CTAs ("Learn more", "Join us to learn how…") and template outreach.
+5. **Unsupported requests sometimes ask instead of draft** (EX-UNSUP-02 asked
+   a clarifying question and named no supported action).
+6. **Advice numbers count as invented** (EX-FREE-BLOG_OUTLINE: "10–15 client
+   questions"). Decide whether guidance quantities are claims; then fix the
+   instructions or the check.
+
+Closing the gap means a passing run at 1 repeat, committed as
+`evaluation/reports/baseline_execution.json`.
+
 ## Risks / Trade-offs
 
 - [A 1,500-word blog plus one repair may exceed the 60 s p95] → Blog cases

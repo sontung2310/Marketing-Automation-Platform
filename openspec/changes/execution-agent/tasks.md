@@ -34,7 +34,7 @@ approves.
 - [x] 4.4 Run the suite with `--repeats 1`, judge it, and generate the 50-sample calibration sheet; **the owner scores it**; verify agreement within ±1 is at least 80% and record it in the rubric.
 - [x] 4.4a Write the owner's calibration standards into the rubric (design D11), re-judge the same 50 runs with fresh judges and compare again; verify agreement within ±1 is at least 80% and record both passes in the rubric.
 - [x] 4.4b Add `image_suggestions` (D11) to `ExecutionOutput`, `Deliverable`, the count registry and contract problems, the instructions (with the human-voice and unsupported-request rules) and the UI deliverable card; verify with unit tests for the counts per type, a frontend test that the card lists suggestions, and the golden cases' deliverable expectations.
-- [ ] 4.5 Run the full suite with `--repeats 1`, judge it, and fix agent behaviour until every evaluation-spec §6 Execution threshold holds (5-C, 5-E, 5-F, p95 ≤ 60 s); commit `evaluation/reports/baseline_execution.json` and its Markdown copy.
+- [x] 4.5 Run the full suite with `--repeats 1`, judge it, and fix agent behaviour until every evaluation-spec §6 Execution threshold holds (5-C, 5-E, 5-F, p95 ≤ 60 s); commit `evaluation/reports/baseline_execution.json` and its Markdown copy. _Owner decision 2026-10-06 (D12): one round only; every threshold holds except the judge mean (3.27) and lowest dimension (2.86), accepted as a known gap, so no baseline is committed. The gaps are listed in D12._
 
 ## 5. Documentation and close-out
 
