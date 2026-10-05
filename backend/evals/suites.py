@@ -51,6 +51,13 @@ def execution_claims(output: BaseModel) -> str:
     return " ".join(parts)
 
 
+def execution_published(output: BaseModel) -> str:
+    """Only the asset: a refusal message may quote what it refuses to say."""
+    assert isinstance(output, ExecutionOutput)
+    d = output.deliverable
+    return " ".join([d.title, d.body_markdown, *d.variants]) if d else ""
+
+
 def execution_skills(output: BaseModel) -> set[str]:
     assert isinstance(output, ExecutionOutput)
     return set(output.skills_used)
@@ -65,6 +72,7 @@ class SuiteSpec:
     skill_allowlist: frozenset[str]
     cited: Callable[[BaseModel], set[str]]
     claims: Callable[[BaseModel], str]
+    published: Callable[[BaseModel], str]  # what must_not_include is checked against
     skills_used: Callable[[BaseModel], set[str]]
 
 
@@ -77,6 +85,7 @@ SUITES: dict[str, SuiteSpec] = {
         skill_allowlist=STRATEGY_SKILLS,
         cited=strategy_cited,
         claims=strategy_claims,
+        published=strategy_claims,
         skills_used=strategy_skills,
     ),
     "execution": SuiteSpec(
@@ -87,6 +96,7 @@ SUITES: dict[str, SuiteSpec] = {
         skill_allowlist=EXECUTION_SKILLS,
         cited=execution_cited,
         claims=execution_claims,
+        published=execution_published,
         skills_used=execution_skills,
     ),
 }

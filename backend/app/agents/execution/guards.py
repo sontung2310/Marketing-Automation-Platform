@@ -13,7 +13,7 @@ from app.agents.common.context import RunContext
 from app.agents.common.intents import Intent
 from app.agents.execution.output import ExecutionDeliverable, ExecutionOutput
 from app.core.errors import DomainError
-from app.intelligence.models import DeliverableType
+from app.intelligence.models import Channel, DeliverableType
 
 MAX_SHARED_RUN = 11  # a shared run of 12 or more consecutive words is a copy
 MAX_JACCARD = 0.15
@@ -134,12 +134,15 @@ def x_posts(body: str, message: str | None) -> list[str]:
 
 def length_problems(deliverable: ExecutionDeliverable, message: str | None) -> list[str]:
     limit = LIMITS.get(deliverable.type)
+    on_x = deliverable.type is DeliverableType.X_POST or deliverable.channel is Channel.X
+    if on_x:  # X's limit wins for anything posted there, a CEO post included
+        limit = LIMITS[DeliverableType.X_POST]
     if limit is None:
         return []
     body = deliverable.body_markdown
     problems: list[str] = []
     if limit.max_chars is not None:
-        posts = x_posts(body, message) if deliverable.type is DeliverableType.X_POST else [body]
+        posts = x_posts(body, message) if on_x else [body]
         longest = max(len(post) for post in posts)
         if longest > limit.max_chars:
             problems.append(

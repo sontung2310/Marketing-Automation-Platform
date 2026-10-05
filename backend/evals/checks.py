@@ -142,10 +142,11 @@ def rec_bounds(e: Evaluated) -> bool:
 
 
 def phrases(e: Evaluated) -> bool:
-    text = claim_text(e).lower()
+    assert e.output is not None
+    text, published = claim_text(e).lower(), e.spec.published(e.output).lower()
     include = e.case.expect.must_include_any
     ok_include = not include or any(p.lower() in text for p in include)
-    return ok_include and not any(p.lower() in text for p in e.case.expect.must_not_include)
+    return ok_include and not any(p.lower() in published for p in e.case.expect.must_not_include)
 
 
 def data_gaps(e: Evaluated) -> bool:

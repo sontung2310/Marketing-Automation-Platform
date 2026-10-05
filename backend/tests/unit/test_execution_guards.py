@@ -11,7 +11,7 @@ from app.agents.execution.guards import (
     longest_shared_run,
     named_competitors,
 )
-from app.intelligence.models import DeliverableType
+from app.intelligence.models import Channel, DeliverableType
 from tests.execution_samples import deliverable
 
 SOURCE = (
@@ -113,3 +113,9 @@ def test_a_ceo_post_must_speak_in_the_first_person() -> None:
     assert [(p.check, p.hard) for p in problems] == [("channel_fit", False)]
     personal = deliverable(DeliverableType.CEO_POST, body="My view: positioning is never done.")
     assert guard_problems(personal, inputs(Intent.CHAT)) == []
+
+
+def test_a_ceo_post_on_x_keeps_to_the_x_limit() -> None:
+    on_x = deliverable(DeliverableType.CEO_POST, body="My view. " * 40)  # 360 characters
+    on_x = on_x.model_copy(update={"channel": Channel.X})
+    assert "at most 280 characters" in length_problems(on_x, None)[0]

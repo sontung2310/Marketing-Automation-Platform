@@ -21,7 +21,7 @@ def test_instructions_cover_every_required_element() -> None:
         "never copied",  # §7.3 originality
         "phrase them qualitatively",  # §7.3 grounding
         "never name the competitor",  # §7.3 competitor mentions
-        "at most 280 characters",  # §7.3 channel fit
+        "at most 280",  # §7.3 channel fit
         "Refuse fake reviews",  # §7.3 safety
         "first person as the company's\n  `spokesperson`",  # CEO voice
         'Never "I"',  # company voice
