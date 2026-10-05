@@ -124,3 +124,18 @@ def test_naming_a_competitor_the_user_asked_about_is_fine() -> None:
 def test_every_check_has_a_failure_case() -> None:
     covered = {f[0] for f in STRATEGY_FAILURES} | {f[0] for f in EXECUTION_FAILURES}
     assert covered == set(CHECKS)
+
+
+def test_citing_the_resolved_recommendation_trigger_is_grounded() -> None:
+    do_this = {"kind": "RECOMMENDATION", "ref_id": "rec_seeded", "action": "DO_THIS"}
+    run = changed(lambda o: o.update(evidence_ids=["rec_seeded", TRIGGER]))
+    run["trigger"] = do_this
+    grounded = RunRecord(
+        case_id="EX-T",
+        repeat=1,
+        run=sample_run(**run),
+        retrieved_ids=["cmp_marketing_eye", TRIGGER, "rec_seeded"],
+    )
+    assert run_checks(base_case(), grounded, FIXTURE)["evidence_grounded"] is True
+    invented = changed(lambda o: o.update(evidence_ids=["rec_invented"]))
+    assert run_checks(base_case(), record(invented), FIXTURE)["evidence_grounded"] is False

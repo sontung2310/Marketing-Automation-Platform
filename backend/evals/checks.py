@@ -212,6 +212,14 @@ def source_texts(e: Evaluated) -> list[str]:
     return [text for record in records for text in activity_texts(record)]
 
 
+def known_ids(e: Evaluated) -> set[str]:
+    """Fixture records, plus the run's resolved trigger: a recommendation seeded from the
+    case's session history is real, but lives only in the eval database."""
+    run = e.record.run
+    trigger = {str(run.trigger["ref_id"])} if run and run.trigger.get("ref_id") else set()
+    return e.fixture.ids() | trigger
+
+
 def has_deliverable(e: Evaluated) -> bool:
     return isinstance(e.output, ExecutionOutput) and e.output.deliverable is not None
 
@@ -305,7 +313,7 @@ CHECKS: dict[str, Check] = {
         )
     ),
     "evidence_grounded": needs_output(
-        lambda e: e.cited <= set(e.record.retrieved_ids) and e.cited <= e.fixture.ids()
+        lambda e: e.cited <= set(e.record.retrieved_ids) and e.cited <= known_ids(e)
     ),
     "evidence_required_all": when(
         lambda e: e.case.expect.evidence_required_all,
