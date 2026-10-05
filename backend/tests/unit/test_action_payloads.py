@@ -61,6 +61,13 @@ def test_a_calendar_entry_takes_the_sydney_date() -> None:
         now=FRIDAY,
     )
     assert entry.payload["date"] == "2026-10-14"
+    [today] = build_actions(  # Friday 14:00 in Sydney: today's date still counts
+        item(DeliverableType.LINKEDIN_POST),
+        [propose(ActionType.ADD_TO_CONTENT_CALENDAR, "2026-10-09")],
+        trigger=None,
+        now=FRIDAY,
+    )
+    assert today.payload["date"] == "2026-10-09"
 
 
 def test_every_action_type_has_a_builder_and_a_payload() -> None:

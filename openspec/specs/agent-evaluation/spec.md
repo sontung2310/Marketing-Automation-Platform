@@ -78,7 +78,8 @@ and MCP over the frozen fixture, with the same loader, throwaway database,
 judge bundles, calibration gate and report as Strategy. It SHALL apply the
 Execution checks from evaluation-spec §5.1, including `deliverable_shape`
 (type, channel, character and word limits), `originality` (against the
-trigger activity's `title` and `content_excerpt`), `competitor_naming` and
+`title` and `content_excerpt` of the trigger activity and every activity the
+run retrieved), `competitor_naming` and
 `proposed_actions_any`. It SHALL seed a case's `session_history` as the
 session's previous answer for either agent's output, and resolve
 `rec_fx_*` recommendation triggers from the fixture. Execution bundles SHALL

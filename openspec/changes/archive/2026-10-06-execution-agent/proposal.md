@@ -80,9 +80,10 @@ already-built UI (Step 7) connect to a measured agent.
   `api/routes/actions.py`, `intelligence/models.py` (`Company.spokesperson`,
   `ProposedAction.created_at`), the seed, and `backend/evals/` (execution
   suite).
-- Data: `evaluation/fixtures/intelligence_v1.json` gains Execution records
-  (blog, social and executive posts with excerpts, recommendations and an
-  injection-bearing influencer bio); `golden/execution.jsonl`,
+- Data: a new `evaluation/fixtures/intelligence_v2.json` snapshot (v1 stays
+  frozen) carries the spokesperson and the seed's original excerpts; the
+  Execution cases use the records it already holds (blog, social and
+  executive posts, recommendations and an injection-bearing influencer bio); `golden/execution.jsonl`,
   `rubrics/execution.md`, `reports/`.
 - Docs: `agents-spec` §7–8 (the agent-facing action shape, guard outcomes),
   `data-contract` (company `spokesperson`, action `created_at`),

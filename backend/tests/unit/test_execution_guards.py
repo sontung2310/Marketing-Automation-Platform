@@ -90,6 +90,11 @@ def test_the_user_length_replaces_the_default_and_is_enforced() -> None:
     assert length_problems(good_blog) == []
     long_blog = deliverable(DeliverableType.BLOG_DRAFT, body="word " * 643)
     assert "450-550 words" in length_problems(long_blog.model_copy(update=asking(450, 550)))[0]
+    capped_blog = deliverable(DeliverableType.BLOG_DRAFT, body="word " * 300)
+    assert length_problems(capped_blog.model_copy(update=asking(max_chars=1999))) == []
+    thread = deliverable(DeliverableType.X_POST, body=f"{'a' * 200}\n\n{'b' * 200}")
+    thread = thread.model_copy(update=asking(thread=True) | {"variants": ["v" * 900]})
+    assert length_problems(thread)  # a variant still fits the cap in a thread
     post = deliverable(DeliverableType.X_POST, body="y" * 240)
     assert "at most 200" in length_problems(post.model_copy(update=asking(max_chars=200)))[0]
     assert length_problems(post.model_copy(update=asking(max_chars=500))) == []  # X cap holds

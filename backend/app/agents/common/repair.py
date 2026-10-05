@@ -59,8 +59,9 @@ async def run_with_repair(
     context.emit("agent.step", {"label": check.repair_label})
     # The repair shares the run's turn budget (agents-spec §1: max_turns=16).
     turns_left = MAX_TURNS - len(result.raw_responses)
-    if turns_left < 1:
+    if turns_left < 1:  # no turn left to repair: fail hard problems, return the rest
         check.ensure_valid(output)
+        return output
     repair_items = result.to_input_list()
     repair_items.append({"role": "user", "content": message})
     result = await Runner.run(

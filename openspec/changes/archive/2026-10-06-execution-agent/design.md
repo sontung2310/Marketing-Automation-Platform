@@ -126,8 +126,11 @@ owner (5-D tests HTTP).
 
 `Company.spokesperson: Spokesperson {name, role, voice_notes}`, required, so
 seed validation catches its absence. The seed adds a fictional Marketing Eye
-founder and CEO. The fixture `intelligence_v1` is re-snapshotted with it, so
-Strategy sees the same context in evals.
+founder and CEO. The frozen `intelligence_v1` stays unchanged (evaluation-spec
+§7.5), and a new `intelligence_v2` snapshot carries the spokesperson and the
+original excerpts, so both suites run on v2. v1 no longer loads under the
+required field, so the Step 4 Strategy baseline can't be re-run on v1; the
+task 5.2 re-run on v2 is its comparison point.
 
 `voice_notes` holds the professional-tone rules for first-person CEO posts
 (owner decision 2026-10-04). Lead with an insight, not the author. Use "I"

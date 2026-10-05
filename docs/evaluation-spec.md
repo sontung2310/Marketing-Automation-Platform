@@ -35,7 +35,7 @@ evaluation/                           # data: reviewed like specs
 │   └── execution.jsonl
 ├── fixtures/
 │   ├── adversarial_v1.json           # eval-only adversarial records (injections, stale data)
-│   └── intelligence_v2.json          # frozen DB snapshot (seed + adversarial records); v1 is the Step 4 baseline's
+│   └── intelligence_v2.json          # frozen DB snapshot (seed + adversarial records); every suite runs on v2. v1 (the Step 4 baseline's) predates the required spokesperson and no longer loads
 ├── rubrics/
 │   ├── strategy.md                   # judge rubric, anchored 1–5
 │   ├── strategy.calibration.json     # latest owner calibration (gates the baseline)

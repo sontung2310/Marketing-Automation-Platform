@@ -68,9 +68,20 @@ def schedule(when: str | None, now: datetime) -> datetime:
     """The user's time if the agent passed one on; otherwise, or when it is unreadable or
     already past, the default. The user can still change it when approving."""
     parsed = parse_when(when) if when else None
-    if when and parsed is None:
-        logger.warning("Unreadable schedule %r; using the default", when)
-    return parsed if parsed is not None and parsed > now else next_weekday_morning(now)
+    if parsed is not None and parsed > now:
+        return parsed
+    if when:
+        logger.warning("Schedule %r is unreadable or past; using the default", when)
+    return next_weekday_morning(now)
+
+
+def calendar_day(when: str | None, now: datetime) -> date:
+    """A calendar entry is a day: today still counts, unlike a 09:00 post time."""
+    parsed = parse_when(when) if when else None
+    today = now.astimezone(SCHEDULE_ZONE).date()
+    if parsed is not None and parsed.astimezone(SCHEDULE_ZONE).date() >= today:
+        return parsed.astimezone(SCHEDULE_ZONE).date()
+    return schedule(None, now).date()
 
 
 def is_past(payload: Mapping[str, object], now: datetime) -> bool:
@@ -138,7 +149,7 @@ def calendar_entry(src: ActionSource) -> dict[str, object]:
     return {
         "title": src.deliverable.title,
         "channel": src.channel(),
-        "date": schedule(src.when, src.now).astimezone(SCHEDULE_ZONE).date().isoformat(),
+        "date": calendar_day(src.when, src.now).isoformat(),
         "recommendation_id": recommendation.get("id"),
     }
 

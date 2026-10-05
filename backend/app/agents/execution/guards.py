@@ -23,7 +23,8 @@ MIN_SOURCE_NGRAMS = 5
 MIN_ALIAS_CHARS = 4
 
 WORD = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
-# Presence only: counting "I" would penalise good first person (design D8).
+# Presence only: counting "I" would penalise good first person (design D8). An accepted
+# exception to conventions §4: a soft hint that only FLAGs, never a pass/fail gate.
 FIRST_PERSON = re.compile(r"\b(?:I|I'm|I've|I'd|[Mm]y|[Mm]e)\b")
 
 QualityField = Literal["originality", "channel_fit"]
@@ -128,12 +129,13 @@ def effective_limit(deliverable: ExecutionDeliverable) -> Limit:
     asked = deliverable.requested_length
     if asked is None:
         return base
+    # Any length the user gave replaces the default word range, so a character cap
+    # never fights a default word minimum.
     caps = [cap for cap in (base.max_chars, asked.max_chars) if cap is not None]
-    words_given = asked.min_words is not None or asked.max_words is not None
     return Limit(
         max_chars=min(caps, default=None),
-        min_words=asked.min_words if words_given else base.min_words,
-        max_words=asked.max_words if words_given else base.max_words,
+        min_words=asked.min_words,
+        max_words=asked.max_words,
     )
 
 
@@ -143,7 +145,8 @@ def posts(deliverable: ExecutionDeliverable) -> list[str]:
     body = deliverable.body_markdown
     asked = deliverable.requested_length
     if on_x(deliverable) and asked is not None and asked.thread:
-        return [post for post in re.split(r"\n\s*\n", body) if post.strip()]
+        thread = [post for post in re.split(r"\n\s*\n", body) if post.strip()]
+        return [*thread, *deliverable.variants]
     return [body, *deliverable.variants]
 
 

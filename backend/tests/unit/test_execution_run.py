@@ -34,7 +34,9 @@ class FakeMCP:
         return None
 
 
-def fake_runner(monkeypatch: pytest.MonkeyPatch, outputs: list[ExecutionOutput]) -> list[Any]:
+def fake_runner(
+    monkeypatch: pytest.MonkeyPatch, outputs: list[ExecutionOutput], responses: int = 4
+) -> list[Any]:
     inputs: list[Any] = []
 
     async def run(agent: object, items: Any, **kwargs: object) -> SimpleNamespace:
@@ -43,7 +45,7 @@ def fake_runner(monkeypatch: pytest.MonkeyPatch, outputs: list[ExecutionOutput])
         return SimpleNamespace(
             final_output_as=lambda _type: output,
             to_input_list=lambda: [{"role": "user", "content": "first"}],
-            raw_responses=[object()] * 4,
+            raw_responses=[object()] * responses,
             context_wrapper=SimpleNamespace(usage=Usage(requests=1, total_tokens=10)),
         )
 
@@ -166,3 +168,15 @@ async def test_a_surviving_competitor_name_is_flagged(monkeypatch: pytest.Monkey
     assert isinstance(outcome.output, ExecutionOutput) and outcome.output.quality_check
     assert outcome.output.quality_check.originality == "FLAG"
     assert outcome.status is RunStatus.SUCCEEDED
+
+
+async def test_a_soft_problem_with_no_turns_left_is_flagged_not_failed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    too_long = execution_output(deliverable(body="We plan around buyers. " * 140))  # > 3,000
+    inputs = fake_runner(monkeypatch, [too_long], responses=16)
+    outcome = await execution_run.run_execution(similar_post(), None)
+    assert len(inputs) == 1  # no repair turn was left
+    assert outcome.status is RunStatus.SUCCEEDED
+    assert isinstance(outcome.output, ExecutionOutput) and outcome.output.quality_check
+    assert outcome.output.quality_check.channel_fit == "FLAG"
