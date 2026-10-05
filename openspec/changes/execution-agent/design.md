@@ -162,6 +162,31 @@ the retrieved evidence.
 Execution uses `OPENAI_MODEL_AGENT` (`gpt-5.6-luna`), the same as Strategy.
 There is no new setting.
 
+### D11. Owner standards from calibration (2026-10-06)
+
+The owner's first calibration scored the judge's runs stricter (mean 3.00
+against 3.69; 77% agreement within ±1). Their notes change behaviour as well
+as scoring:
+
+- **Image suggestions.** `ExecutionDeliverable` and the stored `Deliverable`
+  gain `image_suggestions: list[{placement, content, style}]`. A count
+  registry keyed by `DeliverableType` (posts and ads 1, blogs 1–2, others 0)
+  backs a contract problem, so a missing or extra suggestion is repaired
+  once. The UI's deliverable card lists the suggestions below the draft.
+  _Alternative:_ generate images. Rejected: no image model is in scope, and
+  the owner asked only for a description.
+- **Human voice.** The instructions list the machine patterns to avoid, and
+  the rubric scores them under brand voice. The judge scores this rather than
+  a code check: a phrase list in code would be brittle and easy to game.
+- **Unsupported requests** name the supported channels and actions.
+- **Rubric:** a 5 is rare (publish unchanged); a clean refusal with a pointer
+  is good work; brand voice means "sounds like a person"; a missing image
+  suggestion costs a point on marketing quality.
+
+The same 50 runs are re-judged with the revised rubric for the calibration
+comparison, as Strategy did on 2026-10-01. The behaviour changes land in task
+4.5 and are measured by the baseline run.
+
 ## Risks / Trade-offs
 
 - [A 1,500-word blog plus one repair may exceed the 60 s p95] → Blog cases

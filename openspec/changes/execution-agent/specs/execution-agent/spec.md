@@ -122,6 +122,77 @@ claims SHALL be refused with an ethical alternative.
 - **THEN** the body invents no figures, and any unsupported claim is
   phrased qualitatively or listed in `assumptions`
 
+### Requirement: Posts and blogs suggest their images
+
+Owner decision 2026-10-06, from calibration. Each deliverable SHALL carry
+`image_suggestions`, a list of `{placement, content, style}`. The agent
+describes each image; it never generates one.
+
+- **Social posts** (`LINKEDIN_POST`, `X_POST`, `INSTAGRAM_POST`, `CEO_POST`)
+  and `AD_COPY` SHALL suggest exactly one image, placed as the post's
+  attachment.
+- **Blogs** (`BLOG_DRAFT`, `BLOG_OUTLINE`) SHALL suggest one or two images,
+  each placed by the section it sits in.
+- **Emails, response briefs and outreach** SHALL suggest none.
+
+`placement` says where the image goes. `content` says what it shows,
+specific to this piece. `style` says how it looks. A suggestion SHALL NOT
+invent data for a chart or infographic: any figure it shows comes from the
+deliverable's grounded claims.
+
+#### Scenario: A similar post suggests its image
+
+- **GIVEN** a seeded LinkedIn `SOCIAL_POST` activity
+- **WHEN** `CREATE_SIMILAR` runs for it
+- **THEN** the `LINKEDIN_POST` carries exactly one image suggestion placed as
+  the post's attachment, whose content is specific to the post
+
+#### Scenario: A blog places its images by section
+
+- **GIVEN** a seeded `NEW_BLOG` activity
+- **WHEN** `CREATE_SIMILAR` runs for it
+- **THEN** the `BLOG_DRAFT` carries one or two image suggestions, each naming
+  the section it belongs in
+
+### Requirement: Copy sounds like a person, not a machine
+
+Owner decision 2026-10-06, from calibration. Every deliverable SHALL read as
+written by a thoughtful person at Marketing Eye, never as AI-generated copy.
+It SHALL avoid the recognisable machine patterns:
+
+- stock openers ("In today's fast-paced…", "Let's dive in");
+- "It's not X, it's Y" reversals and colon-then-reveal lines;
+- reflexive groups of three;
+- hype words ("game-changer", "unlock", "elevate", "seamless");
+- uniform bullet lists where prose would do;
+- a closing question on every post by default.
+
+It SHALL use plain, specific sentences with varied rhythm. An email subject
+line SHALL be specific and professional rather than generic.
+
+#### Scenario: A post avoids machine patterns
+
+- **GIVEN** any Execution case that produces a post
+- **WHEN** the judge scores brand voice against the rubric
+- **THEN** copy built from the listed machine patterns scores at most 3 on
+  brand voice
+
+### Requirement: Unsupported requests say what is supported
+
+When the user asks for an action no connector supports (posting to TikTok,
+sending to a list, publishing now), the message SHALL state plainly that it
+cannot, and SHALL name what the platform does support: scheduling a social
+post on LinkedIn, X or Instagram, a CMS draft, an email draft, or a content
+calendar entry, each approved by a person.
+
+#### Scenario: TikTok is not supported
+
+- **GIVEN** the chat message "Write a LinkedIn post about AI search visibility
+  and post it to TikTok now"
+- **WHEN** it is sent to Execution
+- **THEN** the message says TikTok posting is not supported, names the
+  supported channels and actions, and proposes only supported actions
+
 ### Requirement: CEO posts speak as the company spokesperson
 
 A `CEO_POST` SHALL be written in the first person as the company context's

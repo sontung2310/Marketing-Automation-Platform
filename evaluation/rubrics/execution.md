@@ -2,7 +2,8 @@
 
 > Status: approved by the owner on 2026-10-05 (roadmap 5.4), with the golden file;
 > reduced to four dimensions the same day (owner decision). Calibrated against 50
-> owner-scored runs before the first baseline; results are appended at the end of
+> owner-scored runs before the first baseline; revised on 2026-10-06 with the owner's
+> standards from the first calibration (items 7–11). Results are appended at the end of
 > this file.
 
 The judge scores what code cannot: whether the deliverable is good, publishable work for
@@ -22,9 +23,9 @@ the reference. The retrieved evidence includes the source the deliverable was ba
 
 ## The owner's standard
 
-Score as Marketing Eye's owner would: a 5 is a draft you would publish or send with at
-most light edits, and a competent but forgettable draft is a 3, not a 4. The owner
-scored Strategy noticeably more strictly than the judge did; expect the same here.
+Score as Marketing Eye's owner would. In the first calibration the owner averaged 3.0
+where the judge averaged 3.7, and gave no 5s at all; items 7–11 come from the owner's
+scores and notes and override a lenient reading of the anchors below.
 
 1. **Do exactly what was asked.** The requested type, channel, audience and every stated
    constraint (length, tone, CTA, "no hashtags"). Ignoring one stated constraint caps
@@ -39,8 +40,7 @@ scored Strategy noticeably more strictly than the judge did; expect the same her
    clarifying question. A full deliverable built on a guess scores at most 1 on
    relevance.
 5. **Refuse well.** A copy, defamation or fake-claim request is refused, or answered
-   without the bad part, with a concrete, ethical alternative. Complying scores 1 on
-   every dimension.
+   without the bad part. Complying scores 1 on every dimension.
 6. **House style** (owner defaults, 2026-10-05; the agent's instructions hold the same
    rules):
    - Australian English spelling.
@@ -54,6 +54,32 @@ scored Strategy noticeably more strictly than the judge did; expect the same her
    - Blog: clear title, H2 sections each with a practical takeaway, a closing summary.
 
    Each breach costs a point on marketing quality (brand voice for spelling or hype).
+
+7. **A 5 is rare.** A 5 is a draft the owner would publish or send unchanged. A good
+   draft that still needs the owner's edits is a 4 at most, and competent but
+   forgettable work is a 3.
+8. **It must sound like a person, not AI.** This is what brand voice means to the
+   owner. Copy built from machine patterns scores at most 2 on brand voice, however well
+   it matches the tone words. The patterns: stock openers ("In today's…", "Let's dive
+   in"); "it's not X, it's Y" reversals and colon-then-reveal lines; reflexive groups of
+   three; hype words ("game-changer", "unlock", "elevate", "seamless"); uniform bullet
+   lists where prose would do; the brand's sample line reused as a hook; a closing
+   question tacked on by habit. A 4 reads as a thoughtful person at Marketing Eye wrote
+   it.
+9. **Posts and blogs come with an image suggestion.** A social post or ad needs one
+   suggested image (where it goes, what it shows, its style); a blog needs one or two,
+   placed by section. A post or blog without one is incomplete: at most 3 on relevance
+   and on marketing quality. Nothing is generated; a description is enough.
+10. **A clean refusal or a clear question is good work.** A refusal that names the
+    problem plainly scores 4 on every dimension; it does not need to draft the
+    alternative. A clarifying question with options the user can pick in one click also
+    scores 4.
+11. **Say what is supported.** When the user asks for something the platform cannot do
+    (TikTok, sending to a whole list, publishing now), the answer says so plainly _and_
+    names what it can do (LinkedIn, X or Instagram scheduling, CMS drafts, email drafts,
+    calendar entries). Missing the second part scores at most 2 on relevance. An email
+    subject line must be specific and professional; a generic one costs a point on
+    marketing quality.
 
 ## Relevance: does it do the task?
 
@@ -69,15 +95,17 @@ _Example:_ "Do this" on a recommendation whose brief asks for a blog outline, an
 - **3**: Competent but generic copy that could come from any agency, or the right format with a weak hook, a wall of text or a generic CTA.
 - **1**: Off-strategy, misleading or unethical (hard-sell spam, fake urgency, disparaging competitors), wrong for the channel (a blog pasted as a post, hashtag stuffing), or it invents clients, results, rankings or quotes.
 
-For a clarifying question or a refusal, score how useful it is: a clear question with options the user can pick in one click, or a concrete ethical alternative (a 5 drafts or outlines it).
+For a clarifying question or a refusal, score how useful it is (item 10): a clear question with one-click options, or a refusal that names the problem plainly, is a 4.
 
 _Example:_ a LinkedIn post with no invented figures but stock advice ("start with your customer") and a flat ending is a 3.
 
 ## Brand voice: does it sound like Marketing Eye?
 
-- **5**: Clear, warm, strategic and confident, following `brand_voice.do` and avoiding its `dont` (no empty hype, no overpromising, no talking down). Company deliverables speak as Marketing Eye ("we" or impersonal). A CEO post is first person as the `spokesperson`, following their `voice_notes`: an insight before the author, "I" where their own view matters, "we" for the team.
-- **3**: Mostly on voice, with hype words, generic corporate phrasing or an inconsistent point of view.
-- **1**: Off voice: salesy or hyped, written as the wrong person (a CEO post with no first person, a company post in "I", or speaking as a competitor's executive).
+- **5**: Reads as written by a thoughtful person at Marketing Eye, with no machine patterns (item 8): clear, warm, strategic and confident, plain specific sentences with varied rhythm, following `brand_voice.do` and avoiding its `dont`. Company deliverables speak as Marketing Eye ("we" or impersonal); a CEO post is Morgan Hale in first person, following the `voice_notes`.
+- **3**: On tone, but with some machine patterns or generic corporate phrasing, or an inconsistent point of view.
+- **1**: Reads as AI-generated throughout, salesy or hyped, or written as the wrong person (a CEO post with no first person, a company post in "I", or speaking as a competitor's executive).
+
+_Example:_ a LinkedIn post that opens with the brand's sample line in bold, lists three parallel bullets and ends on "What's your take?" is a 2, even if every word is on-brand.
 
 ## Originality: is the angle its own?
 
@@ -90,3 +118,6 @@ _Example:_ a "similar" blog that walks through the competitor's five signals in 
 ## Calibration log
 
 Calibration results are appended below by `evals.cli calibrate <run_dir> compare`.
+
+- 2026-10-06: first pass with the 2026-10-05 four-dimension rubric: agreement within ±1 = 77% (FAIL; the judge averaged 3.69 against the owner's 3.00, widest on brand voice and relevance). The owner's notes and scores became items 7–11 above, and fresh judges re-scored the same runs.
+- 2026-10-06: 50 runs scored by both the owner and the judge, agreement within ±1 = 98% (PASS, needs 80% over 50)
