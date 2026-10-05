@@ -36,8 +36,9 @@ from evals.suites import SUITES, SuiteSpec
 # A K/M suffix counts only as a whole unit: "275 mentions" is 275, not 275 million.
 NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM](?![A-Za-z])|%)?")
 MIN_CHECKED_NUMBER = 10
-# Numbers the agent's own policy uses ("older than 21 days"); not claims about data.
-POLICY_NUMBERS = "21"
+# Numbers the agents' own policies use ("older than 21 days", X's "280-character limit",
+# the 800-1,500 word blog range); not claims about data.
+POLICY_NUMBERS = "21 280 2200 3000 800 1500"
 DATE_FIELDS = ("detected_at", "occurred_at", "computed_at")
 
 
