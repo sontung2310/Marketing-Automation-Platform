@@ -240,6 +240,13 @@ evaluation-spec §7 commits only a passing run.
 Closing the gap means a passing run at 1 repeat, committed as
 `evaluation/reports/baseline_execution.json`.
 
+**Strategy re-run (task 5.2).** After the D1 refactor and fixture v2, the
+Strategy suite held every threshold except the judge mean: 3.92 against
+4.0, down from the 4.06 baseline. Step 5 changed neither Strategy's
+instructions nor the trend and influencer data where the scores dropped, so
+the owner accepted it as run-to-run variation (2026-10-06). The committed
+Strategy baseline is unchanged.
+
 ## Risks / Trade-offs
 
 - [A 1,500-word blog plus one repair may exceed the 60 s p95] → Blog cases
