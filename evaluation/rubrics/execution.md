@@ -1,14 +1,17 @@
 # Execution judge rubric
 
-> Status: approved by the owner on 2026-10-05 (roadmap 5.4), with the golden file.
-> Calibrated against 50 owner-scored runs before the first baseline; results are
-> appended at the end of this file.
+> Status: approved by the owner on 2026-10-05 (roadmap 5.4), with the golden file;
+> reduced to four dimensions the same day (owner decision). Calibrated against 50
+> owner-scored runs before the first baseline; results are appended at the end of
+> this file.
 
 The judge scores what code cannot: whether the deliverable is good, publishable work for
 Marketing Eye. Deterministic checks already cover the schema, cited IDs, the deliverable
 type and channel, character and word limits, verbatim overlap with the source, naming a
 competitor in "create similar" output, proposed action types, phrases and refusal
-status, so do not re-score those. Score each dimension as an integer from 1 to 5, using
+status, so do not re-score those. Grounding is not scored on its own: code fails
+uncited IDs and invented numbers, and an invented claim caps Marketing quality at 2
+(item 3 below). Score each dimension as an integer from 1 to 5, using
 the anchors below; 2 and 4 sit between the neighbouring anchors.
 
 Marketing Eye (Australia) is a B2B marketing agency. Its pillars are B2B growth, Brand
@@ -30,7 +33,8 @@ scored Strategy noticeably more strictly than the judge did; expect the same her
    Eye's pillars. Rephrasing the competitor's points in the same order, or keeping their
    headline or structure, scores at most 2 on originality, even with no words in common.
 3. **Never invent.** No statistics, clients, results, rankings, quotes or offers that are
-   not in the evidence or the company context. One invented figure caps grounding at 2.
+   not in the evidence or the company context. One invented claim caps marketing
+   quality at 2.
 4. **Ask before assuming.** A request with nothing to go on ("Write it") needs a
    clarifying question. A full deliverable built on a guess scores at most 1 on
    relevance.
@@ -49,7 +53,7 @@ scored Strategy noticeably more strictly than the judge did; expect the same her
      150–300 words, except on X, where the 280-character limit wins.
    - Blog: clear title, H2 sections each with a practical takeaway, a closing summary.
 
-   Each breach costs a point on channel craft (brand voice for spelling or hype).
+   Each breach costs a point on marketing quality (brand voice for spelling or hype).
 
 ## Relevance: does it do the task?
 
@@ -59,31 +63,21 @@ scored Strategy noticeably more strictly than the judge did; expect the same her
 
 _Example:_ "Do this" on a recommendation whose brief asks for a blog outline, answered with a generic outline on a different topic, is a 2.
 
-## Grounding: do its claims hold up?
+## Marketing quality: is it good, channel-native marketing for this company?
 
-- **5**: Every factual claim traces to the evidence or the company context; anything else is phrased qualitatively or listed in `assumptions`. A Do this deliverable reflects the recommendation's evidence.
-- **3**: No invented numbers, but some generic claims are presented as Marketing Eye's own results or findings.
-- **1**: Invented statistics, clients, results or quotes, or claims about a competitor that the evidence does not support.
+- **5**: Applies a sound method (structure, hook, objection handling) and fits Marketing Eye's positioning, ICP and pillars, so a B2B leader would care. It uses its format well: a strong first line on social, scannable structure, the right length, a soft useful CTA and the house hashtag and emoji rules. A blog has clear H2 sections and a summary; an email has a specific subject and one ask; ad copy has a headline, body and CTA variants.
+- **3**: Competent but generic copy that could come from any agency, or the right format with a weak hook, a wall of text or a generic CTA.
+- **1**: Off-strategy, misleading or unethical (hard-sell spam, fake urgency, disparaging competitors), wrong for the channel (a blog pasted as a post, hashtag stuffing), or it invents clients, results, rankings or quotes.
 
-_Example:_ "Our clients see 3x pipeline growth" with no such figure in the company context is a 1.
+For a clarifying question or a refusal, score how useful it is: a clear question with options the user can pick in one click, or a concrete ethical alternative (a 5 drafts or outlines it).
 
-## Marketing soundness: is it good marketing for this company?
-
-- **5**: Applies the loaded skill's method (structure, hook, objection handling) and fits Marketing Eye's positioning, ICP and pillars; the idea would interest a B2B leader.
-- **3**: Competent but generic copy that could come from any agency.
-- **1**: Off-strategy, misleading or unethical (hard-sell spam, fake urgency, disparaging competitors).
+_Example:_ a LinkedIn post with no invented figures but stock advice ("start with your customer") and a flat ending is a 3.
 
 ## Brand voice: does it sound like Marketing Eye?
 
 - **5**: Clear, warm, strategic and confident, following `brand_voice.do` and avoiding its `dont` (no empty hype, no overpromising, no talking down). Company deliverables speak as Marketing Eye ("we" or impersonal). A CEO post is first person as the `spokesperson`, following their `voice_notes`: an insight before the author, "I" where their own view matters, "we" for the team.
 - **3**: Mostly on voice, with hype words, generic corporate phrasing or an inconsistent point of view.
 - **1**: Off voice: salesy or hyped, written as the wrong person (a CEO post with no first person, a company post in "I", or speaking as a competitor's executive).
-
-## Channel craft: is it native to its format?
-
-- **5**: Uses the format well: a strong first line on social, scannable structure, the right length for the channel, a soft useful CTA, and the house hashtag and emoji rules. A blog has clear H2 sections and a summary; an email has a specific subject and one ask; ad copy has a headline, body and CTA variants.
-- **3**: Correct length and format, but a weak hook, a wall of text or a generic CTA.
-- **1**: Wrong for the channel (a blog pasted as a post, a thread where one post was asked for, hashtag stuffing).
 
 ## Originality: is the angle its own?
 

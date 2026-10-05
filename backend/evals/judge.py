@@ -16,14 +16,8 @@ from evals.runner import RunRecord
 
 DIMENSIONS: dict[str, tuple[str, ...]] = {
     "strategy": ("relevance", "grounding", "actionability", "marketing_soundness"),
-    "execution": (
-        "relevance",
-        "grounding",
-        "marketing_soundness",
-        "brand_voice",
-        "channel_craft",
-        "originality",
-    ),
+    # Owner decision 2026-10-05: four dimensions; grounding is checked in code.
+    "execution": ("relevance", "marketing_quality", "brand_voice", "originality"),
 }
 
 
