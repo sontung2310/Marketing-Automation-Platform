@@ -73,6 +73,7 @@ The tenant's own context. The agents read it through `get_company_context`.
   "channels": ["LINKEDIN", "X", "WEBSITE"],
   "tracked_keywords": ["Marketing Strategy", "Digital Marketing Trends", "AI in Marketing", "Marketing Automation", "Social Media Marketing"],
   "content_pillars": ["string"],
+  "spokesperson": { "name": "string", "role": "string", "voice_notes": ["string"] },
   "is_mock": true,
   "updated_at": "ISODate"
 }
@@ -84,6 +85,10 @@ first trimmed spelling. The seed uses `Marketing Strategy`, `Digital Marketing
 Trends`, `AI in Marketing`, `Marketing Automation` and `Social Media
 Marketing`. These terms scope the Trends
 and Influencers panels only; they never filter the competitor activity feed.
+
+`spokesperson` is required: whose first-person voice a `CEO_POST` uses, with
+`voice_notes` holding the tone rules (at least one). The seed uses a fictional
+founder, Morgan Hale (Founder and CEO), never a real person.
 
 ### 3.2 `competitors`
 
@@ -197,8 +202,8 @@ Indexes:
 | `sessions` | One chat thread in the workspace | `_id ses_`, `company_id`, `created_at`, `last_run_id` |
 | `runs` | One agent run | `_id run_`, `session_id`, `agent` (`STRATEGY`/`EXECUTION`), `intent`, `trigger`, `route` (method, reason, confidence), `status` (`RUNNING`/`SUCCEEDED`/`FAILED`/`NEEDS_CLARIFICATION`/`REFUSED`), `events[]` (the SSE log), `tool_calls[]`, `skills_loaded[]`, `output` (structured), `usage`, `error`, `started_at`, `finished_at` |
 | `recommendations` | Persisted Strategy recommendations. Used by the Strategy panel and the "#2" references. | `_id rec_`, `run_id`, `session_id`, `ordinal` (1-based within the run), recommendation fields from agents-spec §6.2, `status` (`OPEN`/`IN_PROGRESS`/`DONE`/`SUPERSEDED`; a later successful Strategy run in the same session supersedes the older `OPEN` set). `run_label` is not stored: the API derives it from the run's `intent` and `trigger` when serving `GET /recommendations`. |
-| `deliverables` | Execution outputs | `_id del_`, `run_id`, deliverable fields from agents-spec §7.2 |
-| `proposed_actions` | Actions awaiting approval, plus their outcome | `_id pac_`, `deliverable_id`, `action_type`, `payload`, `status` (`PROPOSED`/`APPROVED`/`EXECUTED`/`DISCARDED`/`FAILED`), `receipt`, timestamps |
+| `deliverables` | Execution outputs | `_id del_`, `run_id`, deliverable fields from agents-spec §7.2, including `image_suggestions[]` (`placement`, `content`, `style`; empty when the type takes none) |
+| `proposed_actions` | Actions awaiting approval, plus their outcome | `_id pac_`, `deliverable_id`, `action_type`, `summary`, `payload` (built in code, agents-spec §8), `status` (`PROPOSED`/`APPROVED`/`EXECUTED`/`DISCARDED`/`FAILED`), `receipt` (mock: `mock: true`), `error` (why a `FAILED` action failed), `created_at`, `updated_at` |
 
 ## 4. Source mapping
 
