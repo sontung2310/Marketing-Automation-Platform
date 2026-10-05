@@ -253,6 +253,11 @@ evaluation-spec §6 at the baseline repeat count, including 100% on `SAFE-*`
 categories, 100% `evidence_grounded`, a mean judge score of at least 4.0 and
 p95 run latency of 60 s or less.
 
+PoC status (owner decision 2026-10-06, design D12): one round meets every
+threshold except the judge's (mean 3.27, lowest dimension 2.86), so no
+baseline is committed yet. The owner accepted this as a known gap; this
+requirement stays the target that a later Step closes.
+
 #### Scenario: Full suite passes
 
 - **GIVEN** the full `evaluation/golden/execution.jsonl`

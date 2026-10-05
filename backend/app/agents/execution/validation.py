@@ -2,7 +2,7 @@
 
 from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
 from app.agents.execution.output import ExecutionDeliverable, ExecutionOutput
-from app.intelligence.models import ActionType, DeliverableType
+from app.intelligence.models import ActionType, Channel, DeliverableType
 
 MAX_ACTIONS = 2
 MAX_VARIANTS = 3
@@ -22,6 +22,13 @@ ACTIONS_FOR: dict[DeliverableType, frozenset[ActionType]] = {
     DeliverableType.INFLUENCER_OUTREACH: _EMAIL,
     DeliverableType.AD_COPY: frozenset({ActionType.ADD_TO_CONTENT_CALENDAR}),
     DeliverableType.RESPONSE_BRIEF: frozenset({ActionType.ADD_TO_CONTENT_CALENDAR}),
+}
+
+# Platform posts belong to their platform; other types may sit on any channel.
+CHANNEL_FOR: dict[DeliverableType, Channel] = {
+    DeliverableType.LINKEDIN_POST: Channel.LINKEDIN,
+    DeliverableType.X_POST: Channel.X,
+    DeliverableType.INSTAGRAM_POST: Channel.INSTAGRAM,
 }
 
 _ONE = (1, 1)
@@ -81,6 +88,8 @@ def contract_problems(
                 f"{', '.join(unfit)} does not fit a {deliverable.type}; propose only "
                 f"{', '.join(sorted(ACTIONS_FOR[deliverable.type]))}"
             )
+        if (channel := CHANNEL_FOR.get(deliverable.type)) and deliverable.channel is not channel:
+            problems.append(f"a {deliverable.type} goes on {channel}, not {deliverable.channel}")
         if problem := image_problem(deliverable):
             problems.append(problem)
         if deliverable.type is DeliverableType.CEO_POST and not deliverable.author_persona:
@@ -108,6 +117,7 @@ def repair_message(unknown: list[str], problems: list[str]) -> str:
 
 def ensure_valid(
     output: ExecutionOutput,
+    *,
     retrieved: set[str],
     expected: DeliverableType | None,
     loaded_skills: set[str],

@@ -61,7 +61,12 @@ def output_check(
         return repair_message(unknown, problems) if unknown or problems else None
 
     def ensure(output: ExecutionOutput) -> None:
-        ensure_valid(output, context.retrieved_ids, expected, context.skill_budget.skills)
+        ensure_valid(
+            output,
+            retrieved=context.retrieved_ids,
+            expected=expected,
+            loaded_skills=context.skill_budget.skills,
+        )
         ensure_original(problems_of(output, context, message))
 
     return OutputCheck(

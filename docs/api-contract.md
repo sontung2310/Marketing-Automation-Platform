@@ -181,7 +181,8 @@ returns `200` with the action: `status: EXECUTED` with a `receipt` (marked
 It returns `404` for an unknown action, `409` if the action is not `PROPOSED`
 (including a second approve, or one that loses a race), and `422`
 (`VALIDATION_ERROR`, with the field errors in `details.errors`) if the merged
-payload is invalid; the action then stays `PROPOSED`.
+payload is invalid or its schedule is already in the past; the action then
+stays `PROPOSED`. Overrides can't change the payload's `deliverable_id`.
 
 ### `POST /actions/{action_id}/discard`
 Returns `200` with the action (`status: DISCARDED`), `404` for an unknown

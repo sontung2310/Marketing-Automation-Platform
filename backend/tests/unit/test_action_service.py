@@ -1,5 +1,6 @@
 """The approve/discard state machine: only PROPOSED moves, and a connector error is FAILED."""
 
+import asyncio
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -97,3 +98,31 @@ async def test_a_connector_error_is_failed_without_leaking_detail() -> None:
     failed = await service(memory, connectors).approve("pac_1")
     assert failed.status is ProposedActionStatus.FAILED and failed.receipt is None
     assert failed.error is not None and "secret" not in failed.error
+
+
+async def test_a_past_schedule_is_rejected() -> None:
+    memory = MemoryActions(proposed())
+    with pytest.raises(ValidationError):
+        await service(memory).approve("pac_1", {"scheduled_for": "2026-10-01T09:00:00+10:00"})
+    assert memory.rows["pac_1"].status is ProposedActionStatus.PROPOSED
+
+
+class CancelledConnector:
+    async def execute(self, payload: dict[str, object]) -> dict[str, object]:
+        raise asyncio.CancelledError
+
+
+async def test_a_cancelled_connector_still_settles_the_action() -> None:
+    memory = MemoryActions(proposed())
+    connectors: dict[ActionType, Connector] = {
+        ActionType.SCHEDULE_SOCIAL_POST: CancelledConnector()
+    }
+    with pytest.raises(asyncio.CancelledError):
+        await service(memory, connectors).approve("pac_1")
+    assert memory.rows["pac_1"].status is ProposedActionStatus.FAILED
+
+
+async def test_an_override_cannot_move_the_action_to_another_deliverable() -> None:
+    memory = MemoryActions(proposed())
+    done = await service(memory).approve("pac_1", {"deliverable_id": "del_other"})
+    assert done.payload["deliverable_id"] == "del_1"

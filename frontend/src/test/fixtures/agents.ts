@@ -129,6 +129,7 @@ const executionOutput: ExecutionOutput = {
         style: "Overhead photo, natural light, no stock people",
       },
     ],
+    requested_length: null,
   },
   quality_check: {
     brand_voice: "PASS",
@@ -153,6 +154,7 @@ const executionOutput: ExecutionOutput = {
       },
       status: "PROPOSED",
       receipt: null,
+      error: null,
       created_at: new Date(Date.now() - 17 * 60_000).toISOString(),
       updated_at: new Date(Date.now() - 17 * 60_000).toISOString(),
     },

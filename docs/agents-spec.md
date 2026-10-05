@@ -375,6 +375,14 @@ class ExecutionDeliverable(BaseModel):
     word_count: int  # recounted in code
     author_persona: str | None  # CEO_POST: the company spokesperson's name and role
     image_suggestions: list[ImageSuggestion]  # posts and AD_COPY 1, blogs 1–2, others 0
+    requested_length: RequestedLength | None  # the length the user stated, else null
+
+
+class RequestedLength(BaseModel):  # code checks this instead of reading the message
+    min_words: int | None
+    max_words: int | None
+    max_chars: int | None  # only tightens the channel cap
+    thread: bool  # an X thread, only when asked
 
 
 class QualityCheck(BaseModel):
@@ -409,7 +417,9 @@ Post-validation in code (`agents/execution/validation.py`) asks for one repair
 when the answer breaks the contract: the status shape (only `OK` carries a
 deliverable or actions; a clarification gives 2–3 options), a type other than
 the trigger's, more than 2 actions or 3 variants, an action that doesn't fit
-the type (`ACTIONS_FOR`), the wrong number of image suggestions
+the type (`ACTIONS_FOR`), a platform post off its platform (`CHANNEL_FOR`:
+`LINKEDIN_POST` on LinkedIn, `X_POST` on X, `INSTAGRAM_POST` on Instagram),
+the wrong number of image suggestions
 (`IMAGES_FOR`), a `CEO_POST` with no `author_persona`, an unretrieved evidence
 ID or an unloaded skill. Strategy and Execution share this run → validate →
 repair-once loop (`agents/common/repair.py`).
@@ -424,11 +434,11 @@ answer is returned with that check set to `FLAG` and the reason in `notes`.
 
 | Check | Agent-side rule | Code-side guard |
 |---|---|---|
-| Originality | Don't reuse the competitor's headline, structure or phrasing. Take a different angle rooted in Marketing Eye's pillars. | **Hard.** n-gram overlap against the `content_excerpt` and `title` of the trigger and every retrieved activity. No run of **12 or more consecutive words** may match, and 5-gram Jaccard must be under 0.15 (skipped for a source with fewer than 5 five-grams). |
+| Originality | Don't reuse the competitor's headline, structure or phrasing. Take a different angle rooted in Marketing Eye's pillars. | **Hard.** n-gram overlap of the body and every variant against the `content_excerpt` and `title` of the trigger and every retrieved activity. No run of **12 or more consecutive words** may match, and 5-gram Jaccard must be under 0.15 (skipped for a source with fewer than 5 five-grams). |
 | Brand voice | Follow `brand_voice.do/dont`, and sound like a person: no stock openers, "it's not X, it's Y" reversals, reflexive triples, hype words or habitual closing questions | — (judged in evals) |
 | Grounding | Stats and claims only if they come from tool results or the company context. Otherwise phrase them qualitatively. | Every number in `body_markdown` is either traceable to evidence or listed in `assumptions` (checked in evals) |
 | Competitor mentions | Never make disparaging or unverifiable claims about named competitors. Don't name competitors in `CREATE_SIMILAR` output unless asked. | **Soft.** Competitor-name scan (the full name and its first word) in `CREATE_SIMILAR` output, unless the user's message names it |
-| Channel fit | LinkedIn ≤ 3,000 chars; X ≤ 280 chars per post (a thread is allowed if asked); CEO post written in first person as the persona from the company context; blog draft 800–1,500 words unless the user specifies otherwise | **Soft.** Length per type (`LIMITS`); anything posted on X gets 280 characters per post; a user-given length overrides the blog range; a `CEO_POST` must say I, me or my |
+| Channel fit | LinkedIn ≤ 3,000 chars; X ≤ 280 chars per post (a thread is allowed if asked); CEO post written in first person as the persona from the company context; blog draft 800–1,500 words unless the user specifies otherwise | **Soft.** Length per type (`LIMITS`) for the body and every variant; anything posted on X gets 280 characters per post (per paragraph only for a requested thread); `requested_length` replaces the default word range and can only tighten the character cap; a `CEO_POST` must say I, me or my |
 | Safety | Refuse fake reviews, impersonation, deceptive claims and requests to copy verbatim. Offer an ethical alternative. | — |
 
 ## 8. Proposed actions and mock execution
@@ -448,8 +458,10 @@ fills each one from the stored deliverable, the trigger and the proposal's
 `when` (`PAYLOAD_BUILDERS`), validates it (`connectors/payloads.py`) and
 stores the deliverable and its actions together, rolling both back on
 failure. Mock receipts carry `mock: true` and a `rcp_mock_<ulid>` ID. On
-approval, `payload_overrides` (for example a new `scheduled_for`) are merged
-and re-validated before the connector runs. Each transition is one atomic
+approval, `payload_overrides` (for example a new `scheduled_for` or calendar
+`date`) are merged and re-validated before the connector runs; they can't
+change `deliverable_id`, and a schedule already in the past is rejected. A
+`when` that is unreadable or past falls back to the default schedule. Each transition is one atomic
 update filtered on the current status, so a second approve or discard gets
 `409`.
 

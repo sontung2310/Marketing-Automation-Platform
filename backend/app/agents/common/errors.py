@@ -43,3 +43,9 @@ def run_error(exc: Exception) -> DomainError:
             f"OpenAI or the Intelligence MCP is unavailable ({type(exc).__name__})"
         )
     return DomainError("The run failed unexpectedly. The error has been logged.")
+
+
+class UnoriginalOutputError(DomainError):
+    """The deliverable still copies its source after the repair; no copy is returned."""
+
+    code = "UNORIGINAL_OUTPUT"

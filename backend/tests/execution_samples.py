@@ -30,6 +30,7 @@ def deliverable(
             )
         ]
         * IMAGES_FOR[deliverable_type][0],
+        requested_length=None,
     )
 
 

@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from typing import Literal
 
 from app.agents.common.context import RunContext
+from app.agents.common.errors import UnoriginalOutputError
 from app.agents.common.intents import Intent
 from app.agents.execution.output import ExecutionDeliverable, ExecutionOutput
-from app.core.errors import DomainError
-from app.intelligence.models import Channel, DeliverableType
+from app.intelligence.models import Channel, Competitor, CompetitorActivity, DeliverableType
 
 MAX_SHARED_RUN = 11  # a shared run of 12 or more consecutive words is a copy
 MAX_JACCARD = 0.15
@@ -23,19 +23,10 @@ MIN_SOURCE_NGRAMS = 5
 MIN_ALIAS_CHARS = 4
 
 WORD = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
-# "a 500-word blog", "300 words" or "1,200 to 1,500 words": the user set the length.
-USER_LENGTH = re.compile(r"\d[\d,]*\s*-?\s*words?\b", re.IGNORECASE)
-THREAD = re.compile(r"\bthread\b", re.IGNORECASE)
 # Presence only: counting "I" would penalise good first person (design D8).
 FIRST_PERSON = re.compile(r"\b(?:I|I'm|I've|I'd|[Mm]y|[Mm]e)\b")
 
 QualityField = Literal["originality", "channel_fit"]
-
-
-class UnoriginalOutputError(DomainError):
-    """The deliverable still copies its source after the repair; no copy is returned."""
-
-    code = "UNORIGINAL_OUTPUT"
 
 
 @dataclass(frozen=True)
@@ -125,38 +116,52 @@ LIMITS: dict[DeliverableType, Limit] = {
 }
 
 
-def x_posts(body: str, message: str | None) -> list[str]:
-    """An X thread (only when asked for) is checked post by post: one per paragraph."""
-    if message and THREAD.search(message):
-        return [post for post in re.split(r"\n\s*\n", body) if post.strip()]
-    return [body]
+def on_x(deliverable: ExecutionDeliverable) -> bool:
+    return deliverable.type is DeliverableType.X_POST or deliverable.channel is Channel.X
 
 
-def length_problems(deliverable: ExecutionDeliverable, message: str | None) -> list[str]:
-    limit = LIMITS.get(deliverable.type)
-    on_x = deliverable.type is DeliverableType.X_POST or deliverable.channel is Channel.X
-    if on_x:  # X's limit wins for anything posted there, a CEO post included
-        limit = LIMITS[DeliverableType.X_POST]
-    if limit is None:
-        return []
+def effective_limit(deliverable: ExecutionDeliverable) -> Limit:
+    """The type's limit (X's for anything posted there), narrowed by what the user asked
+    for: their word range replaces the default one, and their character cap only tightens."""
+    base = LIMITS[DeliverableType.X_POST] if on_x(deliverable) else LIMITS.get(deliverable.type)
+    base = base or Limit()
+    asked = deliverable.requested_length
+    if asked is None:
+        return base
+    caps = [cap for cap in (base.max_chars, asked.max_chars) if cap is not None]
+    words_given = asked.min_words is not None or asked.max_words is not None
+    return Limit(
+        max_chars=min(caps, default=None),
+        min_words=asked.min_words if words_given else base.min_words,
+        max_words=asked.max_words if words_given else base.max_words,
+    )
+
+
+def posts(deliverable: ExecutionDeliverable) -> list[str]:
+    """Each text that must fit the character cap: an X thread (only when the user asked for
+    one) post by post, and every variant, since any of them may be the one published."""
     body = deliverable.body_markdown
+    asked = deliverable.requested_length
+    if on_x(deliverable) and asked is not None and asked.thread:
+        return [post for post in re.split(r"\n\s*\n", body) if post.strip()]
+    return [body, *deliverable.variants]
+
+
+def length_problems(deliverable: ExecutionDeliverable) -> list[str]:
+    limit = effective_limit(deliverable)
     problems: list[str] = []
     if limit.max_chars is not None:
-        posts = x_posts(body, message) if on_x else [body]
-        longest = max(len(post) for post in posts)
+        longest = max(len(post) for post in posts(deliverable))
         if longest > limit.max_chars:
             problems.append(
                 f"a {deliverable.type} is at most {limit.max_chars} characters per post; "
                 f"one has {longest}"
             )
-    # A length the user gave overrides the default word range.
-    if limit.min_words is not None and not (message and USER_LENGTH.search(message)):
-        count = len(body.split())
-        if not limit.min_words <= count <= (limit.max_words or count):
-            problems.append(
-                f"a {deliverable.type} is {limit.min_words}-{limit.max_words} words; "
-                f"this one has {count}"
-            )
+    count = len(deliverable.body_markdown.split())
+    low, high = limit.min_words, limit.max_words
+    if (low is not None and count < low) or (high is not None and count > high):
+        wanted = f"{low or 0}-{high}" if high is not None else f"at least {low}"
+        problems.append(f"this {deliverable.type} should be {wanted} words; it has {count}")
     return problems
 
 
@@ -180,10 +185,13 @@ def named_competitors(text: str, names: Iterable[str], message: str | None) -> l
 
 
 def guard_problems(deliverable: ExecutionDeliverable, inputs: GuardInputs) -> list[GuardProblem]:
-    problems = originality_problems(deliverable.body_markdown, inputs.sources)
+    problems = [  # a variant may be the one published, so it must be original too
+        problem
+        for text in (deliverable.body_markdown, *deliverable.variants)
+        for problem in originality_problems(text, inputs.sources)
+    ]
     problems += [
-        GuardProblem("channel_fit", text, hard=False)
-        for text in length_problems(deliverable, inputs.message)
+        GuardProblem("channel_fit", text, hard=False) for text in length_problems(deliverable)
     ]
     if deliverable.type is DeliverableType.CEO_POST and not FIRST_PERSON.search(
         deliverable.body_markdown
@@ -244,10 +252,14 @@ def walk(payload: object) -> Iterable[Mapping[str, object]]:
 def guard_inputs(context: RunContext, message: str | None) -> GuardInputs:
     """Sources and names from the trigger and the run's MCP results; no extra reads."""
     records = [*walk(context.trigger_context or {}), *walk(context.tool_results)]
-    activities = [r for r in records if str(r.get("id", "")).startswith("act_")]
+    activities = [
+        r for r in records if str(r.get("id", "")).startswith(CompetitorActivity.id_prefix)
+    ]
     sources = dict.fromkeys(text for r in activities for text in activity_texts(r))
     names = {str(r["competitor_name"]) for r in activities if r.get("competitor_name")}
-    names |= {str(r["name"]) for r in records if str(r.get("id", "")).startswith("cpt_")}
+    names |= {
+        str(r["name"]) for r in records if str(r.get("id", "")).startswith(Competitor.id_prefix)
+    }
     return GuardInputs(
         intent=context.intent,
         message=message,

@@ -9,7 +9,13 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from app.intelligence.models import ActionType, Channel, DeliverableType, ImageSuggestion
+from app.intelligence.models import (
+    ActionType,
+    Channel,
+    DeliverableType,
+    ImageSuggestion,
+    RequestedLength,
+)
 
 ExecutionStatus = Literal["OK", "NEEDS_CLARIFICATION", "REFUSED"]
 CheckStatus = Literal["PASS", "FIXED", "FLAG"]
@@ -26,6 +32,7 @@ class ExecutionDeliverable(BaseModel):
     word_count: int
     author_persona: str | None
     image_suggestions: list[ImageSuggestion]
+    requested_length: RequestedLength | None  # null when the user stated no length
 
 
 class QualityCheck(BaseModel):

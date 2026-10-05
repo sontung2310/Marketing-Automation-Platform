@@ -49,6 +49,18 @@ def test_a_user_given_time_wins() -> None:
     assert schedule("2026-10-20T15:30:00", FRIDAY).isoformat() == "2026-10-20T15:30:00+11:00"
     assert schedule("2026-10-20", FRIDAY).isoformat() == "2026-10-20T09:00:00+11:00"
     assert schedule("next Tuesday", FRIDAY) == next_weekday_morning(FRIDAY)
+    assert schedule("2020-01-01", FRIDAY) == next_weekday_morning(FRIDAY)  # already past
+
+
+def test_a_calendar_entry_takes_the_sydney_date() -> None:
+    late_utc = "2026-10-13T23:00:00+00:00"  # already Wednesday 10:00 in Sydney
+    [entry] = build_actions(
+        item(DeliverableType.LINKEDIN_POST),
+        [propose(ActionType.ADD_TO_CONTENT_CALENDAR, late_utc)],
+        trigger=None,
+        now=FRIDAY,
+    )
+    assert entry.payload["date"] == "2026-10-14"
 
 
 def test_every_action_type_has_a_builder_and_a_payload() -> None:
@@ -74,7 +86,10 @@ def test_invalid_payloads_are_rejected() -> None:
 
 def test_social_post_payload_comes_from_the_deliverable() -> None:
     [action] = build_actions(
-        item(DeliverableType.CEO_POST), [propose(ActionType.SCHEDULE_SOCIAL_POST)], None, FRIDAY
+        item(DeliverableType.CEO_POST),
+        [propose(ActionType.SCHEDULE_SOCIAL_POST)],
+        trigger=None,
+        now=FRIDAY,
     )
     assert action.status == "PROPOSED" and action.deliverable_id == "del_1"
     assert action.payload == {
@@ -90,8 +105,8 @@ def test_outreach_and_calendar_use_the_trigger_record() -> None:
     [email] = build_actions(
         item(DeliverableType.INFLUENCER_OUTREACH),
         [propose(ActionType.CREATE_EMAIL_DRAFT)],
-        influencer,
-        FRIDAY,
+        trigger=influencer,
+        now=FRIDAY,
     )
     assert (email.payload["to_name"], email.payload["to_handle_or_email"]) == (
         "Priya Shah",
@@ -101,8 +116,8 @@ def test_outreach_and_calendar_use_the_trigger_record() -> None:
     [entry] = build_actions(
         item(DeliverableType.BLOG_DRAFT),
         [propose(ActionType.ADD_TO_CONTENT_CALENDAR, "2026-10-21")],
-        recommendation,
-        FRIDAY,
+        trigger=recommendation,
+        now=FRIDAY,
     )
     assert entry.payload == {
         "title": "Positioning: a shared filter for decisions!",

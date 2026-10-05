@@ -72,7 +72,7 @@ async def persist_execution(
         output.deliverable.model_dump() | {"id": Deliverable.new_id(), "run_id": run.id}
     )
     # Payloads are built and validated before anything is written.
-    actions = build_actions(deliverable, output.proposed_actions, trigger)
+    actions = build_actions(deliverable, output.proposed_actions, trigger=trigger)
     await repositories.deliverables.insert_many([deliverable])
     try:
         await repositories.proposed_actions.insert_many(actions)

@@ -174,6 +174,21 @@ Always return `ExecutionOutput`:
 - `message`: 1–2 sentences to the user.
 - `deliverable.body_markdown` is the asset itself, ready to use. `variants`
   holds up to 3 alternative hooks or subject lines.
+- `deliverable.channel`: a `LINKEDIN_POST`, `X_POST` or `INSTAGRAM_POST` sits
+  on its own platform.
+- `deliverable.requested_length` records the length the user stated, so code
+  can check it. Use the unit the user used:
+  - **Words** go in `min_words` and `max_words`. A single number is
+    approximate, so allow 10% either way: "500 words" or "about 500 words" is
+    450–550. A limit is one-sided: "under 120 words" is a `max_words` of 119
+    and no `min_words`.
+  - **Characters** go in `max_chars` only, never in the word fields: "under
+    200 characters" is a `max_chars` of 199.
+  - `thread: true` only when they asked for an X thread.
+
+  Leave it null when they stated no length. For a revision, carry over what still
+  applies and add the new request ("make it shorter" sets a tighter
+  `max_words` than the previous draft).
 
 # Skills available to you
 

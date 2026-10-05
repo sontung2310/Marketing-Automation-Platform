@@ -236,6 +236,14 @@ export interface Deliverable {
   word_count: number;
   author_persona: string | null;
   image_suggestions: ImageSuggestion[];
+  requested_length: RequestedLength | null;
+}
+
+export interface RequestedLength {
+  min_words: number | null;
+  max_words: number | null;
+  max_chars: number | null;
+  thread: boolean;
 }
 
 export interface QualityCheck {
@@ -254,6 +262,7 @@ export interface ProposedAction {
   payload: Record<string, unknown>;
   status: ProposedActionStatus;
   receipt: ActionReceipt | null;
+  error: string | null;
   created_at: string;
   updated_at: string;
 }

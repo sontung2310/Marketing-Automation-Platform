@@ -12,7 +12,13 @@ from app.agents.execution.validation import (
     normalise,
     unknown_ids,
 )
-from app.intelligence.models import ActionType, DeliverableType, ImageSuggestion
+from app.intelligence.models import (
+    ActionType,
+    Deliverable,
+    DeliverableType,
+    ImageSuggestion,
+    RequestedLength,
+)
 from tests.execution_samples import clarification, deliverable, execution_output
 
 IMAGE = ImageSuggestion(placement="Post attachment", content="A whiteboard", style="Photo")
@@ -53,9 +59,19 @@ def test_limits_skills_and_ceo_persona() -> None:
 
 def test_ensure_valid_raises_the_matching_error() -> None:
     with pytest.raises(UngroundedOutputError):
-        ensure_valid(execution_output(evidence_ids=("act_invented",)), {"act_1"}, None, LOADED)
+        ensure_valid(
+            execution_output(evidence_ids=("act_invented",)),
+            retrieved={"act_1"},
+            expected=None,
+            loaded_skills=LOADED,
+        )
     with pytest.raises(InvalidOutputError):
-        ensure_valid(execution_output(), {"act_1"}, DeliverableType.X_POST, LOADED)
+        ensure_valid(
+            execution_output(),
+            retrieved={"act_1"},
+            expected=DeliverableType.X_POST,
+            loaded_skills=LOADED,
+        )
 
 
 def test_normalise_counts_words() -> None:
@@ -90,3 +106,21 @@ def test_image_suggestion_counts_per_type(deliverable_type: DeliverableType) -> 
     if low:
         empty = item.model_copy(update={"image_suggestions": []})
         assert image_problems(empty)[0].endswith("image_suggestions, not 0")
+
+
+def test_a_platform_post_stays_on_its_platform() -> None:
+    on_linkedin = deliverable(DeliverableType.X_POST)  # the sample sits on LinkedIn
+    problems = contract_problems(execution_output(on_linkedin), None, LOADED)
+    assert "a X_POST goes on X, not LINKEDIN" in problems
+
+
+def test_every_deliverable_field_can_be_stored() -> None:
+    item = deliverable().model_copy(
+        update={
+            "requested_length": RequestedLength(
+                min_words=None, max_words=119, max_chars=None, thread=False
+            )
+        }
+    )
+    stored = Deliverable.model_validate(item.model_dump() | {"id": "del_1", "run_id": "run_1"})
+    assert stored.model_dump(include=set(item.model_dump())) == item.model_dump()

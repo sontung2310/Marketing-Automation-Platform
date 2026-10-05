@@ -8,10 +8,13 @@ import pytest
 from agents import Runner, Usage
 
 from app.agents.common.context import RunContext
-from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
+from app.agents.common.errors import (
+    InvalidOutputError,
+    UngroundedOutputError,
+    UnoriginalOutputError,
+)
 from app.agents.common.intents import Intent
 from app.agents.execution import run as execution_run
-from app.agents.execution.guards import UnoriginalOutputError
 from app.agents.execution.output import ExecutionOutput
 from app.intelligence.models import DeliverableType, RunStatus
 from tests.execution_samples import clarification, deliverable, execution_output

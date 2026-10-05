@@ -222,8 +222,12 @@ evaluation-spec §7 commits only a passing run.
    check on section order.
 3. **User length limits are missed** (EX-CONSTR-02: 643 words for 500;
    EX-CONSTR-04: ~240 characters for 200, while `quality_check` claimed a
-   pass). _Next:_ parse stated word and character limits and enforce them in
-   `guards.py` like the channel limits.
+   pass). _Narrowed in review:_ the agent now records `requested_length` and
+   the guard enforces it, so a miss gets one repair and is reported as
+   `channel_fit: FLAG` (a re-run of EX-CONSTR-02 gave 570 words, flagged
+   honestly; EX-CONSTR-04 passed at 151 characters). _Still open:_ the model
+   sometimes overshoots after the repair, and sometimes puts a character
+   limit in `max_words`.
 4. **CEO posts lack a concrete example** (EX-SIM-CEO-01, -04,
    EX-FREE-CEO_POST), and generic copy holds marketing quality at 3.22:
    vague CTAs ("Learn more", "Join us to learn how…") and template outreach.

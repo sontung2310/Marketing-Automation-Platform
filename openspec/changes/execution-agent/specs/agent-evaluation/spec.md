@@ -13,8 +13,9 @@ trigger activity's `title` and `content_excerpt`), `competitor_naming` and
 `proposed_actions_any`. It SHALL seed a case's `session_history` as the
 session's previous answer for either agent's output, and resolve
 `rec_fx_*` recommendation triggers from the fixture. Execution bundles SHALL
-be judged on relevance, grounding, marketing soundness, brand-voice fit,
-channel craft and originality. The golden file SHALL meet every
+be judged on four dimensions: relevance, marketing quality, brand voice and
+originality (owner decision 2026-10-05; grounding is left to the
+deterministic checks). The golden file SHALL meet every
 evaluation-spec §3.3 minimum, with at most 30% upstream-mined cases.
 
 #### Scenario: A copied deliverable fails the originality check

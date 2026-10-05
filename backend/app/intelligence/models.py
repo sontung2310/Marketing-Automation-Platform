@@ -445,6 +445,15 @@ class ImageSuggestion(ModelBase):
     style: str  # how it looks
 
 
+class RequestedLength(ModelBase):
+    """The length the user stated, so code checks it instead of reading the message."""
+
+    min_words: int | None
+    max_words: int | None
+    max_chars: int | None
+    thread: bool  # an X thread, only when the user asked for one
+
+
 class Deliverable(PrefixedModel):
     id_prefix: ClassVar[str] = "del_"
     run_id: str
@@ -456,6 +465,7 @@ class Deliverable(PrefixedModel):
     word_count: int = Field(ge=0)
     author_persona: str | None = None
     image_suggestions: list[ImageSuggestion] = Field(default_factory=list)
+    requested_length: RequestedLength | None = None
 
     @field_validator("run_id")
     @classmethod

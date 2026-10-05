@@ -11,7 +11,7 @@ from app.agents.execution.guards import (
     longest_shared_run,
     named_competitors,
 )
-from app.intelligence.models import Channel, DeliverableType
+from app.intelligence.models import Channel, DeliverableType, RequestedLength
 from tests.execution_samples import deliverable
 
 SOURCE = (
@@ -57,22 +57,47 @@ def test_jaccard_flags_a_reworded_copy_and_skips_short_sources() -> None:
     assert jaccard("anything at all", "Focus is a service to the team.") is None
 
 
+def asking(
+    min_words: int | None = None,
+    max_words: int | None = None,
+    max_chars: int | None = None,
+    thread: bool = False,
+) -> dict[str, object]:
+    return {
+        "requested_length": RequestedLength(
+            min_words=min_words, max_words=max_words, max_chars=max_chars, thread=thread
+        )
+    }
+
+
 def test_channel_limits() -> None:
     long_post = deliverable(DeliverableType.LINKEDIN_POST, body="x" * 3001)
-    assert "at most 3000 characters" in length_problems(long_post, None)[0]
+    assert "at most 3000 characters" in length_problems(long_post)[0]
     tweet = deliverable(DeliverableType.X_POST, body="y" * 281)
-    assert length_problems(tweet, None)
+    assert length_problems(tweet)
     thread = deliverable(DeliverableType.X_POST, body=f"{'a' * 200}\n\n{'b' * 200}")
-    assert length_problems(thread, "Write an X thread") == []
-    assert length_problems(thread, "Write an X post")  # one post, 402 characters
+    assert length_problems(thread.model_copy(update=asking(thread=True))) == []
+    assert length_problems(thread)  # one post, 402 characters
+    long_variant = deliverable(DeliverableType.X_POST, body="Short.")
+    assert length_problems(long_variant.model_copy(update={"variants": ["z" * 300]}))
 
 
-def test_blog_word_range_unless_the_user_set_a_length() -> None:
+def test_the_user_length_replaces_the_default_and_is_enforced() -> None:
     short_blog = deliverable(DeliverableType.BLOG_DRAFT, body="word " * 300)
-    assert "800-1500 words" in length_problems(short_blog, None)[0]
-    assert length_problems(short_blog, "Write a 300-word blog") == []
+    assert "800-1500 words" in length_problems(short_blog)[0]
+    assert length_problems(short_blog.model_copy(update=asking(250, 350))) == []
     good_blog = deliverable(DeliverableType.BLOG_DRAFT, body="word " * 900)
-    assert length_problems(good_blog, None) == []
+    assert length_problems(good_blog) == []
+    long_blog = deliverable(DeliverableType.BLOG_DRAFT, body="word " * 643)
+    assert "450-550 words" in length_problems(long_blog.model_copy(update=asking(450, 550)))[0]
+    post = deliverable(DeliverableType.X_POST, body="y" * 240)
+    assert "at most 200" in length_problems(post.model_copy(update=asking(max_chars=200)))[0]
+    assert length_problems(post.model_copy(update=asking(max_chars=500))) == []  # X cap holds
+
+
+def test_a_copied_variant_is_a_hard_problem() -> None:
+    item = deliverable(body=OWN).model_copy(update={"variants": [SOURCE]})
+    assert any(p.hard for p in guard_problems(item, inputs()))
 
 
 def test_competitor_names_are_soft_and_only_for_create_similar() -> None:
@@ -118,4 +143,4 @@ def test_a_ceo_post_must_speak_in_the_first_person() -> None:
 def test_a_ceo_post_on_x_keeps_to_the_x_limit() -> None:
     on_x = deliverable(DeliverableType.CEO_POST, body="My view. " * 40)  # 360 characters
     on_x = on_x.model_copy(update={"channel": Channel.X})
-    assert "at most 280 characters" in length_problems(on_x, None)[0]
+    assert "at most 280 characters" in length_problems(on_x)[0]
