@@ -1,7 +1,8 @@
 # Execution judge rubric
 
-> Status: draft for owner review (roadmap 5.4). Calibrated against 50 owner-scored runs
-> before the first baseline; results are appended at the end of this file.
+> Status: approved by the owner on 2026-10-05 (roadmap 5.4), with the golden file.
+> Calibrated against 50 owner-scored runs before the first baseline; results are
+> appended at the end of this file.
 
 The judge scores what code cannot: whether the deliverable is good, publishable work for
 Marketing Eye. Deterministic checks already cover the schema, cited IDs, the deliverable

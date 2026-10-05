@@ -30,7 +30,7 @@ approves.
 
 - [x] 4.1 Extend the harness for the `execution` suite (D9): suite registries, `seed_history` per output model, the Execution checks (`deliverable_shape`, `originality`, `competitor_naming`, `proposed_actions_any`) and judge dimensions; add the fixture's Execution records and re-snapshot it with the spokesperson; verify with unit tests for each new check's pass and fail paths, and a 3-case run through `tests/integration/test_eval_runner.py`.
 - [x] 4.2 Draft `evaluation/golden/execution.jsonl` (≥ 48 cases meeting every evaluation-spec §3.3 minimum, ≤ 30% upstream-mined, `demo-path` tags) and `evaluation/rubrics/execution.md`; run a fresh-subagent over-fitting review; verify the loader accepts the file and the category counts meet §3.3.
-- [ ] 4.3 **Owner approval:** the owner reviews and approves the golden file and rubric; apply requested changes.
+- [x] 4.3 **Owner approval:** the owner reviews and approves the golden file and rubric; apply requested changes.
 - [ ] 4.4 Run the suite with `--repeats 1`, judge it, and generate the 50-sample calibration sheet; **the owner scores it**; verify agreement within ±1 is at least 80% and record it in the rubric.
 - [ ] 4.5 Run the full suite with `--repeats 1`, judge it, and fix agent behaviour until every evaluation-spec §6 Execution threshold holds (5-C, 5-E, 5-F, p95 ≤ 60 s); commit `evaluation/reports/baseline_execution.json` and its Markdown copy.
 
