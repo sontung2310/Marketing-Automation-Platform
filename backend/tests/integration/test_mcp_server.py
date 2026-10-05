@@ -34,6 +34,7 @@ from app.intelligence.models import (
     Service,
     Session,
     SourceSystem,
+    Spokesperson,
     Trend,
     TrendDirection,
 )
@@ -180,6 +181,7 @@ async def test_company_context_is_tenant_specific(mcp_service: McpService) -> No
 
     assert context["id"] == COMPANY_ID
     assert context["name"] == "Marketing Eye"
+    assert context["spokesperson"]["name"] == "Sam Lee"
     assert context["id"] != OTHER_COMPANY_ID
 
 
@@ -467,6 +469,7 @@ def _company(company_id: str, name: str, now: datetime) -> Company:
         positioning="Clear positioning.",
         services=[Service(name="Strategy", description="Marketing strategy.", price_from=1)],
         brand_voice=BrandVoice(tone=["clear"], do=["help"], dont=["hype"], sample_copy=["Useful."]),
+        spokesperson=Spokesperson(name="Sam Lee", role="CEO", voice_notes=["Lead with insight."]),
         channels=[Channel.LINKEDIN],
         content_pillars=["Growth"],
         is_mock=True,

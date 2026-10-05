@@ -156,6 +156,14 @@ class BrandVoice(ModelBase):
     sample_copy: list[str] = Field(min_length=1)
 
 
+class Spokesperson(ModelBase):
+    """Whose first-person voice CEO posts use; voice_notes hold the tone rules."""
+
+    name: str = Field(min_length=1)
+    role: str = Field(min_length=1)
+    voice_notes: list[str] = Field(min_length=1)
+
+
 class Company(PrefixedModel):
     id_prefix: ClassVar[str] = "cmp_"
     name: str = Field(min_length=1)
@@ -167,6 +175,7 @@ class Company(PrefixedModel):
     positioning: str = Field(min_length=1)
     services: list[Service] = Field(min_length=1)
     brand_voice: BrandVoice
+    spokesperson: Spokesperson
     channels: list[Channel] = Field(min_length=1)
     content_pillars: list[str] = Field(min_length=1)
     is_mock: bool
@@ -428,6 +437,23 @@ class Recommendation(PrefixedModel):
         return value
 
 
+class ImageSuggestion(ModelBase):
+    """An image the agent describes for a person to make; nothing is generated (design D11)."""
+
+    placement: str  # where it goes: the post's attachment, or the blog section it sits in
+    content: str  # what it shows, specific to this piece
+    style: str  # how it looks
+
+
+class RequestedLength(ModelBase):
+    """The length the user stated, so code checks it instead of reading the message."""
+
+    min_words: int | None
+    max_words: int | None
+    max_chars: int | None
+    thread: bool  # an X thread, only when the user asked for one
+
+
 class Deliverable(PrefixedModel):
     id_prefix: ClassVar[str] = "del_"
     run_id: str
@@ -438,6 +464,8 @@ class Deliverable(PrefixedModel):
     variants: list[str] = Field(default_factory=list, max_length=3)
     word_count: int = Field(ge=0)
     author_persona: str | None = None
+    image_suggestions: list[ImageSuggestion] = Field(default_factory=list)
+    requested_length: RequestedLength | None = None
 
     @field_validator("run_id")
     @classmethod
@@ -455,7 +483,8 @@ class ProposedAction(PrefixedModel):
     payload: dict[str, object]
     status: ProposedActionStatus
     receipt: dict[str, object] | None = None
-    proposed_at: datetime
+    error: str | None = None  # why a FAILED action failed
+    created_at: datetime
     updated_at: datetime
 
     @field_validator("deliverable_id")
@@ -465,7 +494,7 @@ class ProposedAction(PrefixedModel):
             raise ValueError("deliverable_id must start with 'del_'")
         return value
 
-    @field_validator("proposed_at", "updated_at")
+    @field_validator("created_at", "updated_at")
     @classmethod
     def action_timestamps_are_aware(cls, value: datetime) -> datetime:
         return ensure_aware(value)

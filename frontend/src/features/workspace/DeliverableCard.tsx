@@ -82,6 +82,20 @@ export function DeliverableCard({
               ))}
             </div>
           ) : null}
+          {deliverable.image_suggestions.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-small font-semibold tracking-label text-text-muted uppercase">
+                Image suggestions
+              </span>
+              {deliverable.image_suggestions.map((image) => (
+                <p key={`${image.placement}${image.content}`} className="text-small text-text">
+                  <span className="font-semibold">{image.placement}: </span>
+                  {image.content}
+                  <span className="text-text-muted"> ({image.style})</span>
+                </p>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

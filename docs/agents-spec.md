@@ -360,14 +360,29 @@ DeliverableType = Literal[
 ]
 
 
-class Deliverable(BaseModel):
-    type: DeliverableType
+class ImageSuggestion(BaseModel):  # described for a person to make; never generated
+    placement: str  # the post's attachment, or the blog section it sits in
+    content: str  # what it shows, specific to this piece
+    style: str  # how it looks
+
+
+class ExecutionDeliverable(BaseModel):
+    type: DeliverableType  # fixed by the trigger when it has one
     channel: Channel | None
     title: str
     body_markdown: str  # the asset itself
     variants: list[str]  # optional alt hooks/subject lines (≤ 3)
-    word_count: int
-    author_persona: str | None  # CEO_POST: whose voice (from company context)
+    word_count: int  # recounted in code
+    author_persona: str | None  # CEO_POST: the company spokesperson's name and role
+    image_suggestions: list[ImageSuggestion]  # posts and AD_COPY 1, blogs 1–2, others 0
+    requested_length: RequestedLength | None  # the length the user stated, else null
+
+
+class RequestedLength(BaseModel):  # code checks this instead of reading the message
+    min_words: int | None
+    max_words: int | None
+    max_chars: int | None  # only tightens the channel cap
+    thread: bool  # an X thread, only when asked
 
 
 class QualityCheck(BaseModel):
@@ -378,38 +393,52 @@ class QualityCheck(BaseModel):
     notes: list[str]  # what was fixed / flagged
 
 
-class ProposedAction(BaseModel):
+class ActionProposal(BaseModel):  # what the model proposes; code builds the payload (§8)
     action_type: Literal[
         "schedule_social_post", "create_cms_draft", "create_email_draft", "add_to_content_calendar"
     ]
     summary: str  # human-readable, e.g. "Schedule on LinkedIn · Tue 09:00 AEST"
-    payload: dict  # validated per action_type (§8)
+    when: str | None  # ISO 8601, only when the user named a time; else the default schedule
 
 
 class ExecutionOutput(BaseModel):
     status: Literal["OK", "NEEDS_CLARIFICATION", "REFUSED"]
     message: str  # 1–2 sentences to the user (or question / refusal reason)
-    deliverable: Deliverable | None
+    deliverable: ExecutionDeliverable | None
     quality_check: QualityCheck | None
     evidence_ids: list[str]  # ids actually used (same grounding validation as Strategy)
     skills_used: list[str]
     assumptions: list[str]
-    proposed_actions: list[ProposedAction]
+    proposed_actions: list[ActionProposal]  # ≤ 2, each fitting the deliverable type
     clarification_options: list[str]
 ```
+
+Post-validation in code (`agents/execution/validation.py`) asks for one repair
+when the answer breaks the contract: the status shape (only `OK` carries a
+deliverable or actions; a clarification gives 2–3 options), a type other than
+the trigger's, more than 2 actions or 3 variants, an action that doesn't fit
+the type (`ACTIONS_FOR`), a platform post off its platform (`CHANNEL_FOR`:
+`LINKEDIN_POST` on LinkedIn, `X_POST` on X, `INSTAGRAM_POST` on Instagram),
+the wrong number of image suggestions
+(`IMAGES_FOR`), a `CEO_POST` with no `author_persona`, an unretrieved evidence
+ID or an unloaded skill. Strategy and Execution share this run → validate →
+repair-once loop (`agents/common/repair.py`).
 
 ### 7.3 Quality and policy check
 
 The agent performs these checks itself. Code-side guards in
-`agents/execution/guards.py` back them up.
+`agents/execution/guards.py` back them up. A **hard** problem gets one repair
+turn; if it remains, the run fails with `UNORIGINAL_OUTPUT` and no copy is
+returned. A **soft** problem gets the same repair turn; if it remains, the
+answer is returned with that check set to `FLAG` and the reason in `notes`.
 
 | Check | Agent-side rule | Code-side guard |
 |---|---|---|
-| Originality | Don't reuse the competitor's headline, structure or phrasing. Take a different angle rooted in Marketing Eye's pillars. | n-gram overlap against `content_excerpt` + `title`. No run of **12 or more consecutive words** may match, and 5-gram Jaccard must be under 0.15. On failure, one repair re-prompt. |
-| Brand voice | Follow `brand_voice.do/dont` | — (judged in evals) |
+| Originality | Don't reuse the competitor's headline, structure or phrasing. Take a different angle rooted in Marketing Eye's pillars. | **Hard.** n-gram overlap of the body and every variant against the `content_excerpt` and `title` of the trigger and every retrieved activity. No run of **12 or more consecutive words** may match, and 5-gram Jaccard must be under 0.15 (skipped for a source with fewer than 5 five-grams). |
+| Brand voice | Follow `brand_voice.do/dont`, and sound like a person: no stock openers, "it's not X, it's Y" reversals, reflexive triples, hype words or habitual closing questions | — (judged in evals) |
 | Grounding | Stats and claims only if they come from tool results or the company context. Otherwise phrase them qualitatively. | Every number in `body_markdown` is either traceable to evidence or listed in `assumptions` (checked in evals) |
-| Competitor mentions | Never make disparaging or unverifiable claims about named competitors. Don't name competitors in `CREATE_SIMILAR` output unless asked. | Competitor-name scan → the check becomes `FLAG` if a competitor is named without the user asking |
-| Channel fit | LinkedIn ≤ 3,000 chars; X ≤ 280 chars per post (a thread is allowed if asked); CEO post written in first person as the persona from the company context; blog draft 800–1,500 words unless the user specifies otherwise | Length validation per type |
+| Competitor mentions | Never make disparaging or unverifiable claims about named competitors. Don't name competitors in `CREATE_SIMILAR` output unless asked. | **Soft.** Competitor-name scan (the full name and its first word) in `CREATE_SIMILAR` output, unless the user's message names it |
+| Channel fit | LinkedIn ≤ 3,000 chars; X ≤ 280 chars per post (a thread is allowed if asked); CEO post written in first person as the persona from the company context; blog draft 800–1,500 words unless the user specifies otherwise | **Soft.** Length per type (`LIMITS`) for the body and every variant; anything posted on X gets 280 characters per post (per paragraph only for a requested thread); any `requested_length` replaces the default word range, and its character cap can only tighten the channel's; variants are checked in a thread too; a `CEO_POST` must say I, me or my |
 | Safety | Refuse fake reviews, impersonation, deceptive claims and requests to copy verbatim. Offer an ethical alternative. | — |
 
 ## 8. Proposed actions and mock execution
@@ -419,13 +448,25 @@ the user approves it.
 
 | `action_type` | Payload (Pydantic-validated) | Mock connector result |
 |---|---|---|
-| `schedule_social_post` | `{channel, scheduled_for (ISO, tz), text, deliverable_id}` | `{receipt_id, status: "SCHEDULED", channel, scheduled_for}` |
-| `create_cms_draft` | `{title, body_markdown, slug, tags[]}` | `{receipt_id, status: "DRAFT_CREATED", preview_url: "https://cms.example/drafts/…"}` |
-| `create_email_draft` | `{to_name, to_handle_or_email?, subject, body}` | `{receipt_id, status: "DRAFT_SAVED"}` |
-| `add_to_content_calendar` | `{title, channel, date, owner?, recommendation_id?}` | `{receipt_id, status: "ADDED"}` |
+| `schedule_social_post` | `{channel, scheduled_for (ISO, tz), text, deliverable_id}` | `{receipt_id, status: "SCHEDULED", mock, channel, scheduled_for}` |
+| `create_cms_draft` | `{title, body_markdown, slug, tags[]}` | `{receipt_id, status: "DRAFT_CREATED", mock, preview_url: "https://cms.example/drafts/<slug>"}` |
+| `create_email_draft` | `{to_name (null for a list email), to_handle_or_email?, subject, body}` | `{receipt_id, status: "DRAFT_SAVED", mock}` |
+| `add_to_content_calendar` | `{title, channel, date, owner?, recommendation_id?}` | `{receipt_id, status: "ADDED", mock}` |
+
+**Payloads are built in code**, never by the model: `orchestration/actions.py`
+fills each one from the stored deliverable, the trigger and the proposal's
+`when` (`PAYLOAD_BUILDERS`), validates it (`connectors/payloads.py`) and
+stores the deliverable and its actions together, rolling both back on
+failure. Mock receipts carry `mock: true` and a `rcp_mock_<ulid>` ID. On
+approval, `payload_overrides` (for example a new `scheduled_for` or calendar
+`date`) are merged and re-validated before the connector runs; they can't
+change `deliverable_id`, and a schedule already in the past is rejected. A
+`when` that is unreadable or past falls back to the default schedule. Each transition is one atomic
+update filtered on the current status, so a second approve or discard gets
+`409`.
 
 Flow: `PROPOSED` → user clicks **Approve** → `APPROVED` → the connector runs
-→ `EXECUTED` (or `FAILED`, with a message). **Discard** → `DISCARDED`. The
+→ `EXECUTED` (or `FAILED`, with the reason in `error`). **Discard** → `DISCARDED`. The
 connectors live in `connectors/mock/` and implement a `Connector` protocol, so
 real integrations can replace them without touching the agents. Mock receipts
 are labelled "mock" in the UI.

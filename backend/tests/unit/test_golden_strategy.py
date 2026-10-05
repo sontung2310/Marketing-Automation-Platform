@@ -43,7 +43,7 @@ def test_every_category_meets_its_minimum() -> None:
 
 
 def test_cases_reference_only_fixture_records() -> None:
-    check_fixture_ids(CASES, load_fixture("intelligence_v1"))
+    check_fixture_ids(CASES, load_fixture("intelligence_v2"))
 
 
 def test_upstream_cases_stay_under_thirty_percent() -> None:

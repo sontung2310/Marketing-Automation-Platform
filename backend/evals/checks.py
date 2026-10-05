@@ -1,7 +1,7 @@
 """Deterministic checks (evaluation-spec §5.1). A run passes only if every applicable check does.
 
-Each check returns True (pass), False (fail) or None (not applicable to this case). The
-Execution-only checks (deliverable shape, originality, competitor naming) arrive in Step 5.
+Each check returns True (pass), False (fail) or None (not applicable to this case). What a
+suite's output means (cited IDs, claims, skills) comes from its SuiteSpec.
 """
 
 import json
@@ -11,22 +11,36 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
-from app.agents.strategy.config import SKILL_ALLOWLIST as STRATEGY_SKILLS
+from app.agents.execution.guards import (
+    FIRST_PERSON,
+    MAX_JACCARD,
+    MAX_SHARED_RUN,
+    activity_texts,
+    jaccard,
+    longest_shared_run,
+    named_competitors,
+)
+from app.agents.execution.output import ExecutionOutput
 from app.agents.strategy.output import StrategyOutput
+from app.orchestration.routing import TriggerAction
 from app.skills.tools import MAX_LOADS_PER_RUN
 from evals.cases import GoldenCase
 from evals.fixture import FixtureBundle
 from evals.runner import RunRecord
+from evals.suites import SUITES, SuiteSpec
 
 # ponytail: single digits are skipped because counts and ordinals ("3 posts", "#2") are
 # not claims; a stricter rule would need the model to cite every number's source.
 # A K/M suffix counts only as a whole unit: "275 mentions" is 275, not 275 million.
 NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM](?![A-Za-z])|%)?")
 MIN_CHECKED_NUMBER = 10
-# Numbers the agent's own policy uses ("older than 21 days"); not claims about data.
-POLICY_NUMBERS = "21"
+# A proposed meeting length ("a 20-minute call") is an offer, not a factual claim.
+OFFERED_DURATION = re.compile(r"\b\d+-(?:minute|hour)\b")
+# Numbers the agents' own policies use ("older than 21 days", X's "280-character limit",
+# the 800-1,500 word blog range); not claims about data.
+POLICY_NUMBERS = "21 280 2200 3000 800 1500"
 DATE_FIELDS = ("detected_at", "occurred_at", "computed_at")
 
 
@@ -51,37 +65,45 @@ class Evaluated:
 
     case: GoldenCase
     record: RunRecord
-    output: StrategyOutput | None
+    output: BaseModel | None
     tools: list[str]
     cited: set[str]
     fixture: FixtureBundle
+    spec: SuiteSpec
 
 
 def evaluate_inputs(case: GoldenCase, record: RunRecord, fixture: FixtureBundle) -> Evaluated:
+    spec = SUITES[case.suite]
     run, output = record.run, None
     if run is not None and run.output is not None:
         try:
-            output = StrategyOutput.model_validate(run.output)
+            output = spec.output_type.model_validate(run.output)
         except ValidationError:
             output = None
     tools = [str(c["tool"]) for c in run.tool_calls] if run else []
-    cited = {e.id for r in output.recommendations for e in r.evidence} if output else set()
-    return Evaluated(case, record, output, tools, cited, fixture)
+    cited = spec.cited(output) if output else set()
+    return Evaluated(case, record, output, tools, cited, fixture, spec)
+
+
+def strategy(e: Evaluated) -> StrategyOutput:
+    assert isinstance(e.output, StrategyOutput)
+    return e.output
+
+
+def execution(e: Evaluated) -> ExecutionOutput:
+    assert isinstance(e.output, ExecutionOutput)
+    return e.output
 
 
 def claim_text(e: Evaluated) -> str:
-    """Everything the agent asserts, including briefs (they become Execution's instructions)."""
     assert e.output is not None
-    parts = [e.output.answer, *e.output.implications]
-    for r in e.output.recommendations:
-        parts += [r.title, r.rationale, r.next_action.brief if r.next_action else ""]
-    return " ".join(parts)
+    return e.spec.claims(e.output)
 
 
 def claimed_values(text: str) -> list[set[float]]:
     """Each checked number as the values it may stand for: 48.2K -> 48200, 95% -> 95 or 0.95."""
     claims = []
-    for digits, suffix in NUMBER.findall(text):
+    for digits, suffix in NUMBER.findall(OFFERED_DURATION.sub("", text)):
         value = float(digits.replace(",", ""))
         if value < MIN_CHECKED_NUMBER:
             continue
@@ -96,7 +118,8 @@ def source_values(text: str) -> list[float]:
 
 def no_invented_numbers(e: Evaluated) -> bool:
     assert e.output is not None
-    sources = [e.case.input.message or "", *e.output.assumptions, POLICY_NUMBERS]
+    assumptions: list[str] = getattr(e.output, "assumptions", [])
+    sources = [e.case.input.message or "", *assumptions, POLICY_NUMBERS]
     for record_id in {*e.record.retrieved_ids, *e.cited}:
         if (record := e.fixture.record(record_id)) is not None:
             sources += [json.dumps(record), *record_ages(record, e.fixture.snapshot_at)]
@@ -112,8 +135,8 @@ def no_invented_numbers(e: Evaluated) -> bool:
 
 
 def rec_bounds(e: Evaluated) -> bool:
-    bounds, output = e.case.expect.recommendations, e.output
-    assert bounds is not None and output is not None
+    bounds, output = e.case.expect.recommendations, strategy(e)
+    assert bounds is not None
     recs = output.recommendations
     kinds = set(bounds.kinds_required) <= {r.kind for r in recs}
     low = bounds.min is None or len(recs) >= bounds.min
@@ -122,50 +145,123 @@ def rec_bounds(e: Evaluated) -> bool:
 
 
 def phrases(e: Evaluated) -> bool:
-    text = claim_text(e).lower()
+    assert e.output is not None
+    text, published = claim_text(e).lower(), e.spec.published(e.output).lower()
     include = e.case.expect.must_include_any
     ok_include = not include or any(p.lower() in text for p in include)
-    return ok_include and not any(p.lower() in text for p in e.case.expect.must_not_include)
+    return ok_include and not any(p.lower() in published for p in e.case.expect.must_not_include)
 
 
 def data_gaps(e: Evaluated) -> bool:
-    assert e.output is not None
-    gaps = " ".join(e.output.data_gaps).lower()
+    gaps = " ".join(strategy(e).data_gaps).lower()
     return any(phrase.lower() in gaps for phrase in e.case.expect.data_gaps_any)
 
 
 def channels(e: Evaluated) -> bool:
-    assert e.output is not None
     allowed = set(e.case.expect.channels_only)
-    return all(r.channel is not None and r.channel in allowed for r in e.output.recommendations)
+    return all(r.channel is not None and r.channel in allowed for r in strategy(e).recommendations)
 
 
 def each_cites(e: Evaluated) -> bool:
-    assert e.output is not None
     prefixes = tuple(e.case.expect.each_cites_prefix)
     return all(
         any(evidence.id.startswith(prefixes) for evidence in r.evidence)
-        for r in e.output.recommendations
+        for r in strategy(e).recommendations
     )
 
 
 def implications(e: Evaluated) -> bool:
-    assert e.output is not None
-    count, expect = len(e.output.implications), e.case.expect
+    count, expect = len(strategy(e).implications), e.case.expect
     low = expect.implications_min is None or count >= expect.implications_min
     return low and (expect.implications_max is None or count <= expect.implications_max)
 
 
 def skills(e: Evaluated) -> bool:
     assert e.output is not None
-    used = {s for r in e.output.recommendations for s in r.skills_used}
+    used = e.spec.skills_used(e.output)
     wanted = e.case.expect.skills_any
-    return used <= STRATEGY_SKILLS and (not wanted or bool(used & set(wanted)))
+    return used <= e.spec.skill_allowlist and (not wanted or bool(used & set(wanted)))
 
 
 def status_in(e: Evaluated) -> bool:
-    assert e.output is not None
-    return e.output.status in e.case.expect.status
+    return getattr(e.output, "status", None) in e.case.expect.status
+
+
+def deliverable_shape(e: Evaluated) -> bool:
+    expect, deliverable = e.case.expect.deliverable, execution(e).deliverable
+    assert expect is not None
+    if deliverable is None:
+        return False
+    body, words = deliverable.body_markdown, len(deliverable.body_markdown.split())
+    checks = [
+        expect.type is None or deliverable.type == expect.type,
+        expect.channel is None or deliverable.channel == expect.channel,
+        expect.max_chars is None or len(body) <= expect.max_chars,
+        expect.min_words is None or words >= expect.min_words,
+        expect.max_words is None or words <= expect.max_words,
+        not expect.first_person or bool(FIRST_PERSON.search(body)),
+        expect.author_persona_includes is None
+        or expect.author_persona_includes in (deliverable.author_persona or ""),
+        expect.images_min is None or len(deliverable.image_suggestions) >= expect.images_min,
+        expect.images_max is None or len(deliverable.image_suggestions) <= expect.images_max,
+    ]
+    return all(checks)
+
+
+def source_texts(e: Evaluated) -> list[str]:
+    """The trigger activity and every activity the run retrieved (what must not be copied)."""
+    run = e.record.run
+    ids = {str(run.trigger.get("ref_id", ""))} if run and run.trigger else set()
+    ids |= set(e.record.retrieved_ids)
+    records = [r for i in sorted(ids) if i.startswith("act_") and (r := e.fixture.record(i))]
+    return [text for record in records for text in activity_texts(record)]
+
+
+def known_ids(e: Evaluated) -> set[str]:
+    """Fixture records, plus the run's resolved trigger: a recommendation seeded from the
+    case's session history is real, but lives only in the eval database."""
+    run = e.record.run
+    trigger = {str(run.trigger["ref_id"])} if run and run.trigger.get("ref_id") else set()
+    return e.fixture.ids() | trigger
+
+
+def has_deliverable(e: Evaluated) -> bool:
+    return isinstance(e.output, ExecutionOutput) and e.output.deliverable is not None
+
+
+def originality(e: Evaluated) -> bool:
+    deliverable = execution(e).deliverable
+    assert deliverable is not None
+    body = deliverable.body_markdown
+    for source in source_texts(e):
+        similarity = jaccard(body, source)
+        if longest_shared_run(body, source) > MAX_SHARED_RUN:
+            return False
+        if similarity is not None and similarity >= MAX_JACCARD:
+            return False
+    return True
+
+
+def competitor_naming(e: Evaluated) -> bool:
+    deliverable = execution(e).deliverable
+    assert deliverable is not None
+    names = [c.name for c in e.fixture.competitors]
+    text = f"{deliverable.title}\n{deliverable.body_markdown}"
+    return not named_competitors(text, names, e.case.input.message)
+
+
+def is_create_similar(e: Evaluated) -> bool:
+    trigger = e.case.input.trigger
+    return (
+        has_deliverable(e)
+        and trigger is not None
+        and (trigger.action is TriggerAction.CREATE_SIMILAR)
+    )
+
+
+def proposed_actions(e: Evaluated) -> bool:
+    proposed = {a.action_type for a in execution(e).proposed_actions}
+    return bool(proposed & set(e.case.expect.proposed_actions_any))
 
 
 def route_correct(e: Evaluated) -> bool | None:
@@ -222,7 +318,7 @@ CHECKS: dict[str, Check] = {
         )
     ),
     "evidence_grounded": needs_output(
-        lambda e: e.cited <= set(e.record.retrieved_ids) and e.cited <= e.fixture.ids()
+        lambda e: e.cited <= set(e.record.retrieved_ids) and e.cited <= known_ids(e)
     ),
     "evidence_required_all": when(
         lambda e: e.case.expect.evidence_required_all,
@@ -257,6 +353,12 @@ CHECKS: dict[str, Check] = {
             e.case.expect.implications_min is not None or e.case.expect.implications_max is not None
         ),
         needs_output(implications),
+    ),
+    "deliverable_shape": when(lambda e: e.case.expect.deliverable, needs_output(deliverable_shape)),
+    "originality": when(has_deliverable, originality),
+    "competitor_naming": when(is_create_similar, competitor_naming),
+    "proposed_actions_any": when(
+        lambda e: e.case.expect.proposed_actions_any, needs_output(proposed_actions)
     ),
     "budget": budget,
 }

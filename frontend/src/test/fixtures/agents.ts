@@ -122,6 +122,14 @@ const executionOutput: ExecutionOutput = {
     variants: ["Our retainer did not move. Here is what changed instead."],
     word_count: 218,
     author_persona: "Marketing Eye managing director",
+    image_suggestions: [
+      {
+        placement: "Post attachment",
+        content: "The retainer proposal on a desk, with the scope section circled in pen",
+        style: "Overhead photo, natural light, no stock people",
+      },
+    ],
+    requested_length: null,
   },
   quality_check: {
     brand_voice: "PASS",
@@ -146,6 +154,7 @@ const executionOutput: ExecutionOutput = {
       },
       status: "PROPOSED",
       receipt: null,
+      error: null,
       created_at: new Date(Date.now() - 17 * 60_000).toISOString(),
       updated_at: new Date(Date.now() - 17 * 60_000).toISOString(),
     },

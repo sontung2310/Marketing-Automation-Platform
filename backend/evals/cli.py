@@ -33,6 +33,7 @@ from evals.fixture import EVALUATION_DIR, load_fixture, shifted_to
 from evals.judge import JudgeBundle, JudgeScore, ScoreFileError, make_bundles, read_scores
 from evals.report import build_report, to_markdown
 from evals.runner import RunRecord, run_suite
+from evals.suites import SUITES
 
 REPORTS_DIR = EVALUATION_DIR / "reports"
 RUBRICS_DIR = EVALUATION_DIR / "rubrics"
@@ -185,7 +186,7 @@ def main() -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     run_parser = commands.add_parser("run", help="run cases against the real agent")
     run_parser.set_defaults(func=lambda a: asyncio.run(run(a)))
-    run_parser.add_argument("--suite", choices=["strategy"], required=True)
+    run_parser.add_argument("--suite", choices=sorted(SUITES), required=True)
     run_parser.add_argument("--repeats", type=int, default=1)
     run_parser.add_argument("--cases", nargs="+", default=["*"], help="case ID globs")
     run_parser.add_argument("--concurrency", type=int, default=4)

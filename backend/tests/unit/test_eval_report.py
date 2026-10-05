@@ -16,7 +16,7 @@ from evals.report import build_report
 from evals.runner import RunRecord
 from tests.strategy_samples import golden_case, sample_run
 
-FIXTURE = load_fixture("intelligence_v1")
+FIXTURE = load_fixture("intelligence_v2")
 DIMS = ("relevance", "grounding", "actionability", "marketing_soundness")
 
 
@@ -88,7 +88,7 @@ def make_run_dir(tmp_path: Path, *, scored: bool) -> Path:
     run_dir = tmp_path / "strategy_run"
     run_dir.mkdir()
     (run_dir / "meta.json").write_text(
-        '{"suite": "strategy", "fixture": "intelligence_v1", "repeats": 1,'
+        '{"suite": "strategy", "fixture": "intelligence_v2", "repeats": 1,'
         ' "started_at": "2026-09-22T00:00:00Z"}',
         encoding="utf-8",
     )

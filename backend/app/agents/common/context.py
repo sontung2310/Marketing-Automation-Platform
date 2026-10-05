@@ -11,6 +11,7 @@ from app.intelligence.models import RunStatus
 from app.skills.tools import SkillLoadBudget
 
 MAX_MCP_CALLS_PER_RUN = 12
+MAX_TURNS = 16
 
 
 @dataclass

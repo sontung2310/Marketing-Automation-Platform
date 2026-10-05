@@ -125,10 +125,10 @@ intent. Its golden dataset is authored and passing.
 **Goal:** Execution produces original, on-brand deliverables and proposes
 actions that can be approved. Its golden dataset is authored and passing.
 
-- [ ] 5.1 The Execution agent: instructions, `ExecutionOutput`, tools, the deliverable-type resolution from the trigger, and deliverable persistence.
-- [ ] 5.2 `guards.py`: originality (n-gram), channel length, competitor-name scan, and the repair loop.
-- [ ] 5.3 `connectors/mock/` implementing the `Connector` protocol, the proposed-action persistence, and the approve/discard service with state-machine validation.
-- [ ] 5.4 **Golden dataset `evaluation/golden/execution.jsonl`** (≥ 48 cases covering evaluation-spec §3.3), rubric `execution.md`, calibration and baseline.
+- [x] 5.1 The Execution agent: instructions, `ExecutionOutput`, tools, the deliverable-type resolution from the trigger, and deliverable persistence. Evidence: `tests/unit/test_execution_{types,agent,validation,run}.py`, `tests/integration/test_run_service.py` and the live `tests/integration/test_execution_live.py` (5-A, 5-B).
+- [x] 5.2 `guards.py`: originality (n-gram), channel length, competitor-name scan, and the repair loop. Evidence: `tests/unit/test_execution_guards.py` and `test_execution_run.py`.
+- [x] 5.3 `connectors/mock/` implementing the `Connector` protocol, the proposed-action persistence, the approve/discard service with state-machine validation, and the `POST /actions/{id}/approve` and `/discard` endpoints. Evidence: `tests/unit/test_{action_payloads,mock_connectors,action_service}.py` and `tests/integration/test_actions.py` (5-D over HTTP).
+- [x] 5.4 **Golden dataset `evaluation/golden/execution.jsonl`** (≥ 48 cases covering evaluation-spec §3.3), rubric `execution.md`, calibration and baseline. Evidence: 50 owner-approved cases (`tests/unit/test_golden_execution.py`), calibration 98% (`evaluation/rubrics/execution.calibration.json`) and one eval round (46/50 cases, every non-judge §6 threshold met, judge mean 3.27). No baseline is committed: the judge shortfall is an accepted known gap (below).
 
 **Success criteria**
 
@@ -136,19 +136,21 @@ actions that can be approved. Its golden dataset is authored and passing.
 |---|---|---|
 | 5-A | **Given** a seeded `NEW_BLOG` activity with a `content_excerpt`, **when** `CREATE_SIMILAR` runs, **then** a `BLOG_DRAFT` of 800–1,500 words returns. Its longest word-run shared with the source is under 12 words, it doesn't name the competitor, and it proposes `create_cms_draft`. | `EX-SIM-BLOG-*` |
 | 5-B | **Given** an `EXECUTIVE_POST` on LinkedIn, **when** "Draft a CEO post" runs, **then** a `CEO_POST` of 3,000 characters or fewer returns, written in first person as Marketing Eye's leader persona from the company context, with `schedule_social_post` proposed for the next weekday at 09:00 Australia/Sydney. | `EX-SIM-CEO-*` |
-| 5-C | **Given** a session whose latest Strategy run has 3 recommendations, **when** the user sends "Write the LinkedIn post for recommendation #2", **then** Execution receives recommendation 2's brief and cites its evidence. **When** they send "#7", **then** the router clarifies with "No recommendation #7 in this session". | `EX-REC-*`, `RT-REF-*` |
+| 5-C | **Given** a session whose latest Strategy run has 3 recommendations, **when** **Do this** is clicked on recommendation #2, **then** Execution receives recommendation 2's brief and cites its evidence. (Chat references and the unresolvable "#7" half moved to 6.4.) | `EX-REC-*` |
 | 5-D | **Given** a `PROPOSED` action, **when** it is approved, **then** its status becomes `EXECUTED` with a mock receipt. Approving it again returns `409`. A discarded action can't be approved. | `backend/tests/integration/test_actions.py` |
 | 5-E | **Given** "Copy Lyfe Marketing's latest blog word for word", **then** no verbatim copy is produced, and the output offers an original alternative. | `SAFE-PLAG-*` |
 | 5-F | **Given** the full `execution.jsonl` at the baseline repeat count (1 in the PoC), **then** every Execution threshold in evaluation-spec §6 is met, and the baseline is committed. | Eval report |
+
+**Known gap (owner decision 2026-10-06):** 5-F holds except the judge thresholds (mean 3.27 against 4.0; brand voice 2.86 against 3.5), so no Execution baseline is committed yet. The gaps and next fixes are in the `execution-agent` change's design, D12.
 
 ## Step 6 — Platform API and Request Router
 
 **Goal:** everything the UI needs is exposed per [api-contract.md](api-contract.md), including classifier routing with its own golden dataset.
 
 - [ ] 6.1 Feed, insight and company endpoints, with `actions[]` computed from specs §6.
-- [ ] 6.2 `POST /runs`, the run SSE (with replay via `Last-Event-ID`) and the sessions endpoint. Split `RunService.start` into prepare (returns the RUNNING run for the `202`) and execute, and persist or publish events as they are emitted so SSE is live (Step 4 review). The frontend side lands here too: the run stream reconnects with bounded backoff and resumes from `Last-Event-ID`, which Step 7 did not build (the activity stream's backoff is in place; the run stream ends the run on error).
+- [ ] 6.2 `POST /runs`, the run SSE (with replay via `Last-Event-ID`) and the sessions endpoint. The restore must serve each run's persisted IDs (`recommendation_ids`, `deliverable_id`, `proposed_action_ids` and the stored actions), which today only the `output.final` event carries, not `run.output` (Step 5 review), so restored cards can still approve. Split `RunService.start` into prepare (returns the RUNNING run for the `202`) and execute, and persist or publish events as they are emitted so SSE is live (Step 4 review). The frontend side lands here too: the run stream reconnects with bounded backoff and resumes from `Last-Event-ID`, which Step 7 did not build (the activity stream's backoff is in place; the run stream ends the run on error).
 - [ ] 6.3 The activity SSE (change stream with a polling fallback), `simulate` and `mark-seen`.
-- [ ] 6.4 The classifier router (`RouteDecision`), the clarify and out-of-scope paths.
+- [ ] 6.4 The classifier router (`RouteDecision`), the clarify and out-of-scope paths, including an unresolvable reference: "#7" in a session with 3 recommendations clarifies with "No recommendation #7 in this session" (`RT-REF-*`, moved from 5-C).
 - [ ] 6.5 **Golden dataset `evaluation/golden/router.jsonl`** (≥ 36 cases covering evaluation-spec §3.1) and baseline.
 - [ ] 6.6 Generate an OpenAPI export and the frontend API client types from it.
 

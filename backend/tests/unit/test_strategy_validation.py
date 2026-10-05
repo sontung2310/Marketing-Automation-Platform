@@ -2,9 +2,8 @@
 
 import pytest
 
+from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
 from app.agents.strategy.validation import (
-    InvalidOutputError,
-    UngroundedOutputError,
     contract_problems,
     ensure_valid,
     normalise,

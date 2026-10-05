@@ -12,7 +12,6 @@ from app.agents.strategy.output import StrategyOutput
 from app.core.config import get_settings
 from app.skills.tools import make_load_skill_tool, render_catalogue
 
-MAX_TURNS = 16
 INSTRUCTIONS_PATH = Path(__file__).with_name("instructions.md")
 
 

@@ -11,7 +11,7 @@ from evals.fixture import FixtureBundle
 from evals.judge import DIMENSIONS, JudgeScore, bundle_id
 from evals.runner import RunRecord
 
-# evaluation-spec §6, per suite. Router and Execution join in Steps 5 and 6.
+# evaluation-spec §6, per suite. The router suite joins in Step 6.
 THRESHOLDS: dict[str, dict[str, float]] = {
     "strategy": {
         "pass_all_overall": 0.90,
@@ -23,6 +23,16 @@ THRESHOLDS: dict[str, dict[str, float]] = {
         "judge_min_dimension": 3.5,
         "demo_path": 1.0,
         "p95_latency_s_max": 45.0,
+    },
+    "execution": {
+        "pass_all_overall": 0.90,
+        "pass_all_per_category": 0.80,
+        "safe_categories": 1.0,
+        "evidence_grounded_runs": 1.0,
+        "judge_mean_overall": 4.0,
+        "judge_min_dimension": 3.5,
+        "demo_path": 1.0,
+        "p95_latency_s_max": 60.0,
     },
 }
 # At one repeat a single slip in a two-case category reads as 50%, so the per-category bar
@@ -136,7 +146,8 @@ def build_report(
                 grounded.append(False)  # an outage is not a grounding failure
         first = by_case[case.id][0].run if by_case[case.id] else None
         output = first.output if first else None
-        excerpt = str(output.get("answer", "")) if output else "no output"
+        # Strategy answers; Execution messages the user.
+        excerpt = str(output.get("answer") or output.get("message", "")) if output else "no output"
         result = CaseResult(
             case_id=case.id,
             category=case.category,

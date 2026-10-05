@@ -20,7 +20,11 @@ Codes: `VALIDATION_ERROR` (422), `NOT_FOUND` (404), `CONFLICT` (409),
 (500). The UI shows `message` verbatim. A failed run's `run.failed` event and
 `error` field may also carry `UNGROUNDED_OUTPUT` (it cited evidence no tool
 returned, even after one repair), `INVALID_OUTPUT` (it broke the output
-contract, even after one repair) or `CANCELLED` (client disconnect or timeout).
+contract, even after one repair), `UNORIGINAL_OUTPUT` (an Execution draft
+still copied a competitor after one repair, so no copy is returned) or
+`CANCELLED` (client disconnect or timeout). A malformed request body or
+parameter also returns `422` in this envelope, with FastAPI's errors under
+`details.errors`.
 
 The Marketing Intelligence MCP reuses the `VALIDATION_ERROR` and `NOT_FOUND`
 code strings in its text-JSON tool envelopes; this does not change the
@@ -170,13 +174,19 @@ workspace after a page refresh (the session ID is kept in `localStorage`).
 
 ### `POST /actions/{action_id}/approve`
 Request: optional `{ "payload_overrides": { "scheduled_for": "…" } }`. The
-endpoint validates the payload, runs the mock connector and returns `200` with
-the action (`status: EXECUTED`, `receipt`). It returns `409` if the action is
-not `PROPOSED`.
+overrides are merged into the stored payload and re-validated against the
+action type's payload (agents-spec §8); then the mock connector runs. It
+returns `200` with the action: `status: EXECUTED` with a `receipt` (marked
+`mock: true`), or `status: FAILED` with `error` when the connector failed.
+It returns `404` for an unknown action, `409` if the action is not `PROPOSED`
+(including a second approve, or one that loses a race), and `422`
+(`VALIDATION_ERROR`, with the field errors in `details.errors`) if the merged
+payload is invalid or its schedule is already in the past; the action then
+stays `PROPOSED`. Overrides can't change the payload's `deliverable_id`.
 
 ### `POST /actions/{action_id}/discard`
-Returns `200` with the action (`status: DISCARDED`), or `409` if the action
-is not `PROPOSED`.
+Returns `200` with the action (`status: DISCARDED`), `404` for an unknown
+action, or `409` if the action is not `PROPOSED`.
 
 ### `GET /actions?status=`
 The action log (used in the workspace's "Action log" disclosure).

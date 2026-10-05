@@ -10,9 +10,11 @@ from app.agents.common.context import AgentOutcome, RunContext
 from app.core.db import Document
 from app.core.errors import NotFoundError, UpstreamUnavailableError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus
+from app.intelligence.repositories import ProposedActionsRepository
 from app.orchestration.references import RunRepositories
 from app.orchestration.routing import Trigger, TriggerAction, TriggerKind
 from app.orchestration.run_service import AgentFn, RunService
+from tests.execution_samples import clarification, execution_output
 from tests.strategy_samples import recommendation, strategy_output
 
 pytestmark = pytest.mark.integration
@@ -31,8 +33,15 @@ async def failing_agent(context: RunContext, message: str | None) -> AgentOutcom
     raise UpstreamUnavailableError("MCP is down")
 
 
-def service(database: AsyncDatabase[Document], agent: AgentFn) -> RunService:
-    agents = {AgentName.STRATEGY: agent, AgentName.EXECUTION: agent}
+async def drafting_agent(context: RunContext, message: str | None) -> AgentOutcome:
+    cited = (str(context.trigger_context["id"]),) if context.trigger_context else ()
+    return AgentOutcome(RunStatus.SUCCEEDED, execution_output(evidence_ids=cited))
+
+
+def service(
+    database: AsyncDatabase[Document], agent: AgentFn, execution: AgentFn = drafting_agent
+) -> RunService:
+    agents = {AgentName.STRATEGY: agent, AgentName.EXECUTION: execution}
     return RunService(RunRepositories.for_database(database), agents)
 
 
@@ -219,3 +228,90 @@ async def test_an_empty_answer_supersedes_and_a_failed_supersede_leaves_no_set(
     )
     assert failed.status is RunStatus.FAILED
     assert await recs.count_documents({"run_id": failed.id}) == 0
+
+
+async def test_do_this_can_cite_the_recommendation_evidence(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    retrieved: list[set[str]] = []
+
+    async def recording_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        retrieved.append(set(context.retrieved_ids))
+        return await answering_agent(context, message)
+
+    async def recording_drafter(context: RunContext, message: str | None) -> AgentOutcome:
+        retrieved.append(set(context.retrieved_ids))
+        return await drafting_agent(context, message)
+
+    runs = service(seeded_database, recording_agent, recording_drafter)
+    strategy = await runs.start(COMPANY, message="What should we post?", agent=AgentName.STRATEGY)
+    final = next(e for e in strategy.events if e["type"] == "output.final")
+    second = final["data"]["recommendation_ids"][1]
+    trigger = Trigger(kind=TriggerKind.RECOMMENDATION, ref_id=second, action=TriggerAction.DO_THIS)
+    await runs.start(COMPANY, trigger=trigger)  # a new session: only the trigger grounds it
+    assert retrieved[1] >= {second, "act_2"}
+    assert "act_1" not in retrieved[1]  # recommendation 1's evidence is not this trigger's
+
+
+async def social_post_trigger(database: AsyncDatabase[Document]) -> Trigger:
+    activities = await RunRepositories.for_database(database).activities.search_for_company(
+        COMPANY, detected_since=datetime(2000, 1, 1, tzinfo=UTC), limit=100
+    )
+    activity = next(
+        a for a in activities if a.activity_type == "SOCIAL_POST" and a.channel == "LINKEDIN"
+    )
+    return Trigger(
+        kind=TriggerKind.FEED_ACTION, ref_id=activity.id, action=TriggerAction.CREATE_SIMILAR
+    )
+
+
+async def test_execution_run_persists_its_deliverable(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    trigger = await social_post_trigger(seeded_database)
+    run = await service(seeded_database, answering_agent).start(COMPANY, trigger=trigger)
+
+    assert (run.agent, run.intent, run.status) == (
+        AgentName.EXECUTION,
+        "CREATE_SIMILAR",
+        RunStatus.SUCCEEDED,
+    )
+    final = next(e for e in run.events if e["type"] == "output.final")
+    stored = [doc async for doc in seeded_database["deliverables"].find({"run_id": run.id})]
+    assert [doc["_id"] for doc in stored] == [final["data"]["deliverable_id"]]
+    assert stored[0]["type"] == "LINKEDIN_POST"
+    actions = [doc async for doc in seeded_database["proposed_actions"].find({})]
+    assert [doc["_id"] for doc in actions] == final["data"]["proposed_action_ids"]
+    assert actions[0]["status"] == "PROPOSED"
+    assert actions[0]["payload"]["deliverable_id"] == stored[0]["_id"]
+    assert final["data"]["proposed_actions"][0]["id"] == actions[0]["_id"]
+
+
+async def test_execution_clarification_stores_nothing(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    async def asking_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        return AgentOutcome(RunStatus.NEEDS_CLARIFICATION, clarification())
+
+    run = await service(seeded_database, answering_agent, asking_agent).start(
+        COMPANY, message="Write it", agent=AgentName.EXECUTION
+    )
+    assert run.status is RunStatus.NEEDS_CLARIFICATION
+    final = next(e for e in run.events if e["type"] == "output.final")
+    assert final["data"]["deliverable_id"] is None
+    assert await seeded_database["deliverables"].count_documents({}) == 0
+
+
+async def test_a_failed_action_insert_leaves_no_deliverable(
+    seeded_database: AsyncDatabase[Document], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def broken_insert(self: object, models: object) -> None:
+        raise ConnectionError("write failed")
+
+    monkeypatch.setattr(ProposedActionsRepository, "insert_many", broken_insert)
+    trigger = await social_post_trigger(seeded_database)
+    run = await service(seeded_database, answering_agent).start(COMPANY, trigger=trigger)
+
+    assert run.status is RunStatus.FAILED
+    assert await seeded_database["deliverables"].count_documents({}) == 0
+    assert await seeded_database["proposed_actions"].count_documents({}) == 0

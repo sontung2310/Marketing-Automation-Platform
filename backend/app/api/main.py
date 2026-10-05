@@ -4,10 +4,12 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import health
+from app.api.routes import actions, health
 from app.core.config import get_settings
 from app.core.errors import DomainError
 from app.core.logging import configure_logging
@@ -36,7 +38,15 @@ def create_app() -> FastAPI:
         body = {"error": {"code": exc.code, "message": exc.message, "details": exc.details}}
         return JSONResponse(status_code=exc.http_status, content=body)
 
+    @app.exception_handler(RequestValidationError)
+    async def request_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+        # Malformed requests use the same envelope as domain errors (api-contract).
+        error = {"code": "VALIDATION_ERROR", "message": "The request is not valid"}
+        body = {"error": error | {"details": {"errors": jsonable_encoder(exc.errors())}}}
+        return JSONResponse(status_code=422, content=body)
+
     app.include_router(health.router, prefix="/api")
+    app.include_router(actions.router, prefix="/api")
     return app
 
 

@@ -19,6 +19,18 @@ class CancelledRunError(DomainError):
     code = "CANCELLED"
 
 
+class UngroundedOutputError(DomainError):
+    """Cited evidence was not retrieved in the run, even after the repair."""
+
+    code = "UNGROUNDED_OUTPUT"
+
+
+class InvalidOutputError(DomainError):
+    """The output broke its contract, even after the repair."""
+
+    code = "INVALID_OUTPUT"
+
+
 def run_error(exc: Exception) -> DomainError:
     """A domain error with a user-safe message; unexpected errors never leak their text."""
     if isinstance(exc, DomainError):
@@ -31,3 +43,9 @@ def run_error(exc: Exception) -> DomainError:
             f"OpenAI or the Intelligence MCP is unavailable ({type(exc).__name__})"
         )
     return DomainError("The run failed unexpectedly. The error has been logged.")
+
+
+class UnoriginalOutputError(DomainError):
+    """The deliverable still copies its source after the repair; no copy is returned."""
+
+    code = "UNORIGINAL_OUTPUT"

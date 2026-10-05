@@ -7,18 +7,19 @@ import { Spinner } from "../../components/ds/Spinner";
 import { TextInput } from "../../components/ds/TextInput";
 import { useApproveAction, useDiscardAction } from "../../hooks/queries";
 
-/** Which actions carry a schedule the marketer may edit before approving. */
-const IS_SCHEDULABLE: Record<ActionType, boolean> = {
-  schedule_social_post: true,
-  add_to_content_calendar: true,
-  create_cms_draft: false,
-  create_email_draft: false,
+/** The payload field holding the schedule the marketer may edit before approving. */
+const SCHEDULE_FIELD: Record<ActionType, { key: string; label: string } | null> = {
+  schedule_social_post: { key: "scheduled_for", label: "Scheduled for" },
+  add_to_content_calendar: { key: "date", label: "Date" },
+  create_cms_draft: null,
+  create_email_draft: null,
 };
 
 export function ProposedActionRow({ action }: { action: ProposedAction }) {
   const approve = useApproveAction();
   const discard = useDiscardAction();
-  const [scheduledFor, setScheduledFor] = useState(String(action.payload.scheduled_for ?? ""));
+  const field = SCHEDULE_FIELD[action.action_type];
+  const [schedule, setSchedule] = useState(field ? String(action.payload[field.key] ?? "") : "");
 
   const current = approve.data ?? discard.data ?? action;
   const pending = approve.isPending || discard.isPending;
@@ -32,6 +33,16 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
         <span className="ml-auto text-small text-text-muted">
           {current.receipt.receipt_id} · mock
         </span>
+      </div>
+    );
+  }
+
+  if (current.status === "FAILED") {
+    return (
+      <div className="flex items-center gap-1 border-t border-border bg-surface-page px-2 py-1">
+        <Badge tone="unfavorable">FAILED</Badge>
+        <span className="text-small text-text">{current.summary}</span>
+        <span className="ml-auto text-small text-text-unfavorable">{current.error}</span>
       </div>
     );
   }
@@ -66,9 +77,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
           onClick={() =>
             approve.mutate({
               actionId: current.id,
-              overrides: IS_SCHEDULABLE[current.action_type]
-                ? { scheduled_for: scheduledFor }
-                : undefined,
+              overrides: field ? { [field.key]: schedule } : undefined,
             })
           }
         >
@@ -76,11 +85,11 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
         </Button>
       </div>
 
-      {IS_SCHEDULABLE[current.action_type] ? (
+      {field ? (
         <TextInput
-          label="Scheduled for"
-          value={scheduledFor}
-          onChange={(event) => setScheduledFor(event.target.value)}
+          label={field.label}
+          value={schedule}
+          onChange={(event) => setSchedule(event.target.value)}
         />
       ) : null}
 
