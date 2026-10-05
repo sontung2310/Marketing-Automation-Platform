@@ -39,6 +39,6 @@ approves.
 ## 5. Documentation and close-out
 
 - [x] 5.1 Update `agents-spec` §7.2–§8 (the `ActionProposal` shape, guard severities and code-built payloads), `data-contract` (company `spokesperson`, action `created_at`), `api-contract` (the action endpoints and their `404`/`409`/`422`), `evaluation-spec` (Execution checks, short-source rule) and roadmap: move 5-C's "#7" half to 6.4/`RT-REF`, add the action endpoints to 5.3, and tick 5.1–5.4 with evidence; verify the docs match the code.
-- [ ] 5.2 Re-run the Strategy suite with `--repeats 1` after the D1 refactor and the fixture re-snapshot; verify every evaluation-spec §6 Strategy threshold still holds, and attach the report.
-- [ ] 5.3 Run `npm run check` and `npm run test:integration`; verify both are green.
+- [ ] 5.2 Re-run the Strategy suite with `--repeats 1` after the D1 refactor and the fixture re-snapshot; verify every evaluation-spec §6 Strategy threshold still holds, and attach the report. _Run `strategy_20261005T141441Z` (2026-10-06): every threshold holds (48/50 cases, min dimension 3.64, p95 24 s) except the judge mean, 3.92 against 4.0 (baseline 4.06). The drops are in trend and influencer cases whose data and instructions Step 5 did not change; the owner decides whether to re-run or accept._
+- [x] 5.3 Run `npm run check` and `npm run test:integration`; verify both are green.
 - [ ] 5.4 Ask the owner to approve opening the Step PR; then open it with the eval report summaries and 5-A–5-F evidence, and run the fair review.
