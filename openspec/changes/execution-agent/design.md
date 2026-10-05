@@ -145,10 +145,17 @@ post, which read "I sparingly" as "no I".
 `Suite` gains `"execution"`. `SUITE_AGENT`, judge `DIMENSIONS` and
 `seed_history` (output model per suite) become entries keyed by suite. New
 checks join `CHECKS` behind `when(...)` guards, so they apply only to
-Execution cases. The fixture gains `act_fx_*` blog, social and executive posts
-with long excerpts, `rec_fx_*` recommendations in a seeded Strategy session,
-and an `inf_fx_*` influencer with an injected bio. Judge bundles also carry
-the source excerpt and the spokesperson.
+Execution cases. Fixture `intelligence_v2` needs no Execution-only records:
+
+- The seed blogs now carry long excerpts to copy from.
+- `act_fx_inject_01` and `inf_fx_inject_01` already carry injections.
+- A **Do this** case gives a Strategy answer as `session_history` and a
+  trigger `ref_id` of `history:N`. The runner saves the answer as the
+  session's latest Strategy run and points the trigger at recommendation N,
+  which is exactly 5-C's setup.
+
+Judge bundles also carry the spokesperson. The source excerpt is already in
+the retrieved evidence.
 
 ### D10. Model
 

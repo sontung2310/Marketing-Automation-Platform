@@ -9,24 +9,17 @@ from typing import Any
 from pydantic import BaseModel
 
 from app.agents.common.context import AgentOutcome, RunContext
-from app.agents.strategy.output import StrategyOutput
-from app.agents.strategy.run import run_strategy
 from app.core.config import get_settings
-from app.intelligence.models import AgentName, Run, RunStatus, Session
-from app.orchestration.persistence import persist_strategy
+from app.intelligence.models import Run, RunStatus, Session
 from app.orchestration.references import RunRepositories
+from app.orchestration.routing import Trigger
 from app.orchestration.run_service import AgentFn, RunService
-from evals.cases import GoldenCase
+from evals.cases import HISTORY_REF, GoldenCase
 from evals.fixture import FixtureBundle, install_fixture, shifted_to
 from evals.runtime import serve_mcp, throwaway_database
+from evals.suites import SUITES, history_spec
 
-# Which agent serves each suite while the chat classifier (Step 6) does not exist.
-SUITE_AGENT = {"strategy": AgentName.STRATEGY}
 AgentFactory = Callable[[str], AgentFn]  # MCP URL -> agent function
-
-
-def real_agents(mcp_url: str) -> AgentFn:
-    return partial(run_strategy, mcp_url=mcp_url)
 
 
 class RunRecord(BaseModel):
@@ -38,16 +31,21 @@ class RunRecord(BaseModel):
     error: str | None = None  # the case could not start a run
 
 
-async def seed_history(repositories: RunRepositories, company_id: str, case: GoldenCase) -> str:
-    """A session whose latest successful run answered with the case's last history output,
-    with its recommendations saved, so follow-ups can resolve and re-cite them."""
-    output = StrategyOutput.model_validate(case.input.session_history[-1])
+async def seed_history(
+    repositories: RunRepositories, company_id: str, case: GoldenCase
+) -> tuple[str, list[str]]:
+    """A session whose latest successful run answered with the case's last history output
+    (Strategy or Execution), saved as that agent saves it, so follow-ups can resolve and
+    re-cite it. Returns the session and any recommendation IDs, in ordinal order."""
+    raw = case.input.session_history[-1]
+    spec = history_spec(raw)
+    output = spec.output_type.model_validate(raw)
     now = datetime.now(UTC)
     session = Session(id=Session.new_id(), company_id=company_id, created_at=now)
     run = Run(
         id=Run.new_id(),
         session_id=session.id,
-        agent=AgentName.STRATEGY,
+        agent=spec.agent,
         intent="CHAT",
         status=RunStatus.SUCCEEDED,
         output=output.model_dump(mode="json"),
@@ -55,9 +53,20 @@ async def seed_history(repositories: RunRepositories, company_id: str, case: Gol
         finished_at=now,
     )
     await repositories.runs.upsert(run)
-    await persist_strategy(repositories, run, AgentOutcome(RunStatus.SUCCEEDED, output), None)
+    saved = await spec.persist(repositories, run, AgentOutcome(RunStatus.SUCCEEDED, output), None)
     await repositories.sessions.upsert(session.model_copy(update={"last_run_id": run.id}))
-    return session.id
+    ids = saved.get("recommendation_ids", [])
+    return session.id, [str(i) for i in ids] if isinstance(ids, list) else []
+
+
+def resolve_history_ref(trigger: Trigger | None, recommendation_ids: list[str]) -> Trigger | None:
+    """Point a "history:N" trigger at recommendation N of the seeded session."""
+    if trigger is None or not (match := HISTORY_REF.match(trigger.ref_id)):
+        return trigger
+    ordinal = int(match.group(1))
+    if not 1 <= ordinal <= len(recommendation_ids):
+        raise ValueError(f"history has no recommendation #{ordinal}")
+    return trigger.model_copy(update={"ref_id": recommendation_ids[ordinal - 1]})
 
 
 async def run_suite(
@@ -68,10 +77,11 @@ async def run_suite(
     now: datetime,
     repeats: int,
     concurrency: int = 4,
-    agent_factory: AgentFactory = real_agents,
+    agent_factory: AgentFactory | None = None,
 ) -> list[RunRecord]:
     company_id = get_settings().default_company_id
-    agent_name = SUITE_AGENT[suite]
+    spec = SUITES[suite]
+    agent_name = spec.agent
     retrieved: dict[str, list[str]] = {}
     results: dict[str, list[Any]] = {}
     async with throwaway_database("marketing_automation_eval") as database:
@@ -80,7 +90,11 @@ async def run_suite(
         await install_fixture(database, shifted_to(fixture, now))
         repositories = RunRepositories.for_database(database)
         async with serve_mcp(database, company_id, now=lambda: now) as mcp_url:
-            agent = agent_factory(mcp_url)
+            agent = (
+                agent_factory(mcp_url)
+                if agent_factory
+                else partial(spec.run_agent, mcp_url=mcp_url)
+            )
 
             async def capturing(context: RunContext, message: str | None) -> AgentOutcome:
                 try:
@@ -96,12 +110,15 @@ async def run_suite(
                 async with gate:
                     # One broken case must not lose the other runs (and their OpenAI spend).
                     try:
-                        session_id = None
+                        session_id: str | None = None
+                        recommendation_ids: list[str] = []
                         if case.input.session_history:
-                            session_id = await seed_history(repositories, company_id, case)
+                            session_id, recommendation_ids = await seed_history(
+                                repositories, company_id, case
+                            )
                         run = await service.start(
                             company_id,
-                            trigger=case.input.trigger,
+                            trigger=resolve_history_ref(case.input.trigger, recommendation_ids),
                             message=case.input.message,
                             agent=agent_name,
                             session_id=session_id,

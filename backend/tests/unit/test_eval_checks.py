@@ -13,6 +13,8 @@ from evals.runner import RunRecord
 from tests.strategy_samples import golden_case, recommendation, sample_run, strategy_output
 
 FIXTURE = load_fixture("intelligence_v2")
+# Checks that read an ExecutionOutput; tests/unit/test_eval_checks_execution.py covers them.
+EXECUTION_CHECKS = {"deliverable_shape", "originality", "competitor_naming", "proposed_actions_any"}
 TRIGGER = "act_seed_026"  # Brightlane price change: before 5200, after 5600
 
 
@@ -80,7 +82,7 @@ def with_output(change: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
 
 def test_a_good_run_passes_every_check() -> None:
     results = run_checks(base_case(), record(base_run()), FIXTURE)
-    assert results == dict.fromkeys(CHECKS, True)
+    assert results == dict.fromkeys(set(CHECKS) - EXECUTION_CHECKS, True)
 
 
 FAILURES: list[tuple[str, dict[str, Any] | None, list[str] | None]] = [
@@ -158,8 +160,8 @@ def test_each_check_catches_its_failure(
     assert run_checks(base_case(), record(run, retrieved), FIXTURE)[check] is False
 
 
-def test_every_check_has_a_failure_case() -> None:
-    assert {f[0] for f in FAILURES} == set(CHECKS)
+def test_every_strategy_check_has_a_failure_case() -> None:
+    assert {f[0] for f in FAILURES} == set(CHECKS) - EXECUTION_CHECKS
 
 
 def test_checks_without_expectations_are_not_applicable() -> None:

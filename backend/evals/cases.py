@@ -1,5 +1,6 @@
 """Golden cases (evaluation-spec §4): schema, loading and fixture-ID validation."""
 
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Literal
@@ -12,7 +13,9 @@ from evals.files import read_jsonl
 from evals.fixture import EVALUATION_DIR, FixtureBundle
 
 GOLDEN_DIR = EVALUATION_DIR / "golden"
-Suite = Literal["strategy"]  # router and execution arrive with Steps 5 and 6
+Suite = Literal["strategy", "execution"]  # the router suite arrives with Step 6
+# A trigger ref_id "history:N" means recommendation N of the seeded session history (5-C).
+HISTORY_REF = re.compile(r"^history:(\d+)$")
 
 
 class Strict(BaseModel):
@@ -37,6 +40,16 @@ class RecommendationBounds(Strict):
     kinds_required: list[str] = []
 
 
+class DeliverableExpect(Strict):
+    type: str | None = None
+    channel: str | None = None
+    max_chars: int | None = None
+    min_words: int | None = None
+    max_words: int | None = None
+    first_person: bool = False  # CEO posts speak as the spokesperson
+    author_persona_includes: str | None = None
+
+
 class Expect(Strict):
     route: ExpectedRoute | None = None
     status: list[str]
@@ -55,6 +68,8 @@ class Expect(Strict):
     each_cites_prefix: list[str] = []  # every recommendation cites an ID with one of these
     implications_min: int | None = None
     implications_max: int | None = None
+    deliverable: DeliverableExpect | None = None  # execution only
+    proposed_actions_any: list[str] = []  # execution: one of these action types is proposed
     max_tool_calls: int = 12
 
 
@@ -74,7 +89,7 @@ class GoldenCase(Strict):
     def referenced_ids(self) -> set[str]:
         ids = set(self.expect.evidence_required_all + self.expect.evidence_required_any)
         ids |= set(self.expect.evidence_forbidden) | set(self.expect.retrieved_any)
-        if self.input.trigger is not None:
+        if self.input.trigger is not None and not HISTORY_REF.match(self.input.trigger.ref_id):
             ids.add(self.input.trigger.ref_id)
         # Follow-ups may re-cite what the history cited, so those IDs must exist too.
         return ids | collect_ids(self.input.session_history)

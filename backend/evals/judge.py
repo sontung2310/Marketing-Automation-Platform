@@ -16,6 +16,14 @@ from evals.runner import RunRecord
 
 DIMENSIONS: dict[str, tuple[str, ...]] = {
     "strategy": ("relevance", "grounding", "actionability", "marketing_soundness"),
+    "execution": (
+        "relevance",
+        "grounding",
+        "marketing_soundness",
+        "brand_voice",
+        "channel_craft",
+        "originality",
+    ),
 }
 
 
@@ -32,6 +40,7 @@ class JudgeBundle(BaseModel):
     evidence: list[dict[str, object]]  # the records the agent's tools returned
     tool_calls: list[dict[str, object]] = []  # what it searched, so absence claims can be judged
     brand_voice: dict[str, object]
+    spokesperson: dict[str, object] | None = None  # whose voice a CEO post must use
 
 
 class JudgeScore(BaseModel):
@@ -51,6 +60,7 @@ def make_bundles(
 ) -> list[JudgeBundle]:
     by_id = {case.id: case for case in cases}
     brand_voice = fixture.companies[0].brand_voice.model_dump(mode="json")
+    spokesperson = fixture.companies[0].spokesperson.model_dump(mode="json")
     bundles = []
     for record in records:
         output = record.run.output if record.run else None
@@ -78,6 +88,7 @@ def make_bundles(
                 evidence=evidence,
                 tool_calls=record.run.tool_calls if record.run else [],
                 brand_voice=brand_voice,
+                spokesperson=spokesperson if suite == "execution" else None,
             )
         )
     return bundles
