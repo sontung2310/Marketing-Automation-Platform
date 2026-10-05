@@ -36,6 +36,8 @@ from evals.suites import SUITES, SuiteSpec
 # A K/M suffix counts only as a whole unit: "275 mentions" is 275, not 275 million.
 NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM](?![A-Za-z])|%)?")
 MIN_CHECKED_NUMBER = 10
+# A proposed meeting length ("a 20-minute call") is an offer, not a factual claim.
+OFFERED_DURATION = re.compile(r"\b\d+-(?:minute|hour)\b")
 # Numbers the agents' own policies use ("older than 21 days", X's "280-character limit",
 # the 800-1,500 word blog range); not claims about data.
 POLICY_NUMBERS = "21 280 2200 3000 800 1500"
@@ -101,7 +103,7 @@ def claim_text(e: Evaluated) -> str:
 def claimed_values(text: str) -> list[set[float]]:
     """Each checked number as the values it may stand for: 48.2K -> 48200, 95% -> 95 or 0.95."""
     claims = []
-    for digits, suffix in NUMBER.findall(text):
+    for digits, suffix in NUMBER.findall(OFFERED_DURATION.sub("", text)):
         value = float(digits.replace(",", ""))
         if value < MIN_CHECKED_NUMBER:
             continue

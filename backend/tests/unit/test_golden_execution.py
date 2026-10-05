@@ -6,6 +6,7 @@ from app.agents.execution.validation import IMAGES_FOR
 from app.intelligence.models import DeliverableType
 from evals.cases import check_fixture_ids, golden_path, parse_cases
 from evals.fixture import load_fixture
+from evals.suites import history_spec
 
 # evaluation-spec §3.3: category -> minimum number of cases.
 MINIMUMS = {
@@ -64,3 +65,9 @@ def test_typed_deliverables_expect_their_image_suggestions() -> None:
         if expect and expect.type:
             bounds = IMAGES_FOR[DeliverableType(expect.type)]
             assert (expect.images_min, expect.images_max) == bounds, case.id
+
+
+def test_session_history_entries_parse_as_agent_outputs() -> None:
+    for case in CASES:
+        for output in case.input.session_history:
+            history_spec(output)  # raises when an entry matches no output type

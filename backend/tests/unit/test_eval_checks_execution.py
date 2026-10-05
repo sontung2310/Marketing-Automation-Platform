@@ -146,3 +146,11 @@ def test_citing_the_resolved_recommendation_trigger_is_grounded() -> None:
     assert run_checks(base_case(), grounded, FIXTURE)["evidence_grounded"] is True
     invented = changed(lambda o: o.update(evidence_ids=["rec_invented"]))
     assert run_checks(base_case(), record(invented), FIXTURE)["evidence_grounded"] is False
+
+
+def test_an_offered_meeting_length_is_not_a_claim() -> None:
+    case = base_case()
+    offer = changed(with_body(ORIGINAL + " Would a 20-minute call next week suit you?"))
+    assert run_checks(case, record(offer), FIXTURE)["no_invented_numbers"] is True
+    stat = changed(with_body(ORIGINAL + " It cut our sales cycle by 37 minutes."))
+    assert run_checks(case, record(stat), FIXTURE)["no_invented_numbers"] is False
