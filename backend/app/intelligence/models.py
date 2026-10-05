@@ -437,6 +437,14 @@ class Recommendation(PrefixedModel):
         return value
 
 
+class ImageSuggestion(ModelBase):
+    """An image the agent describes for a person to make; nothing is generated (design D11)."""
+
+    placement: str  # where it goes: the post's attachment, or the blog section it sits in
+    content: str  # what it shows, specific to this piece
+    style: str  # how it looks
+
+
 class Deliverable(PrefixedModel):
     id_prefix: ClassVar[str] = "del_"
     run_id: str
@@ -447,6 +455,7 @@ class Deliverable(PrefixedModel):
     variants: list[str] = Field(default_factory=list, max_length=3)
     word_count: int = Field(ge=0)
     author_persona: str | None = None
+    image_suggestions: list[ImageSuggestion] = Field(default_factory=list)
 
     @field_validator("run_id")
     @classmethod

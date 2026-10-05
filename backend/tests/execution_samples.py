@@ -6,7 +6,8 @@ from app.agents.execution.output import (
     ExecutionOutput,
     QualityCheck,
 )
-from app.intelligence.models import ActionType, Channel, DeliverableType
+from app.agents.execution.validation import IMAGES_FOR
+from app.intelligence.models import ActionType, Channel, DeliverableType, ImageSuggestion
 
 
 def deliverable(
@@ -21,6 +22,14 @@ def deliverable(
         variants=[],
         word_count=0,
         author_persona=None,
+        image_suggestions=[
+            ImageSuggestion(
+                placement="Post attachment",
+                content="A sticky-note map of one buyer's next decision",
+                style="Overhead photo, natural light",
+            )
+        ]
+        * IMAGES_FOR[deliverable_type][0],
     )
 
 

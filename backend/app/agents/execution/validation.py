@@ -1,7 +1,7 @@
 """Post-validation of ExecutionOutput (agents-spec §7.2), run in code after the SDK parses it."""
 
 from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
-from app.agents.execution.output import ExecutionOutput
+from app.agents.execution.output import ExecutionDeliverable, ExecutionOutput
 from app.intelligence.models import ActionType, DeliverableType
 
 MAX_ACTIONS = 2
@@ -23,6 +23,31 @@ ACTIONS_FOR: dict[DeliverableType, frozenset[ActionType]] = {
     DeliverableType.AD_COPY: frozenset({ActionType.ADD_TO_CONTENT_CALENDAR}),
     DeliverableType.RESPONSE_BRIEF: frozenset({ActionType.ADD_TO_CONTENT_CALENDAR}),
 }
+
+_ONE = (1, 1)
+_NONE = (0, 0)
+# How many image suggestions each deliverable carries, as (min, max) (design D11).
+IMAGES_FOR: dict[DeliverableType, tuple[int, int]] = {
+    DeliverableType.LINKEDIN_POST: _ONE,
+    DeliverableType.X_POST: _ONE,
+    DeliverableType.INSTAGRAM_POST: _ONE,
+    DeliverableType.CEO_POST: _ONE,
+    DeliverableType.AD_COPY: _ONE,
+    DeliverableType.BLOG_DRAFT: (1, 2),
+    DeliverableType.BLOG_OUTLINE: (1, 2),
+    DeliverableType.EMAIL: _NONE,
+    DeliverableType.INFLUENCER_OUTREACH: _NONE,
+    DeliverableType.RESPONSE_BRIEF: _NONE,
+}
+
+
+def image_problem(deliverable: ExecutionDeliverable) -> str | None:
+    low, high = IMAGES_FOR[deliverable.type]
+    count = len(deliverable.image_suggestions)
+    if low <= count <= high:
+        return None
+    wanted = str(low) if low == high else f"{low}-{high}"
+    return f"a {deliverable.type} carries {wanted} image_suggestions, not {count}"
 
 
 def unknown_ids(output: ExecutionOutput, retrieved: set[str]) -> list[str]:
@@ -56,6 +81,8 @@ def contract_problems(
                 f"{', '.join(unfit)} does not fit a {deliverable.type}; propose only "
                 f"{', '.join(sorted(ACTIONS_FOR[deliverable.type]))}"
             )
+        if problem := image_problem(deliverable):
+            problems.append(problem)
         if deliverable.type is DeliverableType.CEO_POST and not deliverable.author_persona:
             problems.append("a CEO_POST names its author_persona (the company spokesperson)")
     if output.status == "NEEDS_CLARIFICATION" and not output.clarification_options:

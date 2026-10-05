@@ -3,15 +3,19 @@
 import pytest
 
 from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
+from app.agents.execution.output import ExecutionDeliverable
 from app.agents.execution.validation import (
     ACTIONS_FOR,
+    IMAGES_FOR,
     contract_problems,
     ensure_valid,
     normalise,
     unknown_ids,
 )
-from app.intelligence.models import ActionType, DeliverableType
+from app.intelligence.models import ActionType, DeliverableType, ImageSuggestion
 from tests.execution_samples import clarification, deliverable, execution_output
+
+IMAGE = ImageSuggestion(placement="Post attachment", content="A whiteboard", style="Photo")
 
 LOADED = {"social"}
 
@@ -68,3 +72,21 @@ def test_actions_must_fit_the_deliverable() -> None:
         "add_to_content_calendar, create_email_draft"
     ]
     assert set(ACTIONS_FOR) == set(DeliverableType)  # every type has its actions
+
+
+def image_problems(item: ExecutionDeliverable) -> list[str]:
+    output = execution_output(item, actions=())
+    return [p for p in contract_problems(output, None, LOADED) if "image_suggestions" in p]
+
+
+@pytest.mark.parametrize("deliverable_type", list(DeliverableType))
+def test_image_suggestion_counts_per_type(deliverable_type: DeliverableType) -> None:
+    low, high = IMAGES_FOR[deliverable_type]
+    item = deliverable(deliverable_type)
+    assert len(item.image_suggestions) == low
+    assert image_problems(item) == []
+    extra = item.image_suggestions + [IMAGE] * (high - low + 1)
+    assert image_problems(item.model_copy(update={"image_suggestions": extra}))
+    if low:
+        empty = item.model_copy(update={"image_suggestions": []})
+        assert image_problems(empty)[0].endswith("image_suggestions, not 0")

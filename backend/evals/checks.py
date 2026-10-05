@@ -200,6 +200,8 @@ def deliverable_shape(e: Evaluated) -> bool:
         not expect.first_person or bool(FIRST_PERSON.search(body)),
         expect.author_persona_includes is None
         or expect.author_persona_includes in (deliverable.author_persona or ""),
+        expect.images_min is None or len(deliverable.image_suggestions) >= expect.images_min,
+        expect.images_max is None or len(deliverable.image_suggestions) <= expect.images_max,
     ]
     return all(checks)
 

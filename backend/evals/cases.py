@@ -48,6 +48,8 @@ class DeliverableExpect(Strict):
     max_words: int | None = None
     first_person: bool = False  # CEO posts speak as the spokesperson
     author_persona_includes: str | None = None
+    images_min: int | None = None  # image_suggestions bounds (design D11)
+    images_max: int | None = None
 
 
 class Expect(Strict):

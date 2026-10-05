@@ -221,6 +221,12 @@ export interface Recommendation {
 
 // --- Agent outputs ---------------------------------------------------------
 
+export interface ImageSuggestion {
+  placement: string;
+  content: string;
+  style: string;
+}
+
 export interface Deliverable {
   type: DeliverableType;
   channel: Channel | null;
@@ -229,6 +235,7 @@ export interface Deliverable {
   variants: string[];
   word_count: number;
   author_persona: string | null;
+  image_suggestions: ImageSuggestion[];
 }
 
 export interface QualityCheck {

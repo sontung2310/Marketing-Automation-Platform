@@ -112,6 +112,13 @@ def test_deliverable_limits_first_person_and_persona() -> None:
     assert run_checks(ceo_case, record(ceo), FIXTURE)["deliverable_shape"] is True
 
 
+def test_deliverable_image_suggestion_bounds() -> None:
+    case = base_case(deliverable={"images_min": 1, "images_max": 1})
+    assert run_checks(case, record(base_run()), FIXTURE)["deliverable_shape"] is True
+    bare = changed(lambda o: o["deliverable"].update(image_suggestions=[]))
+    assert run_checks(case, record(bare), FIXTURE)["deliverable_shape"] is False
+
+
 def test_naming_a_competitor_the_user_asked_about_is_fine() -> None:
     case = base_case()
     case = case.model_copy(

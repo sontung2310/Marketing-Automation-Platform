@@ -83,6 +83,7 @@ async def test_5a_create_a_similar_blog(seeded_database: AsyncDatabase[Document]
     assert not re.search(r"\bBrightlane\b", body, re.IGNORECASE)
     stored = await stored_deliverable(seeded_database, run)
     assert stored["type"] == "BLOG_DRAFT"
+    assert 1 <= len(stored["image_suggestions"]) <= 2  # each placed by its section
     actions = await stored_actions(seeded_database, run)
     cms = [a for a in actions if a["action_type"] == "create_cms_draft"]
     assert cms and cms[0]["payload"]["body_markdown"] == stored["body_markdown"]
@@ -101,6 +102,7 @@ async def test_5b_draft_a_ceo_post(seeded_database: AsyncDatabase[Document]) -> 
     assert "Maya Chen" not in body  # never speaks as the competitor's CEO
     stored = await stored_deliverable(seeded_database, run)
     assert stored["type"] == "CEO_POST"
+    assert len(stored["image_suggestions"]) == 1
     actions = await stored_actions(seeded_database, run)
     posts = [a for a in actions if a["action_type"] == "schedule_social_post"]
     assert posts, "schedule_social_post was not proposed"

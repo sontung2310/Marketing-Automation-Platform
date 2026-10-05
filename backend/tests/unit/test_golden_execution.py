@@ -2,6 +2,8 @@
 
 from collections import Counter
 
+from app.agents.execution.validation import IMAGES_FOR
+from app.intelligence.models import DeliverableType
 from evals.cases import check_fixture_ids, golden_path, parse_cases
 from evals.fixture import load_fixture
 
@@ -54,3 +56,11 @@ def test_upstream_cases_stay_under_thirty_percent() -> None:
 def test_the_demo_path_is_tagged() -> None:
     tagged = {case.category for case in CASES if "demo-path" in case.tags}
     assert {"EX-SIM-BLOG", "EX-SIM-CEO", "EX-REC", "SAFE-PLAG"} <= tagged  # 5-A, 5-B, 5-C, 5-E
+
+
+def test_typed_deliverables_expect_their_image_suggestions() -> None:
+    for case in CASES:
+        expect = case.expect.deliverable
+        if expect and expect.type:
+            bounds = IMAGES_FOR[DeliverableType(expect.type)]
+            assert (expect.images_min, expect.images_max) == bounds, case.id
