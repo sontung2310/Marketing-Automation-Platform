@@ -81,7 +81,9 @@ def calendar_day(when: str | None, now: datetime) -> date:
     today = now.astimezone(SCHEDULE_ZONE).date()
     if parsed is not None and parsed.astimezone(SCHEDULE_ZONE).date() >= today:
         return parsed.astimezone(SCHEDULE_ZONE).date()
-    return schedule(None, now).date()
+    if when:
+        logger.warning("Calendar date %r is unreadable or past; using the default", when)
+    return next_weekday_morning(now).date()
 
 
 def is_past(payload: Mapping[str, object], now: datetime) -> bool:

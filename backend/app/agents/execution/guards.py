@@ -132,10 +132,11 @@ def effective_limit(deliverable: ExecutionDeliverable) -> Limit:
     # Any length the user gave replaces the default word range, so a character cap
     # never fights a default word minimum.
     caps = [cap for cap in (base.max_chars, asked.max_chars) if cap is not None]
+    stated = (asked.min_words, asked.max_words, asked.max_chars) != (None, None, None)
     return Limit(
         max_chars=min(caps, default=None),
-        min_words=asked.min_words,
-        max_words=asked.max_words,
+        min_words=asked.min_words if stated else base.min_words,
+        max_words=asked.max_words if stated else base.max_words,
     )
 
 

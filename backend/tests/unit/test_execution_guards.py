@@ -90,6 +90,7 @@ def test_the_user_length_replaces_the_default_and_is_enforced() -> None:
     assert length_problems(good_blog) == []
     long_blog = deliverable(DeliverableType.BLOG_DRAFT, body="word " * 643)
     assert "450-550 words" in length_problems(long_blog.model_copy(update=asking(450, 550)))[0]
+    assert length_problems(short_blog.model_copy(update=asking()))  # nothing stated
     capped_blog = deliverable(DeliverableType.BLOG_DRAFT, body="word " * 300)
     assert length_problems(capped_blog.model_copy(update=asking(max_chars=1999))) == []
     thread = deliverable(DeliverableType.X_POST, body=f"{'a' * 200}\n\n{'b' * 200}")
