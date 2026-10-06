@@ -366,6 +366,35 @@ test.describe("7-D the evidence loop", () => {
   });
 });
 
+test.describe("7-D an edited Do this draft", () => {
+  test("goes to the router as chat, not as the recommendation", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__runBodies = [];
+      const original = window.fetch;
+      window.fetch = (input, init) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.includes("/api/runs") && (init?.method ?? "GET") === "POST") {
+          window.__runBodies = [...(window.__runBodies ?? []), String(init?.body)];
+        }
+        return original(input, init);
+      };
+    });
+    await openWorkspace(page);
+
+    await page.getByRole("button", { name: /Hold price, publish the reasoning/ }).click();
+    await page.getByRole("button", { name: "Do this" }).click();
+    const composer = page.getByLabel("Message the Execution agent");
+    await composer.fill("Write the LinkedIn post for recommendation #1, under 100 words");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect.poll(() => page.evaluate(() => window.__runBodies?.length)).toBe(1);
+    const [body = ""] = await page.evaluate(() => window.__runBodies ?? []);
+    const request = JSON.parse(body) as { message?: string; trigger?: unknown };
+    expect(request.trigger).toBeUndefined();
+    expect(request.message).toBe("Write the LinkedIn post for recommendation #1, under 100 words");
+  });
+});
+
 test.describe("7-E degraded regions and narrow viewports", () => {
   test("shows a failing region's message verbatim while the rest keep working", async ({
     page,

@@ -60,6 +60,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [highlightedKind, setHighlightedKind] = useState<EvidenceKind | null>(null);
   const highlightTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const streams = useRef(new Map<string, EventSource>());
+  const recoveries = useRef(new Set<ReturnType<typeof setTimeout>>());
   const restoredSessionId = useRef<string | null>(null);
 
   const restored = useSession(sessionId);
@@ -124,8 +125,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         source.onerror = () => {
           // A routine close (the server ends streams on a schedule) reconnects
           // natively with Last-Event-ID; only a stream the browser gave up on is ours.
+          // The closed source stays in the map while recovering, so the
+          // one-stream-per-run effect does not open a second one meanwhile.
           if (source.readyState !== source.CLOSED) return;
-          streams.current.delete(runId);
           recover(0);
         };
       };
@@ -134,7 +136,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       // take its final state; give up only after a few failed attempts.
       const recover = (attempt: number) => {
         const delay = Math.min(RECONNECT_BASE_MS * 2 ** attempt, RECONNECT_MAX_MS);
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+          recoveries.current.delete(timer);
           fetchRun(runId)
             .then((run) => {
               if (run.status === "RUNNING") {
@@ -155,6 +158,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 recover(attempt + 1);
                 return;
               }
+              streams.current.delete(runId);
               setRuns((current) => {
                 const run = current[runId];
                 if (!run || run.status !== "RUNNING") return current;
@@ -163,6 +167,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
               });
             });
         }, delay);
+        recoveries.current.add(timer);
       };
 
       open();
@@ -172,9 +177,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const open = streams.current;
+    const pending = recoveries.current;
     return () => {
       for (const source of open.values()) source.close();
       open.clear();
+      for (const timer of pending) clearTimeout(timer);
+      pending.clear();
     };
   }, []);
 

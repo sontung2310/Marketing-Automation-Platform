@@ -15,12 +15,14 @@ const VARIANT: Record<ButtonVariant, string> = {
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
+  /** Let a long label wrap onto more lines instead of overflowing. */
+  wrap?: boolean;
   children: ReactNode;
 }
 
 /** The only button in the workspace. One primary per card (ui-spec §8). */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = "secondary", className, children, ...rest },
+  { variant = "secondary", wrap = false, className, children, ...rest },
   ref,
 ) {
   return (
@@ -29,7 +31,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type="button"
       {...rest}
       className={cn(
-        "inline-flex flex-none cursor-pointer items-center gap-1 whitespace-nowrap disabled:cursor-default",
+        "inline-flex flex-none cursor-pointer items-center gap-1 disabled:cursor-default",
+        wrap ? "h-auto min-h-4 py-0.5 text-left" : "whitespace-nowrap",
         VARIANT[variant],
         className,
       )}
