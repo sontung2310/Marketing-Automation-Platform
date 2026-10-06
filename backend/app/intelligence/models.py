@@ -31,12 +31,14 @@ class Channel(StrEnum):
     YOUTUBE = "YOUTUBE"
     REDDIT = "REDDIT"
     NEWS = "NEWS"
+    TIKTOK = "TIKTOK"
 
 
 class SourceSystem(StrEnum):
     COMPETITORSCOPE = "COMPETITORSCOPE"
     DCT = "DCT"
     PACE = "PACE"
+    LAST30DAYS = "LAST30DAYS"
     MOCK_SEED = "MOCK_SEED"
     SIMULATED = "SIMULATED"
 
@@ -177,9 +179,16 @@ class Company(PrefixedModel):
     brand_voice: BrandVoice
     spokesperson: Spokesperson
     channels: list[Channel] = Field(min_length=1)
+    # Older eval fixtures predate the field; the API still requires 1 to 20 on write.
+    tracked_keywords: list[str] = Field(default_factory=list, max_length=20)
     content_pillars: list[str] = Field(min_length=1)
     is_mock: bool
     updated_at: datetime
+
+    @field_validator("tracked_keywords")
+    @classmethod
+    def tracked_keywords_are_normalized(cls, value: list[str]) -> list[str]:
+        return normalize_keywords(value)
 
     @field_validator("updated_at")
     @classmethod
@@ -310,6 +319,7 @@ class Trend(TenantModel):
     direction: TrendDirection
     sentiment: float = Field(ge=-1, le=1)
     sample_posts: list[SamplePost] = Field(min_length=1)
+    summary: str | None = None
     computed_at: datetime
     source: Provenance
     is_mock: bool
@@ -516,6 +526,21 @@ class SimulationTemplate(ModelBase):
         if not value.startswith("cpt_"):
             raise ValueError("competitor_id must start with 'cpt_'")
         return value
+
+
+def normalize_keywords(values: list[str]) -> list[str]:
+    """Trim, reject blanks, and drop case-insensitive repeats (first spelling wins)."""
+
+    seen: set[str] = set()
+    keywords: list[str] = []
+    for raw in values:
+        keyword = raw.strip()
+        if not keyword:
+            raise ValueError("tracked keywords must be non-empty")
+        if keyword.casefold() not in seen:
+            seen.add(keyword.casefold())
+            keywords.append(keyword)
+    return keywords
 
 
 def ensure_aware(value: datetime) -> datetime:

@@ -22,7 +22,11 @@ class SilentEventSource {
 }
 
 if (!("EventSource" in globalThis)) {
-  Object.defineProperty(globalThis, "EventSource", { value: SilentEventSource, writable: true });
+  Object.defineProperty(globalThis, "EventSource", {
+    value: SilentEventSource,
+    writable: true,
+    configurable: true, // a hook test swaps in a scripted fake
+  });
 }
 
 // jsdom implements no layout, so scrolling is a no-op and no media query

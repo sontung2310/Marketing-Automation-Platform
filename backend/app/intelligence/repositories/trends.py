@@ -1,5 +1,7 @@
 """Repository for normalized market trends."""
 
+from datetime import datetime
+
 from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.database import AsyncDatabase
 
@@ -45,3 +47,10 @@ class TrendsRepository(TenantRepository[Trend]):
             filters["direction"] = direction.value
         documents = self.collection.find(filters).sort("momentum_pct", DESCENDING).limit(limit)
         return [self.model_type.model_validate(document) async for document in documents]
+
+    async def newest_computed_at(self, company_id: str) -> datetime | None:
+        document = await self.collection.find_one(
+            {"company_id": company_id}, {"computed_at": 1}, sort=[("computed_at", DESCENDING)]
+        )
+        value = document.get("computed_at") if document else None
+        return value if isinstance(value, datetime) else None

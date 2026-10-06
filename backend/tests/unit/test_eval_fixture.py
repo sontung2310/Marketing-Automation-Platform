@@ -1,4 +1,5 @@
-"""Eval fixture intelligence_v2: loads, holds the adversarial records, and is reproducible."""
+"""Eval fixtures: v2 (pinned by the golden cases) loads with every adversarial record; the
+latest, v3, is reproducible from the seed."""
 
 import json
 
@@ -23,6 +24,6 @@ def test_fixture_loads_with_every_adversarial_record() -> None:
 
 
 def test_committed_fixture_matches_a_fresh_build() -> None:
-    committed = json.loads(fixture_path("intelligence_v2").read_text("utf-8"))
-    rebuilt = json.loads(build("intelligence_v2").model_dump_json(by_alias=True))
+    committed = json.loads(fixture_path("intelligence_v3").read_text("utf-8"))
+    rebuilt = json.loads(build("intelligence_v3").model_dump_json(by_alias=True))
     assert committed == rebuilt

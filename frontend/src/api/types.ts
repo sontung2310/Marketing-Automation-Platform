@@ -55,6 +55,12 @@ export interface BrandVoice {
   sample_copy: string[];
 }
 
+export interface Spokesperson {
+  name: string;
+  role: string;
+  voice_notes: string[];
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -67,6 +73,7 @@ export interface Company {
   services: CompanyService[];
   brand_voice: BrandVoice;
   channels: Channel[];
+  spokesperson: Spokesperson;
   tracked_keywords: string[];
   content_pillars: string[];
   is_mock: boolean;
@@ -155,6 +162,8 @@ export interface Trend {
   direction: TrendDirection;
   sentiment: number;
   sample_posts: SamplePost[];
+  /** A one-line read of the conversation, when the source provides one. */
+  summary?: string | null;
   computed_at: string;
   is_mock: boolean;
   actions: ItemAction[];

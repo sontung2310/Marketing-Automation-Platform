@@ -73,6 +73,11 @@ export const company: Company = {
     ],
   },
   channels: ["LINKEDIN", "X", "WEBSITE"],
+  spokesperson: {
+    name: "Morgan Hale",
+    role: "Founder and CEO",
+    voice_notes: ["Write in the first person as Morgan, sharing your own view or experience."],
+  },
   tracked_keywords: [
     "Marketing Strategy",
     "Digital Marketing Trends",

@@ -42,8 +42,8 @@ typed repository models and serializes their public `id` fields for agents.
 ```text
 ActivityType   = NEW_BLOG | SOCIAL_POST | EXECUTIVE_POST | NEW_PRODUCT | PRODUCT_REMOVED
                | PRICE_CHANGE | PROMOTION | CAMPAIGN_LAUNCH | PAGE_UPDATE
-Channel        = WEBSITE | LINKEDIN | X | INSTAGRAM | FACEBOOK | YOUTUBE | REDDIT | NEWS
-SourceSystem   = COMPETITORSCOPE | DCT | PACE | MOCK_SEED | SIMULATED
+Channel        = WEBSITE | LINKEDIN | X | INSTAGRAM | FACEBOOK | YOUTUBE | REDDIT | NEWS | TIKTOK
+SourceSystem   = COMPETITORSCOPE | DCT | PACE | LAST30DAYS | MOCK_SEED | SIMULATED
 TrendDirection = RISING | STEADY | FALLING
 Priority       = HIGH | MEDIUM | LOW
 ```
@@ -79,9 +79,10 @@ The tenant's own context. The agents read it through `get_company_context`.
 }
 ```
 
-`tracked_keywords` configures social listening. It contains 1–20 non-empty
+`tracked_keywords` configures social listening. API writes set 1–20 non-empty
 terms, each trimmed and unique case-insensitively; validation preserves the
-first trimmed spelling. The seed uses `Marketing Strategy`, `Digital Marketing
+first trimmed spelling (records from older eval fixtures may omit it). The seed
+uses `Marketing Strategy`, `Digital Marketing
 Trends`, `AI in Marketing`, `Marketing Automation` and `Social Media
 Marketing`. These terms scope the Trends
 and Influencers panels only; they never filter the competitor activity feed.
@@ -158,8 +159,9 @@ Indexes:
   "direction": "RISING",
   "sentiment": 0.31,                      // −1..1
   "sample_posts": [{ "title": "string", "url": "string", "channel": "LINKEDIN" }],
+  "summary": "string|null",               // one-line read of the conversation, when the source has one
   "computed_at": "ISODate",
-  "source": { "system": "PACE|MOCK_SEED", "ref_id": "string" },
+  "source": { "system": "PACE|LAST30DAYS|MOCK_SEED", "ref_id": "string" },
   "is_mock": true
 }
 ```
@@ -506,3 +508,5 @@ adversarial records. The eval harness loads the snapshot into a throwaway
 database (`marketing_automation_eval_<run>`), either on a local `mongo:7`
 container (the default, and the one CI uses) or on the dev cluster. Golden cases reference evidence IDs from a specific fixture version.
 Bumping the fixture version requires re-validating the cases' `expected_evidence`.
+`intelligence_v3` adds the company's `tracked_keywords` and the trends' optional
+`summary`; the golden cases stay pinned to `intelligence_v2` until migrated.
