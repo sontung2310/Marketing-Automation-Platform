@@ -8,6 +8,7 @@ import {
   type EvidenceKind,
   type RunEvent,
   type RunRequest,
+  type RunTrigger,
 } from "../../api";
 import { queryKeys, useSession, useStartRun } from "../../hooks/queries";
 import {
@@ -51,7 +52,7 @@ function readStoredSession(): string | null {
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [sessionId, setSessionId] = useState<string | null>(readStoredSession);
-  const [draft, setDraft] = useState("");
+  const [composer, setComposer] = useState<{ text: string; trigger?: RunTrigger }>({ text: "" });
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [runs, setRuns] = useState<Record<string, RunState>>({});
   const [activeStrategyRunId, setActiveStrategyRunId] = useState<string | null>(null);
@@ -228,11 +229,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [runs, listen]);
 
   const startRun = useCallback(
-    (request: RunRequest, label?: string, { retry = false } = {}) => {
-      if (request.message && !retry) {
+    (request: RunRequest, label?: string, { retry = false, echo = request.message } = {}) => {
+      if (echo && !retry) {
         setTranscript((current) => [
           ...current,
-          { kind: "marketer", id: `msg-${Date.now()}`, text: request.message ?? "" },
+          { kind: "marketer", id: `msg-${Date.now()}`, text: echo },
         ]);
       }
       startRunMutation.mutate(
@@ -303,10 +304,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [sessionId, startRunMutation],
   );
 
+  const setDraft = useCallback(
+    (text: string, trigger?: RunTrigger) => setComposer({ text, trigger }),
+    [],
+  );
+
+  const sendDraft = useCallback(() => {
+    const message = composer.text.trim();
+    if (!message) return;
+    setComposer({ text: "" });
+    if (composer.trigger) startRun({ trigger: composer.trigger }, undefined, { echo: message });
+    else startRun({ message });
+  }, [composer, startRun]);
+
   const value = useMemo<WorkspaceValue>(
     () => ({
-      draft,
+      draft: composer.text,
       setDraft,
+      sendDraft,
       transcript,
       runs,
       activeStrategyRunId,
@@ -316,7 +331,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       highlight,
     }),
     [
-      draft,
+      composer.text,
+      setDraft,
+      sendDraft,
       transcript,
       runs,
       activeStrategyRunId,

@@ -21,7 +21,11 @@ export function ClarificationBlock({ message, options, pointsAtFeed }: Clarifica
       ) : null}
       <div className="flex flex-wrap gap-1">
         {options.map((option) => (
-          <Button key={option} onClick={() => setDraft(option)}>
+          <Button
+            key={option}
+            className="h-auto min-h-4 py-0.5 text-left whitespace-normal"
+            onClick={() => setDraft(option)}
+          >
             {option}
           </Button>
         ))}

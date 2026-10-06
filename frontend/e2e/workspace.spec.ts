@@ -308,7 +308,7 @@ test.describe("7-C retrying a message run", () => {
 });
 
 test.describe("7-D the evidence loop", () => {
-  test("Do this prefills the composer without sending, and evidence scrolls to its target", async ({
+  test("Do this prefills the composer without sending, sends the recommendation unedited, and evidence scrolls to its target", async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -320,6 +320,7 @@ test.describe("7-D the evidence loop", () => {
         const url = typeof input === "string" ? input : input.toString();
         if (url.includes("/api/runs") && (init?.method ?? "GET") === "POST") {
           window.__runPosts = (window.__runPosts ?? 0) + 1;
+          window.__runBodies = [...(window.__runBodies ?? []), String(init?.body)];
         }
         return original(input, init);
       };
@@ -351,6 +352,17 @@ test.describe("7-D the evidence loop", () => {
       "Write the LinkedIn post for recommendation #1",
     );
     expect(await page.evaluate(() => window.__runPosts)).toBe(0);
+
+    // Sent unedited, the draft runs the recommendation itself, not a chat guess.
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect.poll(() => page.evaluate(() => window.__runPosts)).toBe(1);
+    const [body = ""] = await page.evaluate(() => window.__runBodies ?? []);
+    expect(JSON.parse(body).trigger).toMatchObject({ kind: "RECOMMENDATION", action: "DO_THIS" });
+    await expect(
+      page
+        .getByRole("log", { name: "Execution transcript" })
+        .getByText("Write the LinkedIn post for recommendation #1"),
+    ).toBeVisible();
   });
 });
 

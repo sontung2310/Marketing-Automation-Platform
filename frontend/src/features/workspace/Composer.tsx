@@ -11,14 +11,7 @@ import { useWorkspace } from "./workspaceContext";
  * clarification line pointing at the feed.
  */
 export function Composer() {
-  const { draft, setDraft, startRun } = useWorkspace();
-
-  const send = () => {
-    const message = draft.trim();
-    if (!message) return;
-    setDraft("");
-    startRun({ message });
-  };
+  const { draft, setDraft, sendDraft: send } = useWorkspace();
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
