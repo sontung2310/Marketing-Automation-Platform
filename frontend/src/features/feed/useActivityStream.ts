@@ -4,6 +4,8 @@ import { openActivityStream, type Activity } from "../../api";
 
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30_000;
+/** The server ends each stream after ~55 s; a reconnect slower than this counts as paused. */
+export const PAUSE_AFTER_MS = 5000;
 
 export interface ActivityStream {
   /** Items pushed since load, newest first. */
@@ -15,8 +17,9 @@ export interface ActivityStream {
 }
 
 /**
- * Subscribes to `activity.created` and reconnects with bounded backoff
- * (api-contract, `GET /activities/stream`).
+ * Subscribes to `activity.created` (api-contract, `GET /activities/stream`).
+ * Routine server closes reconnect natively with `Last-Event-ID`; a stream the
+ * browser gives up on reconnects here with bounded backoff.
  */
 export function useActivityStream(): ActivityStream {
   const [inserted, setInserted] = useState<Activity[]>([]);
@@ -27,6 +30,7 @@ export function useActivityStream(): ActivityStream {
   useEffect(() => {
     let source: EventSource | null = null;
     let retry: ReturnType<typeof setTimeout> | undefined;
+    let pause: ReturnType<typeof setTimeout> | undefined;
     let closed = false;
 
     const connect = () => {
@@ -42,12 +46,21 @@ export function useActivityStream(): ActivityStream {
 
       source.onopen = () => {
         attempt.current = 0;
+        clearTimeout(pause);
+        pause = undefined;
         setPaused(false);
       };
 
       source.onerror = () => {
-        source?.close();
         if (closed) return;
+        if (source && source.readyState === source.CONNECTING) {
+          // The browser reconnects by itself and resumes from Last-Event-ID
+          // (the server closes every stream on purpose), so this is only a
+          // pause when the reconnect does not open soon.
+          pause ??= setTimeout(() => setPaused(true), PAUSE_AFTER_MS);
+          return;
+        }
+        source?.close();
         setPaused(true);
         const delay = Math.min(RECONNECT_BASE_MS * 2 ** attempt.current, RECONNECT_MAX_MS);
         attempt.current += 1;
@@ -59,6 +72,7 @@ export function useActivityStream(): ActivityStream {
     return () => {
       closed = true;
       clearTimeout(retry);
+      clearTimeout(pause);
       source?.close();
     };
   }, []);
