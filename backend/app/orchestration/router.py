@@ -5,6 +5,7 @@ into a run route or a direct answer (clarify, out of scope) with no model involv
 the rules are testable on their own.
 """
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from functools import cache
@@ -26,6 +27,7 @@ from app.orchestration.routing import Route, RouteMethod
 logger = logging.getLogger(__name__)
 INSTRUCTIONS_PATH = Path(__file__).with_name("router_instructions.md")
 CLARIFY_BELOW = 0.6
+ROUTER_TIMEOUT_SECONDS = 15.0  # p95 target is 3 s (api-contract)
 OUT_OF_SCOPE_MESSAGE = (
     "I can help with Marketing Eye's marketing: competitor moves, content ideas and drafts. "
     "That request is outside what I do."
@@ -72,17 +74,17 @@ class RouterAnswer(BaseModel):
 
 
 # Which agent serves each run intent; CLARIFY and OUT_OF_SCOPE run no agent.
-INTENT_AGENT: dict[str, AgentName] = {
-    "TOPIC_RECOMMENDATION": AgentName.STRATEGY,
-    "RESPONSE_PLAN": AgentName.STRATEGY,
-    "WHY_IT_MATTERS": AgentName.STRATEGY,
-    "INFLUENCER_RECOMMENDATION": AgentName.STRATEGY,
-    "TREND_ANALYSIS": AgentName.STRATEGY,
-    "COMPETITOR_QUESTION": AgentName.STRATEGY,
-    "FROM_RECOMMENDATION": AgentName.EXECUTION,
-    "FREEFORM_DELIVERABLE": AgentName.EXECUTION,
-    "INFLUENCER_OUTREACH": AgentName.EXECUTION,
-    "REVISE_DELIVERABLE": AgentName.EXECUTION,
+INTENT_AGENT: dict[Intent, AgentName] = {
+    Intent.TOPIC_RECOMMENDATION: AgentName.STRATEGY,
+    Intent.RESPONSE_PLAN: AgentName.STRATEGY,
+    Intent.WHY_IT_MATTERS: AgentName.STRATEGY,
+    Intent.INFLUENCER_RECOMMENDATION: AgentName.STRATEGY,
+    Intent.TREND_ANALYSIS: AgentName.STRATEGY,
+    Intent.COMPETITOR_QUESTION: AgentName.STRATEGY,
+    Intent.FROM_RECOMMENDATION: AgentName.EXECUTION,
+    Intent.FREEFORM_DELIVERABLE: AgentName.EXECUTION,
+    Intent.INFLUENCER_OUTREACH: AgentName.EXECUTION,
+    Intent.REVISE_DELIVERABLE: AgentName.EXECUTION,
 }
 # What a hinted agent does with a message the classifier gave to the other one.
 HINT_DEFAULT_INTENT: dict[AgentName, Intent] = {
@@ -114,7 +116,8 @@ def decide(decision: RouteDecision, hint: AgentName | None) -> Route | RouterAns
             clarification_options=[],
             route=answered,
         )
-    agent = INTENT_AGENT.get(decision.intent)
+    run_intent = next((i for i in INTENT_AGENT if i == decision.intent), None)
+    agent = INTENT_AGENT[run_intent] if run_intent else None
     unsure = agent is None or confidence < CLARIFY_BELOW
     if hint is None and unsure:
         options = decision.clarification_options[:3]
@@ -125,11 +128,13 @@ def decide(decision: RouteDecision, hint: AgentName | None) -> Route | RouterAns
             route=answered,
         )
     if hint is not None and agent is not hint:
-        intent = HINT_DEFAULT_INTENT[hint]  # the marketer chose the agent; it decides scope
+        # The marketer chose the agent; it decides the scope.
+        intent, agent = HINT_DEFAULT_INTENT[hint], hint
     else:
-        intent = Intent(decision.intent)
+        assert run_intent is not None and agent is not None  # unsure answers returned above
+        intent = run_intent
     return Route(
-        agent=hint or INTENT_AGENT[decision.intent],
+        agent=agent,
         intent=intent,
         method=method,
         reason=decision.reason,
@@ -194,11 +199,16 @@ async def classify(message: str, hint: AgentName | None) -> RouteDecision:
     )
     try:
         async with model_provider() as provider:
-            result = await Runner.run(
-                agent,
-                message,
-                run_config=RunConfig(model_provider=provider, tracing_disabled=True),
-            )
+            # The 202 waits for this call, so it is bounded well under the function limit.
+            async with asyncio.timeout(ROUTER_TIMEOUT_SECONDS):
+                result = await Runner.run(
+                    agent,
+                    message,
+                    max_turns=1,  # one structured answer, no tools
+                    run_config=RunConfig(model_provider=provider, tracing_disabled=True),
+                )
+    except TimeoutError as exc:
+        raise UpstreamUnavailableError("The router model did not answer in time") from exc
     except DomainError:
         raise
     except Exception as exc:

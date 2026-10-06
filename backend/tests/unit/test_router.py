@@ -1,16 +1,23 @@
 """Router decision rules (agents-spec §5.2), with no model call."""
 
+import asyncio
+from typing import get_args
+
 import pytest
+from pydantic import SecretStr
 
 from app.agents.common.intents import Intent
 from app.core.config import get_settings
 from app.core.errors import UpstreamUnavailableError
 from app.intelligence.models import AgentName, DeliverableType
+from app.orchestration import router
 from app.orchestration.references import Unresolved
 from app.orchestration.router import (
     FALLBACK_OPTIONS,
+    INTENT_AGENT,
     OUT_OF_SCOPE_MESSAGE,
     RouteDecision,
+    RoutedIntent,
     RouterAnswer,
     classify,
     decide,
@@ -128,4 +135,23 @@ async def test_a_blank_router_model_fails_loudly(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(get_settings(), "openai_model_router", "")
 
     with pytest.raises(UpstreamUnavailableError, match="OPENAI_MODEL_ROUTER"):
+        await classify("hello", None)
+
+
+def test_every_run_intent_the_router_can_return_has_an_agent() -> None:
+    answers = {"CLARIFY", "OUT_OF_SCOPE"}
+    assert set(get_args(RoutedIntent)) - answers == set(INTENT_AGENT)
+
+
+async def test_a_stalled_router_model_is_a_readable_503(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(router, "ROUTER_TIMEOUT_SECONDS", 0.05)
+
+    async def stalled(*args: object, **kwargs: object) -> object:
+        await asyncio.sleep(5)
+        raise AssertionError("not reached")
+
+    monkeypatch.setattr(router.Runner, "run", stalled)
+    monkeypatch.setattr(get_settings(), "openai_api_key", SecretStr("sk-test"))
+
+    with pytest.raises(UpstreamUnavailableError, match="did not answer in time"):
         await classify("hello", None)

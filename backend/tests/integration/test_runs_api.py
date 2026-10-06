@@ -198,7 +198,7 @@ async def test_the_cap_refuses_chat_before_the_router_is_called(
     async def unpaid(message: str, hint: AgentName | None) -> RouteDecision:
         raise AssertionError("the router must not be called past the cap")
 
-    api.app_under_test.dependency_overrides[get_classifier] = lambda: unpaid  # type: ignore[attr-defined]
+    api.app_under_test.dependency_overrides[get_classifier] = lambda: unpaid  # type: ignore[attr-defined]  # set by the api fixture
 
     refused = await api.post("/api/runs", json={"message": "Draft a LinkedIn post"})
 
@@ -270,7 +270,7 @@ async def test_recommendation_references_route_or_clarify(
             clarification_options=[],
         )
 
-    api_app = api.app_under_test  # type: ignore[attr-defined]
+    api_app = api.app_under_test  # type: ignore[attr-defined]  # set by the api fixture
     api_app.dependency_overrides[get_classifier] = lambda: references
 
     missing = await api.post("/api/runs", json={"message": "#7", "session_id": session_id})
