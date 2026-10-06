@@ -223,6 +223,20 @@ def build_report(
     )
 
 
+def cost_lines(report: Report) -> list[str]:
+    """Tokens when the suite counts them (the router suite does not), then durations."""
+    parts = []
+    if report.tokens:
+        tokens = report.tokens
+        parts.append(
+            f"Tokens: total {tokens['total']:.0f}, p50 {tokens['p50']:.0f}, p95 {tokens['p95']:.0f}"
+        )
+    if report.latency_s:
+        latency = report.latency_s
+        parts.append(f"Duration: p50 {latency['p50']:.1f} s, p95 {latency['p95']:.1f} s")
+    return [" · ".join(parts)] if parts else []
+
+
 def to_markdown(report: Report) -> str:
     def fmt(value: float | None) -> str:
         return "—" if value is None else f"{value:.2f}"
@@ -266,8 +280,6 @@ def to_markdown(report: Report) -> str:
         "",
         "## Cost and latency",
         "",
-        f"Tokens: total {report.tokens['total']:.0f}, p50 {report.tokens['p50']:.0f}, "
-        f"p95 {report.tokens['p95']:.0f} · Duration: p50 {report.latency_s['p50']:.1f} s, "
-        f"p95 {report.latency_s['p95']:.1f} s",
+        *cost_lines(report),
     ]
     return "\n".join(lines) + "\n"
