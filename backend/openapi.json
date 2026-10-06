@@ -266,7 +266,8 @@
           "FACEBOOK",
           "YOUTUBE",
           "REDDIT",
-          "NEWS"
+          "NEWS",
+          "TIKTOK"
         ],
         "title": "Channel",
         "type": "string"
@@ -1141,6 +1142,17 @@
             "title": "Sentiment",
             "type": "number"
           },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
           "topic": {
             "title": "Topic",
             "type": "string"
@@ -1161,6 +1173,7 @@
           "direction",
           "sentiment",
           "sample_posts",
+          "summary",
           "computed_at",
           "is_mock",
           "actions"

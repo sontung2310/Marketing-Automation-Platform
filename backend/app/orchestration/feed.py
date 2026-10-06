@@ -184,6 +184,7 @@ class TrendItem(BaseModel):
     direction: TrendDirection
     sentiment: float
     sample_posts: list[SamplePost]
+    summary: str | None
     computed_at: datetime
     is_mock: bool
     actions: list[ItemAction]

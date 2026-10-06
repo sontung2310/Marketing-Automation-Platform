@@ -24,6 +24,7 @@ export const CHANNELS = [
   "YOUTUBE",
   "REDDIT",
   "NEWS",
+  "TIKTOK",
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
 

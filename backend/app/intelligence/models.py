@@ -31,12 +31,14 @@ class Channel(StrEnum):
     YOUTUBE = "YOUTUBE"
     REDDIT = "REDDIT"
     NEWS = "NEWS"
+    TIKTOK = "TIKTOK"
 
 
 class SourceSystem(StrEnum):
     COMPETITORSCOPE = "COMPETITORSCOPE"
     DCT = "DCT"
     PACE = "PACE"
+    LAST30DAYS = "LAST30DAYS"
     MOCK_SEED = "MOCK_SEED"
     SIMULATED = "SIMULATED"
 
@@ -177,7 +179,8 @@ class Company(PrefixedModel):
     brand_voice: BrandVoice
     spokesperson: Spokesperson
     channels: list[Channel] = Field(min_length=1)
-    tracked_keywords: list[str] = Field(min_length=1, max_length=20)
+    # Older eval fixtures predate the field; the API still requires 1 to 20 on write.
+    tracked_keywords: list[str] = Field(default_factory=list, max_length=20)
     content_pillars: list[str] = Field(min_length=1)
     is_mock: bool
     updated_at: datetime
@@ -316,6 +319,7 @@ class Trend(TenantModel):
     direction: TrendDirection
     sentiment: float = Field(ge=-1, le=1)
     sample_posts: list[SamplePost] = Field(min_length=1)
+    summary: str | None = None
     computed_at: datetime
     source: Provenance
     is_mock: bool

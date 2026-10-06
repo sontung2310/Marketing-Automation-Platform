@@ -162,6 +162,8 @@ export interface Trend {
   direction: TrendDirection;
   sentiment: number;
   sample_posts: SamplePost[];
+  /** A one-line read of the conversation, when the source provides one. */
+  summary?: string | null;
   computed_at: string;
   is_mock: boolean;
   actions: ItemAction[];
