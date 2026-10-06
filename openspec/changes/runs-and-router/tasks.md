@@ -23,6 +23,7 @@
 
 ## 4. Hosting, docs and close
 
-- [ ] 4.1 The owner sets `MCP_URL=https://marketing-automation-api.vercel.app/mcp` and `MAX_RUNS_PER_DAY` on the API project. Verify on the live site: **Plan a response** on a `PRICE_CHANGE` streams to Strategy recommendations, **Do this** produces a deliverable, and **Approve** executes (screenshots in the PR).
-- [ ] 4.2 Update api-contract (`429 RATE_LIMITED`, run stream close and resume, session payload, `/mcp` on the API), agents-spec §5 (router module, fixed messages), README (Vercel env) and roadmap; verify the docs match the code.
+- [x] 4.1 The owner sets `MCP_URL=https://marketing-automation-api.vercel.app/mcp` and `MAX_RUNS_PER_DAY` on the API project. Verify on the live site: **Plan a response** on a `PRICE_CHANGE` streams to Strategy recommendations, **Do this** produces a deliverable, and **Approve** executes (screenshots in the PR).
+- [x] 4.2 Update api-contract (`429 RATE_LIMITED`, run stream close and resume, session payload, `/mcp` on the API), agents-spec §5 (router module, fixed messages), README (Vercel env) and roadmap; verify the docs match the code.
 - [ ] 4.3 Run `npm run check`, `npm run test:integration` and the router suite. The Strategy and Execution suites are not re-run, because no agent code, instructions, skills or MCP tools change (the MCP is only mounted). Record that in the PR.
+- [x] 4.4 Fix what the live check found: an unedited **Do this** draft runs its recommendation (`RECOMMENDATION` `DO_THIS`) instead of going to the router as chat (workspace-ui delta); long clarification options and evidence chips wrap; `/health` reports the MCP down on 404 or 5xx. Verify the extended 7-D Playwright spec and the probe unit test.
