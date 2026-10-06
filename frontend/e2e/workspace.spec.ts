@@ -88,6 +88,22 @@ test.describe("7-A the workspace loads at the design target", () => {
   });
 });
 
+test.describe("7-I Strategy cards", () => {
+  // jsdom has no stylesheet, so only a real browser can prove the accent
+  // utility resolves to the token rather than inheriting the body colour.
+  for (const [scheme, colour] of [
+    ["light", "rgb(196, 46, 34)"],
+    ["dark", "rgb(255, 138, 127)"],
+  ] as const) {
+    test(`ordinals render in the ${scheme} accent colour`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await openWorkspace(page);
+      const card = page.getByRole("article", { name: "Hold price, publish the reasoning" });
+      await expect(card.getByText("01", { exact: true })).toHaveCSS("color", colour);
+    });
+  }
+});
+
 test.describe("7-J tracked keywords", () => {
   test("a row's remove control shows on keyboard focus and removes the term", async ({ page }) => {
     await openWorkspace(page);
@@ -553,20 +569,32 @@ test.describe("7-E degraded regions and narrow viewports", () => {
     await switcher.getByRole("tab", { name: "Feed" }).click();
     await expect(page.getByRole("region", { name: "Competitor activity" })).toBeVisible();
 
-    for (const width of [1440, 1300, 1280, 900, 760]) {
+    for (const width of [1440, 1300, 1280, 900, 760, 375]) {
       await page.setViewportSize({ width, height: 800 });
       await page.waitForTimeout(150);
       // The body is clipped by design, so also check the content itself fits:
       // a region wider than its column would be hidden rather than reported.
       const overflow = await page.evaluate(() => {
         const main = document.querySelector("main");
+        const header = document.querySelector("header");
         return {
           body: document.documentElement.scrollWidth - document.documentElement.clientWidth,
           content: main ? main.scrollWidth - main.clientWidth : 0,
+          header: header ? header.scrollWidth - header.clientWidth : 0,
         };
       });
       expect(overflow.body, `body overflow at ${width}px`).toBeLessThanOrEqual(0);
       expect(overflow.content, `content overflow at ${width}px`).toBeLessThanOrEqual(0);
+      expect(overflow.header, `TopBar overflow at ${width}px`).toBeLessThanOrEqual(0);
     }
+  });
+
+  test("the recommendation sheet stays inside a phone-width viewport", async ({ page }) => {
+    await openWorkspace(page);
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.getByRole("button", { name: /Open plan for Hold price/ }).click();
+
+    const box = await page.getByRole("dialog", { name: "Recommendation 1" }).boundingBox();
+    expect(box && box.x >= 0 && box.x + box.width <= 375).toBe(true);
   });
 });

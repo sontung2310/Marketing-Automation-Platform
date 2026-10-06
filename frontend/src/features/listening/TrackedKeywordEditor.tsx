@@ -100,7 +100,7 @@ export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
           >
             <span
               aria-hidden="true"
-              className="text-accent grid h-2.5 w-2.5 place-items-center rounded-sm bg-primary-light text-small font-medium"
+              className="grid h-2.5 w-2.5 place-items-center rounded-sm bg-primary-light text-small font-medium text-text-accent"
             >
               #
             </span>

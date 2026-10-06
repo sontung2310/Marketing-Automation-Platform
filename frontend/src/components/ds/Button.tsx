@@ -27,7 +27,7 @@ const VARIANT: Record<ButtonVariant, string> = {
 const SIZE: Record<ButtonVariant, { md: string } & Partial<Record<ButtonSize, string>>> = {
   primary: {
     md: "h-4.5 rounded-sm px-2 text-body",
-    sm: "h-3.5 rounded-sm px-1.25 text-small",
+    sm: "h-3.5 rounded-sm px-1.5 text-small",
     square: "h-4 w-4 justify-center rounded-md",
   },
   secondary: { md: "h-4 rounded-sm px-1 text-small", sm: "h-3.5 rounded-sm px-1 text-small" },

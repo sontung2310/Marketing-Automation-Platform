@@ -37,7 +37,11 @@ export function SimulateMenu() {
   return (
     <Menu
       label="Simulate a signal"
-      trigger="🎭 Simulate a signal"
+      trigger={
+        <>
+          🎭 Simulate<span className="hidden tablet:inline"> a signal</span>
+        </>
+      }
       triggerClassName="border border-text-inverse-muted text-text-inverse"
     >
       {(close) => (

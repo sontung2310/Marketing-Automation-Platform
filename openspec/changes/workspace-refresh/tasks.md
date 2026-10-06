@@ -46,8 +46,8 @@
 - [x] 3.1 Change the right column to 425px in `layout-workspace` and the sheet
   to 520px (D6). Verify that the Playwright width assertions are updated and
   pass.
-- [x] 3.2 Make the `ExecutionChat` header show the labelled `Working` dot
-  while a run is in flight, else the request count. Move the prompt chips centred above the composer and always show them, as on
+- [x] 3.2 Make the `ExecutionChat` header show the request count, with
+  a labelled `Working` dot beside it while a run is in flight. Move the prompt chips centred above the composer and always show them, as on
   the canvas. Verify that the 7-C Playwright test still passes.
 - [x] 3.3 Rebuild `StrategyPanel` as cards per D5:
   - no run grouping;

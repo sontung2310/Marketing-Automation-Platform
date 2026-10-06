@@ -103,8 +103,8 @@ tracking goes from 0.06em to 0.05em.
 
 The Icon registry gains the canvas's five panel glyphs: `radio`, `users`,
 `pen`, `target` and `pulse`. It also gains `plus`, `list`, `sun` and `moon`.
-`ExecutionChat` passes a `Working` dot as meta while its run is in flight, and
-a request count otherwise.
+`ExecutionChat` passes the request count as meta, with a labelled `Working`
+dot before it while a run is in flight.
 
 ### D5. Strategy becomes cards; signals come from evidence
 
@@ -125,7 +125,10 @@ utility goes from 440px to 520px.
 
 The right column goes from `360px` to `425px` in `layout-workspace`, at both
 desktop and tablet. The centre becomes `minmax(0, 1fr)`, as on the canvas:
-with 560px, the desktop arrangement overflowed at 1281–1384px. `sheet-width` becomes 520px. Keyword rows use a new
+with 560px, the desktop arrangement overflowed at 1281–1384px. `sheet-width` becomes 520px, capped at the viewport less its 24px gutters so it
+never runs off a phone screen. Below the tablet breakpoint the TopBar keeps only
+its controls: the context label and last-sync text hide, and the theme and
+Simulate triggers shorten, each keeping its accessible name. Keyword rows use a new
 `layout-keyword-row` utility, `20px 1fr 20px`: the canvas's sparkline and
 count columns are dropped (non-goal). Spacing stays on the 8px unit, with
 half steps (4px and 12px) allowed. The canvas uses 12px card padding.

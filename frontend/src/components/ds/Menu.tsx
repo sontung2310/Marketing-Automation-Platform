@@ -111,7 +111,7 @@ export function MenuItem({
       <span className="flex w-full items-center gap-1 text-body font-medium text-text">
         <span className="min-w-0 truncate">{children}</span>
         {checked ? (
-          <span className="text-accent ml-auto">
+          <span className="ml-auto text-text-accent">
             <Icon name="check" size={16} />
           </span>
         ) : null}

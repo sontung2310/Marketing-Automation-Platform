@@ -86,7 +86,7 @@ export function StrategyPanel() {
           )}
         >
           <div className="flex min-h-3.5 items-center gap-1">
-            <span className="text-accent text-small font-medium">
+            <span className="text-small font-medium text-text-accent">
               {padOrdinal(recommendation.ordinal)}
             </span>
             <Badge tone={PRIORITY_TONE[recommendation.priority]}>{recommendation.priority}</Badge>
@@ -112,7 +112,7 @@ export function StrategyPanel() {
               return (
                 <li
                   key={evidence.id}
-                  className="grid layout-signal-row items-start gap-x-0.75 text-small text-text"
+                  className="grid layout-signal-row items-start gap-x-1 text-small text-text"
                 >
                   <span
                     aria-hidden="true"

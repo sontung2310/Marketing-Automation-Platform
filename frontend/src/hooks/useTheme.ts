@@ -11,7 +11,9 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 function readPreference(): ThemePreference {
   try {
-    return STORED[localStorage.getItem(STORAGE_KEY) ?? ""] ?? "SYSTEM";
+    const stored = localStorage.getItem(STORAGE_KEY) ?? "";
+    // Own keys only: "constructor" must not resolve to Object's prototype.
+    return Object.hasOwn(STORED, stored) ? (STORED[stored] as ThemePreference) : "SYSTEM";
   } catch {
     return "SYSTEM"; // storage blocked: follow the system
   }

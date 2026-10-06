@@ -160,9 +160,10 @@
   grid-template-columns: 18px 72px minmax(0, 1fr);
 }
 
-/* The recommendation sheet overlays the right rail at a fixed 520px (ui-spec §3). */
+/* The recommendation sheet overlays the right rail at a fixed 520px (ui-spec §3),
+ * and never wider than the viewport less its 24px gutters. */
 @utility sheet-width {
-  width: 520px;
+  width: min(520px, calc(100vw - var(--spacing) * 6));
 }
 
 /* The composer grows with its content from two to six body lines, then scrolls

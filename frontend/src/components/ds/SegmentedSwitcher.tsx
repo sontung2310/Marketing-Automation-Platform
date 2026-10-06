@@ -36,7 +36,7 @@ export function SegmentedSwitcher<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               "h-4 flex-1 cursor-pointer rounded-sm text-small font-medium",
-              selected ? "text-accent bg-primary-light" : "text-text-muted",
+              selected ? "bg-primary-light text-text-accent" : "text-text-muted",
             )}
           >
             {option.label}

@@ -48,6 +48,15 @@ dark mode.
   - The composer has no agent selector (ui-spec §1.2).
   - Priority renders verbatim as `HIGH` rather than "High priority" (ui-spec §8).
 
+## Success criteria
+
+| # | Scenario | Verify |
+|---|---|---|
+| 7-G | **Given** the browser prefers dark and no theme was chosen, **when** the page loads at 1440×900, **then** it renders dark from first paint, the theme menu shows `System`, and the axe scan reports no violation. **Given** a light-preferring browser, **when** the marketer picks `Dark` and reloads, **then** it stays dark, and `System` returns it to light. | Playwright + `@axe-core/playwright` |
+| 7-H | **Given** typed fixtures at 1440×900, **then** the right region is 425px, every panel header shows its icon, title and pill, and no `src/**/*.tsx` holds a literal colour. | Playwright; `tokens.test.ts` |
+| 7-I | **Given** a recommendation citing a trend and an activity, **then** its card shows the zero-padded ordinal, verbatim priority, title, a `Trend` and a `Competitor` line and **Open plan**; **Open plan** → **Do this** fills the composer from a 520px sheet without creating a run. | Vitest + Playwright |
+| 7-J | **Given** five seeded keywords, **when** the marketer tabs to a row's remove control and activates it, **then** the control is visible while focused and the saved list drops that term; the platform filter shows a count per option. | Vitest |
+
 ## Capabilities
 
 ### New Capabilities

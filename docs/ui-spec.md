@@ -80,6 +80,8 @@ The design target is 1440×900.
     workspace shell while Strategy and the feed remain available.
   - At 900px and below, the page is one column with a bottom segmented switcher
     `Feed | Workspace | Insights`.
+  - Below 901px, the TopBar keeps only its controls: the context label and
+    last-sync text hide, and the theme and Simulate triggers shorten.
   - At every width, the body never scrolls horizontally.
 
 ## 3. Components

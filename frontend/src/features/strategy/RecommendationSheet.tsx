@@ -31,7 +31,7 @@ export function RecommendationSheet({ recommendation, onClose }: RecommendationS
       onClose={onClose}
       header={
         <>
-          <span className="text-accent text-h2">{recommendation.ordinal}</span>
+          <span className="text-h2 text-text-accent">{recommendation.ordinal}</span>
           <Badge tone={PRIORITY_TONE[recommendation.priority]}>{recommendation.priority}</Badge>
           <Badge>{recommendation.kind}</Badge>
           <Badge tone={STATUS_TONE[recommendation.status]}>{recommendation.status}</Badge>

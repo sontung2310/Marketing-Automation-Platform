@@ -18,7 +18,7 @@ export function ThemeMenu() {
       trigger={
         <>
           <Icon name={OPTIONS[preference].icon} size={14} />
-          {OPTIONS[preference].label}
+          <span className="hidden tablet:inline">{OPTIONS[preference].label}</span>
         </>
       }
       triggerClassName="border border-text-inverse-muted text-text-inverse"

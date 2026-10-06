@@ -65,7 +65,9 @@ export function Tabs<T extends string>({
               {/* The space keeps the accessible name "All 16", not "All16". */}
               {option.count === undefined ? null : " "}
               {option.count === undefined ? null : (
-                <span className={cn("text-micro", selected ? "text-accent" : "text-text-muted")}>
+                <span
+                  className={cn("text-micro", selected ? "text-text-accent" : "text-text-muted")}
+                >
                   {option.count}
                 </span>
               )}

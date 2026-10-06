@@ -58,6 +58,28 @@ describe("useTheme", () => {
     expect(localStorage.getItem("theme")).toBeNull();
   });
 
+  it("treats a prototype key in storage as no choice", () => {
+    localStorage.setItem("theme", "constructor");
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.preference).toBe("SYSTEM");
+  });
+
+  it("follows the system when storage is blocked, and a choice still applies", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    systemDark = true;
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.preference).toBe("SYSTEM");
+    expect(theme()).toBe("dark");
+
+    act(() => result.current.setPreference("LIGHT"));
+    expect(theme()).toBe("light");
+  });
+
   it("restores a stored choice on load", () => {
     localStorage.setItem("theme", "dark");
     const { result } = renderHook(() => useTheme());
