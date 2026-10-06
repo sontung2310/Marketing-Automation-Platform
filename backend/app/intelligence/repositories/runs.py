@@ -26,7 +26,10 @@ class RunsRepository(Repository[Run]):
         ]
 
     async def set_events(self, run_id: str, events: list[dict[str, object]]) -> None:
-        await self.collection.update_one({"_id": run_id}, {"$set": {"events": events}})
+        # Only while RUNNING: a run already read as interrupted keeps its run.failed.
+        await self.collection.update_one(
+            {"_id": run_id, "status": RunStatus.RUNNING}, {"$set": {"events": events}}
+        )
 
     async def replace_if_running(self, run: Run) -> bool:
         """Write a run's final state unless it already ended (e.g. read as interrupted)."""
