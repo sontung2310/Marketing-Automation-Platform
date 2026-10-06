@@ -39,7 +39,7 @@ export function Sheet({ label, onClose, header, footer, children }: SheetProps) 
       aria-label={label}
       className="fixed top-10 right-3 bottom-3 z-20 flex sheet-width flex-col overflow-hidden rounded-md border border-border-strong bg-surface-card shadow-overlay"
     >
-      <div className="flex h-6 flex-none items-center gap-1 border-b border-border px-2">
+      <div className="flex min-h-6 flex-none flex-wrap items-center gap-1 border-b border-border px-2 py-1">
         {header}
         <Button
           ref={closeButton}

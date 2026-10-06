@@ -594,7 +594,15 @@ test.describe("7-E degraded regions and narrow viewports", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.getByRole("button", { name: /Open plan for Hold price/ }).click();
 
-    const box = await page.getByRole("dialog", { name: "Recommendation 1" }).boundingBox();
+    const sheet = page.getByRole("dialog", { name: "Recommendation 1" });
+    const box = await sheet.boundingBox();
     expect(box && box.x >= 0 && box.x + box.width <= 375).toBe(true);
+    // The content must fit too: the sheet clips overflow, and focusing Close
+    // would otherwise scroll it sideways with no way back.
+    const fit = await sheet.evaluate((node) => ({
+      scrollLeft: node.scrollLeft,
+      overflow: node.scrollWidth - node.clientWidth,
+    }));
+    expect(fit).toEqual({ scrollLeft: 0, overflow: 0 });
   });
 });
