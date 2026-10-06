@@ -8,6 +8,8 @@ from pydantic import BaseModel
 from app.core import db
 from app.core.config import Settings
 
+MCP_ALIVE_REFUSALS = {400, 405, 406}
+
 
 class HealthReport(BaseModel):
     status: Literal["ok"] = "ok"
@@ -26,12 +28,13 @@ class HealthChecker:
     async def mcp_ok(self) -> bool:
         try:
             # A stateless MCP answers a GET with a stream that stays open, so read the
-            # headers only. A 4xx other than 404 is a live MCP refusing a bare GET.
+            # headers only. 400/405/406 are a live MCP refusing a bare GET; 403, 404 or
+            # 421 (host not allowed) mean agents cannot use it.
             async with (
                 httpx.AsyncClient(timeout=1.5) as client,
                 client.stream("GET", self._settings.mcp_url) as response,
             ):
-                return response.status_code != 404 and response.status_code < 500
+                return response.is_success or response.status_code in MCP_ALIVE_REFUSALS
         except httpx.HTTPError:
             return False
 
