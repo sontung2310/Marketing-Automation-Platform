@@ -147,7 +147,8 @@ class RunService:
                     else {}
                 )
         except TimeoutError:
-            run = self._failed(run, context, DomainError("The run took too long and was stopped"))
+            stopped = CancelledRunError("The run took too long and was stopped")
+            run = self._failed(run, context, stopped)
         except asyncio.CancelledError:
             run = self._failed(run, context, CancelledRunError("The run was cancelled"))
             await asyncio.shield(self._finish(run, context, session, writer))

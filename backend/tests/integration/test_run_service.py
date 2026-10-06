@@ -405,7 +405,7 @@ async def test_a_slow_agent_is_stopped_before_it_reads_as_lost(
     )
 
     assert run.status is RunStatus.FAILED
-    assert run.error == {"code": "INTERNAL", "message": "The run took too long and was stopped"}
+    assert run.error == {"code": "CANCELLED", "message": "The run took too long and was stopped"}
 
 
 async def stored_events(database: AsyncDatabase[Document], run_id: str) -> list[dict[str, object]]:
