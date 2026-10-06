@@ -157,7 +157,10 @@ Responses:
 - `404` if the trigger `ref_id` doesn't exist. `422` if both or neither of
   `message`/`trigger` are given. `429 RATE_LIMITED` ("The demo's daily run
   limit is reached. Try again tomorrow.") once `MAX_RUNS_PER_DAY` runs started
-  that UTC day; router answers and reads do not count.
+  that UTC day; router answers and reads do not count. Past the cap a `message`
+  is refused before the router model is called. A reference to something the
+  session lacks ("#7") answers `NEEDS_CLARIFICATION` with "No recommendation #7
+  in this session", whatever else the router decided.
 
 Buttons (`trigger`) route deterministically and return within 500 ms. A
 `message` is classified first (agents-spec §5.2), so its reply waits for the

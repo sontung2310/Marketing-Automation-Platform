@@ -43,7 +43,7 @@ Agent runs over HTTP: starting a run, streaming its events live with replay, rea
 
 ### Requirement: Daily run cap
 
-The API SHALL refuse to start an agent run when `MAX_RUNS_PER_DAY` runs have already started for the company that UTC day, returning `429` with code `RATE_LIMITED` and the message "The demo's daily run limit is reached. Try again tomorrow." Router answers that start no run do not count, and neither do reads.
+The API SHALL refuse to start an agent run when `MAX_RUNS_PER_DAY` runs have already started that UTC day (the PoC serves one company per deployment), returning `429` with code `RATE_LIMITED` and the message "The demo's daily run limit is reached. Try again tomorrow." Router answers that start no run do not count, and neither do reads. Past the cap, a chat message is refused before the router model is called.
 
 #### Scenario: Cap reached
 - **GIVEN** `MAX_RUNS_PER_DAY=2` and two runs started today
