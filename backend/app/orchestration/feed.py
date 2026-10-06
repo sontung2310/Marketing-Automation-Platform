@@ -45,7 +45,7 @@ from app.intelligence.repositories.companies import CompaniesRepository
 from app.intelligence.repositories.influencers import InfluencersRepository
 from app.intelligence.repositories.recommendations import RecommendationsRepository
 from app.intelligence.repositories.trends import TrendsRepository
-from app.orchestration.routing import TriggerAction
+from app.orchestration.routing import TRIGGER_ROUTES, TriggerAction, TriggerKind
 from app.pipelines.seed.loader import load_seed_bundle
 from app.pipelines.simulation import simulate_activity
 
@@ -60,24 +60,28 @@ class ItemAction(BaseModel):
     primary: bool = False
 
 
-WHY_IT_MATTERS = ItemAction(
-    action=TriggerAction.WHY_IT_MATTERS, label="Why it matters", agent=AgentName.STRATEGY
-)
-PLAN_A_RESPONSE = [
-    ItemAction(
-        action=TriggerAction.RESPONSE_PLAN,
-        label="Plan a response",
-        agent=AgentName.STRATEGY,
-        primary=True,
+def _button(
+    kind: TriggerKind,
+    action: TriggerAction,
+    label: str,
+    *,
+    deliverable: DeliverableType | None = None,
+    primary: bool = False,
+) -> ItemAction:
+    """A button whose agent is the one routing sends that trigger to."""
+    agent, _intent = TRIGGER_ROUTES[(kind, action)]
+    return ItemAction(
+        action=action, label=label, agent=agent, deliverable_type=deliverable, primary=primary
     )
+
+
+WHY_IT_MATTERS = _button(TriggerKind.FEED_ACTION, TriggerAction.WHY_IT_MATTERS, "Why it matters")
+PLAN_A_RESPONSE = [
+    _button(TriggerKind.FEED_ACTION, TriggerAction.RESPONSE_PLAN, "Plan a response", primary=True)
 ]
-USE_TREND = ItemAction(
-    action=TriggerAction.USE_TREND, label="Get topic ideas", agent=AgentName.STRATEGY
-)
-DRAFT_OUTREACH = ItemAction(
-    action=TriggerAction.DRAFT_OUTREACH, label="Draft outreach", agent=AgentName.EXECUTION
-)
-DO_THIS = ItemAction(action=TriggerAction.DO_THIS, label="Do this", agent=AgentName.EXECUTION)
+USE_TREND = _button(TriggerKind.TREND, TriggerAction.USE_TREND, "Get topic ideas")
+DRAFT_OUTREACH = _button(TriggerKind.INFLUENCER, TriggerAction.DRAFT_OUTREACH, "Draft outreach")
+DO_THIS = _button(TriggerKind.RECOMMENDATION, TriggerAction.DO_THIS, "Do this")
 
 # "Create a similar post" stays on the post's own channel (specs §6).
 CHANNEL_POST: dict[Channel, DeliverableType] = {
@@ -88,11 +92,11 @@ CHANNEL_POST: dict[Channel, DeliverableType] = {
 
 
 def _create_similar(label: str, deliverable: DeliverableType) -> list[ItemAction]:
-    primary = ItemAction(
-        action=TriggerAction.CREATE_SIMILAR,
-        label=label,
-        agent=AgentName.EXECUTION,
-        deliverable_type=deliverable,
+    primary = _button(
+        TriggerKind.FEED_ACTION,
+        TriggerAction.CREATE_SIMILAR,
+        label,
+        deliverable=deliverable,
         primary=True,
     )
     return [primary, WHY_IT_MATTERS]
@@ -232,9 +236,13 @@ class Items(BaseModel, Generic[T]):
 # ---------------------------------------------------------------- cursor
 
 
-def encode_cursor(activity: CompetitorActivity) -> str:
-    raw = f"{activity.detected_at.isoformat()}|{activity.id}"
+def encode_position(detected_at: datetime, activity_id: str) -> str:
+    raw = f"{detected_at.isoformat()}|{activity_id}"
     return base64.urlsafe_b64encode(raw.encode()).decode()
+
+
+def encode_cursor(activity: CompetitorActivity) -> str:
+    return encode_position(activity.detected_at, activity.id)
 
 
 def decode_cursor(cursor: str) -> tuple[datetime, str]:
@@ -260,9 +268,12 @@ async def get_company(company_id: str) -> CompanyView:
     company = await CompaniesRepository(get_database()).get_for_company(company_id)
     if company is None:
         raise NotFoundError(f"Company {company_id} not found")
-    last_sync_at = await CompetitorActivitiesRepository(get_database()).newest_ingested_at(
-        company_id
-    )
+    # The newest data any pipeline wrote; influencers carry no sync time.
+    synced = [
+        await CompetitorActivitiesRepository(get_database()).newest_ingested_at(company_id),
+        await TrendsRepository(get_database()).newest_computed_at(company_id),
+    ]
+    last_sync_at = max((value for value in synced if value), default=None)
     return CompanyView(**company.model_dump(), last_sync_at=last_sync_at)
 
 
@@ -308,18 +319,11 @@ async def mark_seen(company_id: str, up_to: datetime) -> MarkSeenResult:
     return MarkSeenResult(updated=updated)
 
 
-async def activities_after(company_id: str, after: datetime) -> list[ActivityItem]:
+async def activities_after(company_id: str, after: tuple[datetime, str]) -> list[ActivityItem]:
     activities = await CompetitorActivitiesRepository(get_database()).detected_after(
         company_id, after, limit=50
     )
     return [activity_item(activity) for activity in activities]
-
-
-async def get_activity_detected_at(company_id: str, activity_id: str) -> datetime | None:
-    activity = await CompetitorActivitiesRepository(get_database()).get_for_company(
-        activity_id, company_id
-    )
-    return activity.detected_at if activity else None
 
 
 @lru_cache
@@ -420,6 +424,8 @@ STREAM_POLL_SECONDS = 3.0
 # ponytail: serverless caps a function's duration, so the stream ends itself and
 # EventSource reconnects with Last-Event-ID. Use a change stream on a long-lived host.
 STREAM_MAX_SECONDS = 55.0
+# Browsers default to 3-5 s; a quick reconnect keeps routine closes invisible.
+STREAM_RETRY_MS = 1000
 
 
 async def stream_activities(
@@ -429,14 +435,37 @@ async def stream_activities(
     is_disconnected: Callable[[], Awaitable[bool]],
     poll_seconds: float = STREAM_POLL_SECONDS,
     max_seconds: float = STREAM_MAX_SECONDS,
-) -> AsyncGenerator[dict[str, str]]:
-    """`activity.created` events for activities detected after the stream opened,
-    or after the `Last-Event-ID` item when a client reconnects."""
-    resumed = await get_activity_detected_at(company_id, last_event_id) if last_event_id else None
-    after = resumed or datetime.now(UTC)
+) -> AsyncGenerator[dict[str, str | int]]:
+    """`activity.created` events for activities detected after the stream's position.
+
+    Every event ID is an opaque feed position. The stream opens with an id-only
+    event, so even a quiet window gives the browser a `Last-Event-ID` and a
+    reconnect resumes exactly where the last stream stopped.
+    """
+    position = _resume_position(last_event_id) or (_now_ms(), "")
+    yield {"id": encode_position(*position), "retry": STREAM_RETRY_MS}
     deadline = monotonic() + max_seconds
     while monotonic() < deadline and not await is_disconnected():
-        for item in await activities_after(company_id, after):
-            after = item.detected_at
-            yield {"event": "activity.created", "id": item.id, "data": item.model_dump_json()}
+        for item in await activities_after(company_id, position):
+            position = (item.detected_at, item.id)
+            yield {
+                "event": "activity.created",
+                "id": encode_position(*position),
+                "data": item.model_dump_json(),
+            }
         await asyncio.sleep(poll_seconds)
+
+
+def _now_ms() -> datetime:
+    """Mongo stores milliseconds; a finer start would skip an activity in the same ms."""
+    now = datetime.now(UTC)
+    return now.replace(microsecond=now.microsecond // 1000 * 1000)
+
+
+def _resume_position(last_event_id: str | None) -> tuple[datetime, str] | None:
+    if not last_event_id:
+        return None
+    try:
+        return decode_cursor(last_event_id)
+    except ValidationError:
+        return None  # not a position we issued: start from now

@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import { PAUSE_AFTER_MS, useActivityStream } from "./useActivityStream";
@@ -40,6 +42,15 @@ class FakeEventSource {
   }
 }
 
+const queryClient = new QueryClient();
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+);
+
+function render() {
+  return renderHook(() => useActivityStream(), { wrapper });
+}
+
 function stream(index: number): FakeEventSource {
   const source = FakeEventSource.instances[index];
   if (!source) throw new Error(`no EventSource #${index}`);
@@ -58,7 +69,7 @@ afterEach(() => {
 });
 
 test("a routine server close reconnects natively without flashing the paused bar", () => {
-  const { result } = renderHook(() => useActivityStream());
+  const { result } = render();
   const source = stream(0);
   act(() => source.open());
 
@@ -73,7 +84,7 @@ test("a routine server close reconnects natively without flashing the paused bar
 });
 
 test("a reconnect that does not open soon shows the paused bar until it does", () => {
-  const { result } = renderHook(() => useActivityStream());
+  const { result } = render();
   const source = stream(0);
 
   act(() => source.fail(FakeEventSource.CONNECTING));
@@ -85,7 +96,7 @@ test("a reconnect that does not open soon shows the paused bar until it does", (
 });
 
 test("a stream the browser gives up on is reopened with backoff", () => {
-  const { result } = renderHook(() => useActivityStream());
+  const { result } = render();
   const first = stream(0);
 
   act(() => first.fail(FakeEventSource.CLOSED));
@@ -93,6 +104,9 @@ test("a stream the browser gives up on is reopened with backoff", () => {
   act(() => vi.advanceTimersByTime(1000));
 
   const second = stream(1);
+  const refetch = vi.spyOn(queryClient, "invalidateQueries");
+  act(() => second.open());
+  expect(refetch).toHaveBeenCalledWith({ queryKey: ["activities"] });
   act(() => second.emit({ id: "act_1", title: "New post" }));
   expect(result.current.inserted.map((item) => item.id)).toEqual(["act_1"]);
   expect(result.current.paused).toBe(false);

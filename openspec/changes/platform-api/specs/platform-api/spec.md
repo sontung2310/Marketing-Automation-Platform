@@ -7,7 +7,7 @@ The read side of the Platform API: the company context, competitor feed, insight
 
 ### Requirement: Company context and tracked keywords
 
-The API SHALL return the configured company's context with `tracked_keywords` and `last_sync_at` (the newest `ingested_at` across the intelligence collections, or null). It SHALL replace the tracked keywords from a list of 1–20 terms. Terms are trimmed, must be non-empty and must be unique case-insensitively; the first spelling of a duplicate is kept.
+The API SHALL return the configured company's context with `tracked_keywords` and `last_sync_at` (the newest sync time across the intelligence data: competitor activities' `ingested_at` and trends' `computed_at`, or null; influencers carry no sync time). It SHALL replace the tracked keywords from a list of 1–20 terms. Terms are trimmed, must be non-empty and must be unique case-insensitively; the first spelling of a duplicate is kept.
 
 #### Scenario: Seeded company is returned
 - **GIVEN** the seeded DB
@@ -41,7 +41,7 @@ The API SHALL return the configured company's context with `tracked_keywords` an
 
 ### Requirement: Simulate and live feed stream
 
-`POST /api/activities/simulate` SHALL create a simulated activity under the simulation-trigger rules and return `201` with the feed item shape. `GET /api/activities/stream` SHALL be a server-sent event stream that emits `activity.created` (feed item shape) for every activity of the company detected after the stream opened, and a heartbeat comment every 15 s. The stream MAY close itself after a bounded time; clients reconnect, and a reconnect with `Last-Event-ID` resumes after that item without duplicates.
+`POST /api/activities/simulate` SHALL create a simulated activity under the simulation-trigger rules and return `201` with the feed item shape. `GET /api/activities/stream` SHALL be a server-sent event stream that emits `activity.created` (feed item shape) for every activity of the company detected after the stream's position, and a heartbeat comment every 15 s. Event IDs are opaque feed positions, and every stream opens with an id-only event carrying its starting position, so a reconnect always has a `Last-Event-ID`. The stream MAY close itself after a bounded time; a reconnect with `Last-Event-ID` resumes from that position with no gaps or duplicates, even when the closed stream sent no activity.
 
 #### Scenario: Simulated signal arrives live (6-B)
 - **GIVEN** a client subscribed to `/api/activities/stream`

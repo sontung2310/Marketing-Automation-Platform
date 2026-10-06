@@ -39,8 +39,9 @@ Returns `200 {status: "ok", mongo: "ok|down", mcp: "ok|down", openai: "configure
 
 ### `GET /company`
 Returns `200` with the company context (see data-contract §3.1), plus
-`tracked_keywords` and `last_sync_at` (the newest `ingested_at` of the
-company's competitor activities, or `null`).
+`tracked_keywords` and `last_sync_at`: the newest sync time across the
+intelligence data (competitor activities' `ingested_at` and trends'
+`computed_at`; influencers carry none), or `null`.
 
 ### `PUT /company/tracked-keywords`
 Replaces the configured company's social-listening keywords.
@@ -90,12 +91,15 @@ server-side from the mapping in specs §6, so the UI holds no routing logic.
 Request: `{ "up_to": "ISO timestamp" }`. Response: `200 {updated: n}`.
 
 ### `GET /activities/stream` (SSE)
-Emits `activity.created` with the same item shape as above, and the item `id`
-as the event ID, for every activity detected after the stream opened. Sends a
-heartbeat comment every 15 s. It polls `competitor_activities` every 3 s and
-closes itself after about 55 s, because the API runs on serverless functions
-with a bounded duration; `EventSource` reconnects on its own, and a reconnect
-with `Last-Event-ID` resumes after that item with no duplicates.
+Emits `activity.created` with the same item shape as above for every activity
+detected after the stream's position. Event IDs are opaque feed positions:
+each stream opens with an id-only event (and `retry: 1000`) carrying its
+starting position, and each activity event moves it. Sends a heartbeat comment
+every 15 s. It polls `competitor_activities` every 3 s and closes itself after
+about 55 s, because the API runs on serverless functions with a bounded
+duration; `EventSource` reconnects on its own with `Last-Event-ID`, and the
+stream resumes from that position with no gaps or duplicates, even after a
+window that sent no activity. An unknown `Last-Event-ID` starts from now.
 
 ### `POST /activities/simulate`
 Request: `{ "activity_type": "EXECUTIVE_POST" | null, "competitor_id": "cpt_…" | null }`

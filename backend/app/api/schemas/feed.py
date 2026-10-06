@@ -27,7 +27,7 @@ class MarkSeenBody(BaseModel):
 
 class SimulateBody(BaseModel):
     activity_type: ActivityType | None = None
-    competitor_id: str | None = None
+    competitor_id: str | None = Field(default=None, max_length=64)
 
 
 def parse_csv(raw: str | None, enum: type[E], name: str) -> list[E] | None:

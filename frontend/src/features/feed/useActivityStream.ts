@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 import { openActivityStream, type Activity } from "../../api";
@@ -26,6 +27,7 @@ export function useActivityStream(): ActivityStream {
   const [announcement, setAnnouncement] = useState("");
   const [paused, setPaused] = useState(false);
   const attempt = useRef(0);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let source: EventSource | null = null;
@@ -33,7 +35,7 @@ export function useActivityStream(): ActivityStream {
     let pause: ReturnType<typeof setTimeout> | undefined;
     let closed = false;
 
-    const connect = () => {
+    const connect = (reopened = false) => {
       source = openActivityStream();
 
       source.addEventListener("activity.created", (raw) => {
@@ -45,6 +47,10 @@ export function useActivityStream(): ActivityStream {
       });
 
       source.onopen = () => {
+        // A stream reopened here starts without Last-Event-ID, so the feed
+        // refetches to pick up what arrived during the outage.
+        if (reopened) void queryClient.invalidateQueries({ queryKey: ["activities"] });
+        reopened = false;
         attempt.current = 0;
         clearTimeout(pause);
         pause = undefined;
@@ -64,7 +70,7 @@ export function useActivityStream(): ActivityStream {
         setPaused(true);
         const delay = Math.min(RECONNECT_BASE_MS * 2 ** attempt.current, RECONNECT_MAX_MS);
         attempt.current += 1;
-        retry = setTimeout(connect, delay);
+        retry = setTimeout(() => connect(true), delay);
       };
     };
 
@@ -75,7 +81,7 @@ export function useActivityStream(): ActivityStream {
       clearTimeout(pause);
       source?.close();
     };
-  }, []);
+  }, [queryClient]);
 
   return { inserted, announcement, paused };
 }

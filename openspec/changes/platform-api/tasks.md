@@ -30,3 +30,10 @@
 - [x] 5.3 Accept researched trends (`LAST30DAYS`, `TIKTOK`, `summary`) so the shared database's 26 imported trends load; verify the model unit test and `GET /api/trends?limit=50` returning 42 items live.
 - [x] 5.4 Keep golden cases on `intelligence_v2` and snapshot `intelligence_v3` (evaluation-spec §7); verify `test_eval_fixture.py` and that v1/v2 are byte-identical to `main`.
 - [x] 5.5 Let the activity stream reconnect natively with `Last-Event-ID` and show "paused" only after 5 s; verify the hook tests (the routine-close test fails on the old hook).
+
+## 6. Fair-review fixes (PR #39)
+
+- [x] 6.1 Stream positions: every stream opens with an id-only event (`retry: 1000`), event IDs are `(detected_at, _id)` positions, the poll uses that keyset, and the start is truncated to milliseconds; verify `test_quiet_stream_reconnect_still_delivers_the_gap`, the rewritten 6-B test and `test_unknown_last_event_id_starts_from_now`.
+- [x] 6.2 The page refetches the feed when it reopens a stream the browser gave up on; verify the hook test.
+- [x] 6.3 `last_sync_at` covers trends' `computed_at` too; verify `test_researched_trend_is_served_and_counts_as_a_sync`.
+- [x] 6.4 Bound filter, cursor and id lengths; derive each button's agent from `TRIGGER_ROUTES`; give every integration test a unique database; add the missing scenario tests (researched trend via API, no write on a real-competitor simulate, influencer and recommendation ordering).

@@ -142,11 +142,20 @@ class CompetitorActivitiesRepository(TenantRepository[CompetitorActivity]):
         return [self.model_type.model_validate(document) async for document in documents]
 
     async def detected_after(
-        self, company_id: str, after: datetime, *, limit: int
+        self, company_id: str, after: tuple[datetime, str], *, limit: int
     ) -> list[CompetitorActivity]:
-        """Activities detected after `after`, oldest first (the live stream's poll)."""
+        """Activities after the (detected_at, _id) position, oldest first (the stream's poll)."""
+        detected_at, activity_id = after
         documents = (
-            self.collection.find({"company_id": company_id, "detected_at": {"$gt": after}})
+            self.collection.find(
+                {
+                    "company_id": company_id,
+                    "$or": [
+                        {"detected_at": {"$gt": detected_at}},
+                        {"detected_at": detected_at, "_id": {"$gt": activity_id}},
+                    ],
+                }
+            )
             .sort([("detected_at", ASCENDING), ("_id", ASCENDING)])
             .limit(limit)
         )

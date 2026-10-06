@@ -20,7 +20,9 @@ from app.orchestration import feed
 
 router = APIRouter(tags=["feed"])
 
-CompanyQuery = Annotated[str | None, Query(alias="company_id")]
+CompanyQuery = Annotated[str | None, Query(alias="company_id", max_length=64)]
+# Filters and cursors are short; the bound keeps a huge value out of Mongo queries.
+ShortQuery = Annotated[str | None, Query(max_length=1000)]
 
 
 def _company(settings: SettingsDep, company_id: str | None) -> str:
@@ -43,11 +45,11 @@ async def put_tracked_keywords(
 async def list_activities(
     settings: SettingsDep,
     company_id: CompanyQuery = None,
-    activity_types: str | None = None,
-    competitor_ids: str | None = None,
-    channels: str | None = None,
+    activity_types: ShortQuery = None,
+    competitor_ids: ShortQuery = None,
+    channels: ShortQuery = None,
     since: datetime | None = None,
-    cursor: str | None = None,
+    cursor: ShortQuery = None,
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
 ) -> feed.ActivityPage:
     return await feed.list_activities(
@@ -98,7 +100,7 @@ async def stream(
 async def list_trends(
     settings: SettingsDep,
     company_id: CompanyQuery = None,
-    channels: str | None = None,
+    channels: ShortQuery = None,
     direction: TrendDirection | None = None,
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> feed.Items[feed.TrendItem]:
@@ -114,8 +116,8 @@ async def list_trends(
 async def list_influencers(
     settings: SettingsDep,
     company_id: CompanyQuery = None,
-    topic: str | None = None,
-    channels: str | None = None,
+    topic: ShortQuery = None,
+    channels: ShortQuery = None,
     limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> feed.Items[feed.InfluencerItem]:
     return await feed.list_influencers(
