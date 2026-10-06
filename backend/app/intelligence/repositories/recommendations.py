@@ -98,3 +98,7 @@ class RecommendationsRepository(Repository[Recommendation]):
             run = document.pop("run")
             results.append((self.model_type.model_validate(document), Run.model_validate(run)))
         return results
+
+    async def get_by_ordinal(self, run_id: str, ordinal: int) -> Recommendation | None:
+        document = await self.collection.find_one({"run_id": run_id, "ordinal": ordinal})
+        return self.model_type.model_validate(document) if document else None

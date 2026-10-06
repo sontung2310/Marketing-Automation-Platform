@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from app.core.db import Database
 from app.core.errors import NotFoundError
-from app.intelligence.models import Session
+from app.intelligence.models import AgentName, Run, Session
 from app.intelligence.repositories import (
     CompetitorActivitiesRepository,
     DeliverablesRepository,
@@ -85,3 +85,60 @@ async def open_session(
     if existing is None or existing.company_id != company_id:
         raise NotFoundError(f"{session_id} was not found", {"session_id": session_id})
     return existing
+
+
+@dataclass(frozen=True)
+class Unresolved:
+    """A session reference with nothing behind it; the marketer is asked instead."""
+
+    message: str
+
+
+async def _recommendation(
+    repositories: RunRepositories, runs: list[Run], value: str
+) -> dict[str, object] | Unresolved:
+    missing = Unresolved(f"No recommendation #{value} in this session")
+    latest = next(
+        (r for r in reversed(runs) if r.agent is AgentName.STRATEGY and r.persisted), None
+    )
+    if latest is None or not value.isdigit():
+        return missing
+    record = await repositories.recommendations.get_by_ordinal(latest.id, int(value))
+    return record.model_dump(mode="json") if record else missing
+
+
+async def _deliverable(
+    repositories: RunRepositories, runs: list[Run], value: str
+) -> dict[str, object] | Unresolved:
+    missing = Unresolved("No earlier deliverable in this session")
+    ids = (
+        r.persisted.get("deliverable_id") for r in reversed(runs) if r.agent is AgentName.EXECUTION
+    )
+    deliverable_id = next((str(i) for i in ids if i), None)
+    if value != "last" or deliverable_id is None:
+        return missing
+    record = await repositories.deliverables.get(deliverable_id)
+    return record.model_dump(mode="json") if record else missing
+
+
+ReferenceResolver = Callable[
+    [RunRepositories, list[Run], str], Awaitable[dict[str, object] | Unresolved]
+]
+# agents-spec §5.2: "recommendation:N" is the Nth recommendation of the session's latest
+# Strategy run; "deliverable:last" is the session's latest deliverable.
+REFERENCE_RESOLVERS: dict[str, ReferenceResolver] = {
+    "recommendation": _recommendation,
+    "deliverable": _deliverable,
+}
+
+
+async def resolve_reference(
+    repositories: RunRepositories, reference: str, session_id: str | None
+) -> dict[str, object] | Unresolved:
+    """The record a chat reference points at, as the matching UI button would pass it."""
+    kind, _, value = reference.partition(":")
+    resolver = REFERENCE_RESOLVERS.get(kind)
+    runs = await repositories.runs.list_for_session(session_id) if session_id else []
+    if resolver is None:
+        return Unresolved(f"I could not tell what {reference!r} refers to")
+    return await resolver(repositories, runs, value)
