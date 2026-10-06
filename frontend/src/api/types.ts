@@ -55,6 +55,12 @@ export interface BrandVoice {
   sample_copy: string[];
 }
 
+export interface Spokesperson {
+  name: string;
+  role: string;
+  voice_notes: string[];
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -67,6 +73,7 @@ export interface Company {
   services: CompanyService[];
   brand_voice: BrandVoice;
   channels: Channel[];
+  spokesperson: Spokesperson;
   tracked_keywords: string[];
   content_pillars: string[];
   is_mock: boolean;

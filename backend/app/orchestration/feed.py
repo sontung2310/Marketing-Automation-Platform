@@ -10,7 +10,6 @@ import asyncio
 import base64
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from datetime import UTC, datetime
-from enum import StrEnum
 from functools import lru_cache
 from time import monotonic
 from typing import Generic, TypeVar
@@ -38,6 +37,7 @@ from app.intelligence.models import (
     SamplePost,
     Service,
     SimulationTemplate,
+    Spokesperson,
     TrendDirection,
 )
 from app.intelligence.repositories.activities import CompetitorActivitiesRepository
@@ -45,24 +45,15 @@ from app.intelligence.repositories.companies import CompaniesRepository
 from app.intelligence.repositories.influencers import InfluencersRepository
 from app.intelligence.repositories.recommendations import RecommendationsRepository
 from app.intelligence.repositories.trends import TrendsRepository
+from app.orchestration.routing import TriggerAction
 from app.pipelines.seed.loader import load_seed_bundle
 from app.pipelines.simulation import simulate_activity
 
 T = TypeVar("T")
 
 
-# ponytail: mirrors routing.TriggerAction on the Step 4 branch; merge the two when it lands.
-class ItemActionName(StrEnum):
-    CREATE_SIMILAR = "CREATE_SIMILAR"
-    WHY_IT_MATTERS = "WHY_IT_MATTERS"
-    RESPONSE_PLAN = "RESPONSE_PLAN"
-    USE_TREND = "USE_TREND"
-    DRAFT_OUTREACH = "DRAFT_OUTREACH"
-    DO_THIS = "DO_THIS"
-
-
 class ItemAction(BaseModel):
-    action: ItemActionName
+    action: TriggerAction
     label: str
     agent: AgentName
     deliverable_type: DeliverableType | None = None
@@ -70,23 +61,23 @@ class ItemAction(BaseModel):
 
 
 WHY_IT_MATTERS = ItemAction(
-    action=ItemActionName.WHY_IT_MATTERS, label="Why it matters", agent=AgentName.STRATEGY
+    action=TriggerAction.WHY_IT_MATTERS, label="Why it matters", agent=AgentName.STRATEGY
 )
 PLAN_A_RESPONSE = [
     ItemAction(
-        action=ItemActionName.RESPONSE_PLAN,
+        action=TriggerAction.RESPONSE_PLAN,
         label="Plan a response",
         agent=AgentName.STRATEGY,
         primary=True,
     )
 ]
 USE_TREND = ItemAction(
-    action=ItemActionName.USE_TREND, label="Get topic ideas", agent=AgentName.STRATEGY
+    action=TriggerAction.USE_TREND, label="Get topic ideas", agent=AgentName.STRATEGY
 )
 DRAFT_OUTREACH = ItemAction(
-    action=ItemActionName.DRAFT_OUTREACH, label="Draft outreach", agent=AgentName.EXECUTION
+    action=TriggerAction.DRAFT_OUTREACH, label="Draft outreach", agent=AgentName.EXECUTION
 )
-DO_THIS = ItemAction(action=ItemActionName.DO_THIS, label="Do this", agent=AgentName.EXECUTION)
+DO_THIS = ItemAction(action=TriggerAction.DO_THIS, label="Do this", agent=AgentName.EXECUTION)
 
 # "Create a similar post" stays on the post's own channel (specs §6).
 CHANNEL_POST: dict[Channel, DeliverableType] = {
@@ -98,7 +89,7 @@ CHANNEL_POST: dict[Channel, DeliverableType] = {
 
 def _create_similar(label: str, deliverable: DeliverableType) -> list[ItemAction]:
     primary = ItemAction(
-        action=ItemActionName.CREATE_SIMILAR,
+        action=TriggerAction.CREATE_SIMILAR,
         label=label,
         agent=AgentName.EXECUTION,
         deliverable_type=deliverable,
@@ -141,6 +132,7 @@ class CompanyView(BaseModel):
     services: list[Service]
     brand_voice: BrandVoice
     channels: list[Channel]
+    spokesperson: Spokesperson
     tracked_keywords: list[str]
     content_pillars: list[str]
     is_mock: bool
@@ -380,12 +372,12 @@ async def list_influencers(
 
 # Run headers in the Strategy panel name the button that started the run.
 TRIGGER_LABELS: dict[str, str] = {
-    ItemActionName.CREATE_SIMILAR: "Create similar",
-    ItemActionName.WHY_IT_MATTERS: WHY_IT_MATTERS.label,
-    ItemActionName.RESPONSE_PLAN: PLAN_A_RESPONSE[0].label,
-    ItemActionName.USE_TREND: USE_TREND.label,
-    ItemActionName.DRAFT_OUTREACH: DRAFT_OUTREACH.label,
-    ItemActionName.DO_THIS: DO_THIS.label,
+    TriggerAction.CREATE_SIMILAR: "Create similar",
+    TriggerAction.WHY_IT_MATTERS: WHY_IT_MATTERS.label,
+    TriggerAction.RESPONSE_PLAN: PLAN_A_RESPONSE[0].label,
+    TriggerAction.USE_TREND: USE_TREND.label,
+    TriggerAction.DRAFT_OUTREACH: DRAFT_OUTREACH.label,
+    TriggerAction.DO_THIS: DO_THIS.label,
 }
 
 

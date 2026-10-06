@@ -193,6 +193,25 @@
         "title": "AgentName",
         "type": "string"
       },
+      "ApproveRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "payload_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload Overrides"
+          }
+        },
+        "title": "ApproveRequest",
+        "type": "object"
+      },
       "BrandVoice": {
         "additionalProperties": false,
         "properties": {
@@ -321,6 +340,9 @@
             "title": "Services",
             "type": "array"
           },
+          "spokesperson": {
+            "$ref": "#/components/schemas/Spokesperson"
+          },
           "summary": {
             "title": "Summary",
             "type": "string"
@@ -354,6 +376,7 @@
           "services",
           "brand_voice",
           "channels",
+          "spokesperson",
           "tracked_keywords",
           "content_pillars",
           "is_mock",
@@ -598,7 +621,7 @@
       "ItemAction": {
         "properties": {
           "action": {
-            "$ref": "#/components/schemas/ItemActionName"
+            "$ref": "#/components/schemas/TriggerAction"
           },
           "agent": {
             "$ref": "#/components/schemas/AgentName"
@@ -630,18 +653,6 @@
         ],
         "title": "ItemAction",
         "type": "object"
-      },
-      "ItemActionName": {
-        "enum": [
-          "CREATE_SIMILAR",
-          "WHY_IT_MATTERS",
-          "RESPONSE_PLAN",
-          "USE_TREND",
-          "DRAFT_OUTREACH",
-          "DO_THIS"
-        ],
-        "title": "ItemActionName",
-        "type": "string"
       },
       "Items_InfluencerItem_": {
         "properties": {
@@ -917,7 +928,8 @@
         "enum": [
           "OPEN",
           "IN_PROGRESS",
-          "DONE"
+          "DONE",
+          "SUPERSEDED"
         ],
         "title": "RecommendationStatus",
         "type": "string"
@@ -999,6 +1011,37 @@
           }
         },
         "title": "SimulateBody",
+        "type": "object"
+      },
+      "Spokesperson": {
+        "additionalProperties": false,
+        "description": "Whose first-person voice CEO posts use; voice_notes hold the tone rules.",
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "minLength": 1,
+            "title": "Role",
+            "type": "string"
+          },
+          "voice_notes": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Voice Notes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "role",
+          "voice_notes"
+        ],
+        "title": "Spokesperson",
         "type": "object"
       },
       "TrackedKeywords": {
@@ -1125,6 +1168,18 @@
         "title": "TrendItem",
         "type": "object"
       },
+      "TriggerAction": {
+        "enum": [
+          "CREATE_SIMILAR",
+          "WHY_IT_MATTERS",
+          "RESPONSE_PLAN",
+          "DO_THIS",
+          "USE_TREND",
+          "DRAFT_OUTREACH"
+        ],
+        "title": "TriggerAction",
+        "type": "string"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -1173,6 +1228,111 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/actions/{action_id}/approve": {
+      "post": {
+        "operationId": "approve_api_actions__action_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ApproveRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Approve Api Actions  Action Id  Approve Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Approve",
+        "tags": [
+          "actions"
+        ]
+      }
+    },
+    "/api/actions/{action_id}/discard": {
+      "post": {
+        "operationId": "discard_api_actions__action_id__discard_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Discard Api Actions  Action Id  Discard Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discard",
+        "tags": [
+          "actions"
+        ]
+      }
+    },
     "/api/activities": {
       "get": {
         "operationId": "list_activities_api_activities_get",

@@ -200,3 +200,21 @@ async def test_stream_route_speaks_sse(client: httpx.AsyncClient) -> None:
 
 async def _never() -> bool:
     return False
+
+
+async def test_unexpected_errors_use_the_envelope(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def boom(*_: object, **__: object) -> None:
+        raise RuntimeError("secret detail")
+
+    monkeypatch.setattr(feed, "list_trends", boom)
+    transport = httpx.ASGITransport(app=create_app(), raise_app_exceptions=False)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
+        response = await http.get("/api/trends")
+    assert response.status_code == 500
+    assert response.json()["error"] == {
+        "code": "INTERNAL",
+        "message": "Unexpected server error",
+        "details": {},
+    }

@@ -10,6 +10,7 @@ export const SCHEMA_TO_TYPE = {
   ICP: "CompanyIcp",
   Service: "CompanyService",
   BrandVoice: "BrandVoice",
+  Spokesperson: "Spokesperson",
   ActivityItem: "Activity",
   ActivityPage: "ActivityPage",
   ActivityAuthor: "ActivityAuthor",
