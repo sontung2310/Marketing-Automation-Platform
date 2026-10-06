@@ -45,6 +45,7 @@ class Route(BaseModel):
     intent: Intent
     method: RouteMethod
     reason: str
+    confidence: float = Field(default=1.0, ge=0, le=1)
 
 
 TRIGGER_ROUTES: dict[tuple[TriggerKind, TriggerAction], tuple[AgentName, Intent]] = {

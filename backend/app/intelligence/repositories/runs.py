@@ -23,3 +23,11 @@ class RunsRepository(Repository[Run]):
 
     async def set_events(self, run_id: str, events: list[dict[str, object]]) -> None:
         await self.collection.update_one({"_id": run_id}, {"$set": {"events": events}})
+
+    async def list_for_session(self, session_id: str, *, limit: int = 100) -> list[Run]:
+        documents = (
+            self.collection.find({"session_id": session_id})
+            .sort("started_at", ASCENDING)
+            .limit(limit)
+        )
+        return [self.model_type.model_validate(document) async for document in documents]

@@ -10,6 +10,9 @@ from app.core.db import Database, get_database
 from app.core.health import HealthChecker
 from app.intelligence.repositories import ProposedActionsRepository
 from app.orchestration.actions import ActionService
+from app.orchestration.references import RunRepositories
+from app.orchestration.run_api import RUN_AGENTS
+from app.orchestration.run_service import RunService
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
@@ -30,3 +33,10 @@ def get_action_service(database: DatabaseDep) -> ActionService:
 
 
 ActionServiceDep = Annotated[ActionService, Depends(get_action_service)]
+
+
+def get_run_service(database: DatabaseDep) -> RunService:
+    return RunService(RunRepositories.for_database(database), RUN_AGENTS)
+
+
+RunServiceDep = Annotated[RunService, Depends(get_run_service)]

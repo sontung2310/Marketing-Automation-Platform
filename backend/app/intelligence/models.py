@@ -374,6 +374,7 @@ class Run(PrefixedModel):
     session_id: str
     agent: AgentName
     intent: str = Field(min_length=1)
+    message: str | None = None  # the marketer's chat message, shown again on restore
     trigger: dict[str, object] = Field(default_factory=dict)
     route: dict[str, object] = Field(default_factory=dict)
     status: RunStatus

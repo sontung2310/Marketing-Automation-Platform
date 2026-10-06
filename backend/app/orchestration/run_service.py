@@ -76,8 +76,11 @@ class RunService:
         # Accept other companies once the MCP is tenant-aware.
         if company_id != get_settings().default_company_id:
             raise ValidationError(f"Runs are not available for company {company_id}")
-        route, trigger_context = await self._route(company_id, trigger, agent)
-        session = await open_session(self.repositories, company_id, session_id)
+        # Independent lookups, so one round trip to Mongo instead of two.
+        (route, trigger_context), session = await asyncio.gather(
+            self._route(company_id, trigger, agent),
+            open_session(self.repositories, company_id, session_id),
+        )
         previous = None
         if session.last_run_id is not None:
             previous = await self.repositories.runs.get(session.last_run_id)
@@ -107,6 +110,7 @@ class RunService:
             intent=route.intent,
             trigger=trigger.model_dump(mode="json") if trigger else {},
             route=route_json,
+            message=message,
             status=RunStatus.RUNNING,
             events=list(context.events),
             started_at=datetime.now(UTC),
