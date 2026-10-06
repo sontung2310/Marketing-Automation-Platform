@@ -19,7 +19,7 @@ const STATUS_COLOR: Record<Recommendation["status"], string> = {
 };
 
 const PRIORITY_CLASS: Record<Recommendation["priority"], string> = {
-  HIGH: "bg-primary-light text-primary-hover",
+  HIGH: "bg-primary-light text-accent",
   MEDIUM: "bg-surface-page text-text-muted",
   LOW: "bg-surface-page text-text-muted",
 };
@@ -103,25 +103,25 @@ export function StrategyPanel() {
                 openId === recommendation.id ? "bg-surface-selected" : "bg-surface-card",
               )}
             >
-              <span className="row-span-2 text-small font-semibold text-primary-hover">
+              <span className="text-accent row-span-2 text-small font-medium">
                 {recommendation.ordinal}
               </span>
               <span className="flex min-w-0 items-center gap-1">
                 <span
                   className={cn(
-                    "flex-none rounded-sm px-0.5 text-small font-semibold tracking-label",
+                    "flex-none rounded-sm px-0.5 text-small font-medium tracking-label",
                     PRIORITY_CLASS[recommendation.priority],
                   )}
                 >
                   {recommendation.priority}
                 </span>
-                <span className="truncate text-body font-semibold text-text">
+                <span className="truncate text-body font-medium text-text">
                   {recommendation.title}
                 </span>
               </span>
               <span
                 className={cn(
-                  "self-start text-small font-semibold tracking-label",
+                  "self-start text-small font-medium tracking-label",
                   STATUS_COLOR[recommendation.status],
                 )}
               >

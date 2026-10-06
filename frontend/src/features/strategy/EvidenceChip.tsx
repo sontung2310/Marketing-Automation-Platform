@@ -22,7 +22,7 @@ interface EvidenceChipProps {
 export function EvidenceChip({ evidence, onNavigate }: EvidenceChipProps) {
   const { highlight } = useWorkspace();
   const prefix = (
-    <span className="font-semibold tracking-label text-text-muted uppercase">
+    <span className="font-medium tracking-label text-text-muted uppercase">
       {PREFIX[evidence.kind]}
     </span>
   );

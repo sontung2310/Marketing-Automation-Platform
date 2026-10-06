@@ -2,8 +2,9 @@ import { Menu, MenuItem } from "../../components/ds/Menu";
 import { useCompany } from "../../hooks/queries";
 import { relativeTime } from "../../lib/format";
 import { SimulateMenu } from "./SimulateMenu";
+import { ThemeMenu } from "./ThemeMenu";
 
-/** The page's one inverted band. No logo (ui-spec §7). */
+/** The page's one inverted band: ink in light, brand red in dark. No logo (ui-spec §7). */
 export function TopBar() {
   const company = useCompany();
   const lastSync = company.data?.last_sync_at;
@@ -32,6 +33,7 @@ export function TopBar() {
         {lastSync ? `Last sync ${relativeTime(lastSync)}` : "Last sync pending"}
       </span>
 
+      <ThemeMenu />
       <SimulateMenu />
     </header>
   );

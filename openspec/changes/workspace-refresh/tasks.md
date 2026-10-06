@@ -2,7 +2,7 @@
 
 ## 1. Tokens, type and dark mode (Roadmap 7.6)
 
-- [ ] 1.1 Remap the type tokens in `theme.css` per design D3:
+- [x] 1.1 Remap the type tokens in `theme.css` per design D3:
   - Geist font;
   - `text-micro`, 11/12/13/14/16, and drop `text-h1`;
   - tracking 0.05em.
@@ -10,18 +10,18 @@
   Swap Inter for Geist in `index.html` and replace `font-semibold` with
   `font-medium` throughout. Verify with `npm run check` and visually at
   1440×900.
-- [ ] 1.2 Add the dark token block on `:root[data-theme="dark"]` with the D1
+- [x] 1.2 Add the dark token block on `:root[data-theme="dark"]` with the D1
   values, including the `text-accent`, `text-inverse-muted` and status-text
   fixes. Verify that each pair in the D1 table is ≥ 4.5:1 with a contrast
   script whose output goes in the PR.
-- [ ] 1.3 Add the pre-paint theme script to `index.html`, the `useTheme` hook
+- [x] 1.3 Add the pre-paint theme script to `index.html`, the `useTheme` hook
   and the TopBar `Light | Dark | System` menu (D2), with the `sun` and `moon`
   icons. Verify with Vitest for the hook: stored override, `System` clears it,
   and a media change applies live.
-- [ ] 1.4 Widen `tokens.test.ts` to all `src/**/*.tsx` and add the
+- [x] 1.4 Widen `tokens.test.ts` to all `src/**/*.tsx` and add the
   no-hex-literal rule (D7). Fix any offenders. Verify that the test fails on a
   planted `#fff` and then passes.
-- [ ] 1.5 Add the Playwright dark scenarios: the system-dark load with an axe
+- [x] 1.5 Add the Playwright dark scenarios: the system-dark load with an axe
   scan, and pick `Dark` → reload → `System`. Verify that
   `npm run test:e2e` passes.
 

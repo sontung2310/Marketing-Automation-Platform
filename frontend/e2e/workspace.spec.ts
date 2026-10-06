@@ -16,6 +16,25 @@ async function openWorkspace(page: Page): Promise<string[]> {
   return consoleErrors;
 }
 
+/** The ui-spec §6 accessibility gate, in whichever theme the page is in. */
+async function expectAccessible(page: Page): Promise<void> {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+
+  expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+
+  // axe files short text and unlabelled generics under `incomplete` rather
+  // than `violations`, which is where a real 4.32:1 contrast miss hid. The
+  // rules ui-spec §6 turns on must come back clean from that bucket too.
+  const GATED = ["color-contrast", "aria-prohibited-attr"];
+  expect(
+    results.incomplete
+      .filter((item) => GATED.includes(item.id))
+      .flatMap((item) => item.nodes.map((node) => `${item.id}: ${node.target.join(" ")}`)),
+  ).toEqual([]);
+}
+
 test.describe("7-A the workspace loads at the design target", () => {
   test("renders every region, the tenant, the keywords and the last sync", async ({ page }) => {
     const consoleErrors = await openWorkspace(page);
@@ -48,21 +67,56 @@ test.describe("7-A the workspace loads at the design target", () => {
 
   test("passes an axe accessibility scan with no violations", async ({ page }) => {
     await openWorkspace(page);
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .analyze();
+    await expectAccessible(page);
+  });
+});
 
-    expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+test.describe("7-G light and dark themes", () => {
+  const theme = (page: Page) => page.evaluate(() => document.documentElement.dataset.theme);
+  const pageGround = (page: Page) =>
+    page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
-    // axe files short text and unlabelled generics under `incomplete` rather
-    // than `violations`, which is where a real 4.32:1 contrast miss hid. The
-    // rules ui-spec §6 turns on must come back clean from that bucket too.
-    const GATED = ["color-contrast", "aria-prohibited-attr"];
-    expect(
-      results.incomplete
-        .filter((item) => GATED.includes(item.id))
-        .flatMap((item) => item.nodes.map((node) => `${item.id}: ${node.target.join(" ")}`)),
-    ).toEqual([]);
+  test("follows a dark system preference and passes the axe scan", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openWorkspace(page);
+
+    expect(await theme(page)).toBe("dark");
+    expect(await pageGround(page)).toBe("rgb(17, 18, 20)");
+    await page.getByRole("button", { name: "Choose the theme" }).click();
+    await expect(page.getByRole("menuitemradio", { name: "System" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await page.keyboard.press("Escape");
+    await expectAccessible(page);
+  });
+
+  test("resolves the theme before the app renders", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    // Block the bundle: only index.html's pre-paint script can set the theme.
+    await page.route(/\/src\/main\.tsx/, (route) => route.abort());
+    await page.goto("/");
+    expect(await theme(page)).toBe("dark");
+  });
+
+  test("a chosen theme overrides the system, persists, and System clears it", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await openWorkspace(page);
+    expect(await theme(page)).toBe("light");
+
+    const pick = async (option: string) => {
+      await page.getByRole("button", { name: "Choose the theme" }).click();
+      await page.getByRole("menuitemradio", { name: option }).click();
+    };
+
+    await pick("Dark");
+    expect(await theme(page)).toBe("dark");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Social listening" })).toBeVisible();
+    expect(await theme(page)).toBe("dark");
+
+    await pick("System");
+    expect(await theme(page)).toBe("light");
   });
 });
 

@@ -49,13 +49,13 @@ export function InfluencerTable() {
             <tr>
               <th
                 scope="col"
-                className="border-b border-border-strong px-2 py-1 text-left text-small font-semibold text-text-muted"
+                className="border-b border-border-strong px-2 py-1 text-left text-small font-medium text-text-muted"
               >
                 Influencer
               </th>
               <th
                 scope="col"
-                className="border-b border-border-strong px-2 py-1 text-right text-small font-semibold text-text-muted"
+                className="border-b border-border-strong px-2 py-1 text-right text-small font-medium text-text-muted"
               >
                 Followers
               </th>
@@ -75,7 +75,7 @@ export function InfluencerTable() {
                   <span className="flex min-w-0 items-center gap-1">
                     <span
                       aria-hidden="true"
-                      className="grid h-3.5 w-3.5 flex-none place-items-center rounded-full border border-border text-small font-semibold text-text-muted"
+                      className="grid h-3.5 w-3.5 flex-none place-items-center rounded-full border border-border text-small font-medium text-text-muted"
                     >
                       {initials(influencer.name)}
                     </span>
@@ -84,7 +84,7 @@ export function InfluencerTable() {
                         href={influencer.profile_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="truncate text-body font-semibold text-text"
+                        className="truncate text-body font-medium text-text"
                       >
                         {influencer.handle}
                       </a>
@@ -118,7 +118,7 @@ export function InfluencerTable() {
                     </span>
                   </span>
                 </td>
-                <td className="border-b border-border px-2 py-1 text-right text-body font-semibold text-text tabular-nums">
+                <td className="border-b border-border px-2 py-1 text-right text-body font-medium text-text tabular-nums">
                   {compactNumber(influencer.followers)}
                 </td>
               </tr>

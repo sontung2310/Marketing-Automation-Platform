@@ -24,7 +24,9 @@
   --color-bg: #fff;
   --color-bg-subtle: #f7f7f8;
   --color-text: #1a1a1a;
-  --color-text-muted: #6b7280;
+  /* The DS grey #6b7280 is 4.11:1 on the selected-row tint, below AA; this is
+   * the smallest darkening that clears 4.5:1 on both tints. */
+  --color-text-muted: #656b78;
   --color-border: #e5e7eb;
   --color-surface-ink: #16171a;
   --color-text-inverse: #f2f3f5;
@@ -51,25 +53,27 @@
   --color-text-favorable: #0d6b4f;
   --color-text-attention: #92590b;
   --color-text-unfavorable: #b91c1c;
+  /* Brand red as TYPE (ordinals, brand badges, checks): 4.75:1 or better on
+   * every light surface. Fills keep --color-primary-hover. */
+  --color-text-accent: #c42e22;
 
-  /* Type: Inter at exactly five sizes. */
+  /* Type: Geist at exactly five sizes, medium weight for emphasis. */
   --font-*: initial;
-  --font-sans: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Geist", -apple-system, "Segoe UI", Roboto, sans-serif;
   --text-*: initial;
-  --text-h1: 32px;
-  --text-h1--line-height: 1.2;
-  --text-h1--font-weight: 700;
-  --text-h2: 24px;
+  --text-h2: 16px;
   --text-h2--line-height: 1.2;
-  --text-h2--font-weight: 700;
-  --text-h3: 18px;
-  --text-h3--line-height: 1.2;
-  --text-h3--font-weight: 600;
-  --text-body: 15px;
+  --text-h2--font-weight: 500;
+  --text-h3: 14px;
+  --text-h3--line-height: 1.35;
+  --text-h3--font-weight: 500;
+  --text-body: 13px;
   --text-body--line-height: 1.5;
-  --text-small: 13px;
+  --text-small: 12px;
   --text-small--line-height: 1.5;
-  --tracking-label: 0.06em;
+  --text-micro: 11px;
+  --text-micro--line-height: 18px;
+  --tracking-label: 0.05em;
 
   /* Spacing: one 8px unit. p-1 = 8px, p-2 = 16px, p-3 = 24px ... */
   --spacing: 8px;
@@ -90,6 +94,35 @@
 
   /* Motion: color crossfades only. */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/*
+ * Dark theme (ui-spec §6): the same tokens, remapped. The values come from the
+ * Marketing Workspace canvas's dark board, except where it misses WCAG AA:
+ * status and accent type are lightened, and the TopBar's muted text is a tint
+ * that clears 4.5:1 on the red band. index.html sets data-theme before first
+ * paint; hooks/useTheme.ts owns it afterwards.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-primary-light: #3b1d1a;
+  --color-secondary-light: #12302a;
+  --color-bg: #1b1c20;
+  --color-bg-subtle: #24252a;
+  --color-surface-page: #111214;
+  --color-text: #ececee;
+  --color-text-muted: #9aa0a8;
+  --color-border: #2c2d33;
+  --color-border-strong: #3a3c42;
+  --color-surface-ink: #c42e22;
+  --color-text-inverse: #fff;
+  --color-text-inverse-muted: #ffe4e1;
+  --color-text-favorable: #4ade80;
+  --color-text-attention: #f5b04c;
+  --color-text-unfavorable: #f87171;
+  --color-text-accent: #ff8a7f;
+  --shadow-hover: 0 4px 16px rgb(0 0 0 / 40%);
+  --shadow-overlay: 0 12px 32px rgb(0 0 0 / 50%);
 }
 
 /* Named layouts. Arbitrary values are banned in class names, so layouts live here. */

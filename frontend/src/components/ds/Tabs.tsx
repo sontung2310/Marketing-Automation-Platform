@@ -30,7 +30,7 @@ export function Tabs<T extends string>({ label, options, value, onChange }: Tabs
             aria-selected={selected}
             onClick={() => onChange(option.value)}
             className={cn(
-              "cursor-pointer border-b-2 py-1 text-small font-semibold tracking-label whitespace-nowrap uppercase",
+              "cursor-pointer border-b-2 py-1 text-small font-medium tracking-label whitespace-nowrap uppercase",
               selected ? "border-primary text-text" : "border-transparent text-text-muted",
             )}
           >

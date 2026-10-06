@@ -11,15 +11,19 @@ interface MenuProps {
   /** What the trigger button shows. */
   trigger: ReactNode;
   role?: MenuRole;
-  /** "up" opens above the trigger, for the docked composer. */
-  placement?: "up" | "down";
+  /** "up" opens above the trigger, for the docked composer; "down-end" aligns
+   * the overlay's right edge with the trigger's, for controls near the page edge. */
+  placement?: Placement;
   triggerClassName?: string;
   children: (close: () => void) => ReactNode;
 }
 
-const PLACEMENT: Record<"up" | "down", string> = {
+type Placement = "up" | "down" | "down-end";
+
+const PLACEMENT: Record<Placement, string> = {
   up: "bottom-6 left-0",
   down: "top-5 left-0",
+  "down-end": "top-5 right-0",
 };
 
 /** Trigger plus a single dismissable overlay. The workspace's only popup pattern. */
@@ -45,7 +49,7 @@ export function Menu({
         aria-label={label}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          "inline-flex h-4 cursor-pointer items-center gap-1 rounded-sm px-1 text-small font-semibold whitespace-nowrap",
+          "inline-flex h-4 cursor-pointer items-center gap-1 rounded-sm px-1 text-small font-medium whitespace-nowrap",
           triggerClassName ?? "border border-border bg-surface-card text-text",
         )}
       >
@@ -100,10 +104,10 @@ export function MenuItem({
         checked ? "bg-surface-page" : "bg-surface-card",
       )}
     >
-      <span className="flex w-full items-center gap-1 text-body font-semibold text-text">
+      <span className="flex w-full items-center gap-1 text-body font-medium text-text">
         <span className="min-w-0 truncate">{children}</span>
         {checked ? (
-          <span className="ml-auto text-primary">
+          <span className="text-accent ml-auto">
             <Icon name="check" size={16} />
           </span>
         ) : null}

@@ -59,7 +59,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
   return (
     <div className="flex flex-col gap-1 border-t border-border bg-surface-page px-2 py-1">
       <div className="flex items-center gap-1">
-        <span className="flex-none text-small font-semibold text-text">{current.action_type}</span>
+        <span className="flex-none text-small font-medium text-text">{current.action_type}</span>
         <span className="text-small text-text-muted">{current.summary}</span>
         {pending ? <Spinner label="Approving…" /> : null}
         <Button

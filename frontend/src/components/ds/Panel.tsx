@@ -24,7 +24,7 @@ export function Panel({ title, meta, className, children }: PanelProps) {
       <div className="flex items-center gap-1 border-b border-border-strong px-2 py-1">
         <h2
           id={headingId}
-          className="text-small font-semibold tracking-label text-text-muted uppercase"
+          className="text-small font-medium tracking-label text-text-muted uppercase"
         >
           {title}
         </h2>

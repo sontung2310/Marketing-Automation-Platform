@@ -58,7 +58,7 @@ export function ActivityCard({ activity, onAction, highlighted }: ActivityCardPr
         <p className="text-body text-text">
           {money(activity.price.before, activity.price.currency)} →{" "}
           <b>{money(activity.price.after, activity.price.currency)}</b>{" "}
-          <span className="font-semibold text-text-unfavorable">{signedPercent(delta)}</span>
+          <span className="font-medium text-text-unfavorable">{signedPercent(delta)}</span>
         </p>
       ) : null}
 

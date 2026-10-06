@@ -6,7 +6,7 @@ export type BadgeTone = "neutral" | "brand" | "favorable" | "unfavorable" | "att
 
 const TONE: Record<BadgeTone, string> = {
   neutral: "bg-surface-page text-text-muted",
-  brand: "bg-primary-light text-primary-hover",
+  brand: "bg-primary-light text-accent",
   favorable: "bg-secondary-light text-text-favorable",
   unfavorable: "bg-primary-light text-text-unfavorable",
   attention: "bg-surface-page text-text-attention",
@@ -24,7 +24,7 @@ export function Badge({ tone = "neutral", title, children }: BadgeProps) {
     <span
       title={title}
       className={cn(
-        "inline-flex flex-none items-center rounded-sm px-1 text-small font-semibold tracking-label uppercase",
+        "inline-flex flex-none items-center rounded-sm px-1 text-small font-medium tracking-label uppercase",
         TONE[tone],
       )}
     >

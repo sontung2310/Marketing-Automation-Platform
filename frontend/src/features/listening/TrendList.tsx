@@ -61,7 +61,7 @@ export function TrendList() {
         >
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 items-center gap-1">
-              <span className="truncate text-body font-semibold text-text">{trend.topic}</span>
+              <span className="truncate text-body font-medium text-text">{trend.topic}</span>
               {trend.is_mock ? <Badge title="Demo data, not a measured trend">MOCK</Badge> : null}
             </span>
             <span className="flex items-center gap-1 text-small text-text-muted">
@@ -84,7 +84,7 @@ export function TrendList() {
           </span>
           <span
             className={cn(
-              "ml-auto flex-none text-h3 font-semibold",
+              "ml-auto flex-none text-h3 font-medium",
               DIRECTION_COLOR[trend.direction],
             )}
           >

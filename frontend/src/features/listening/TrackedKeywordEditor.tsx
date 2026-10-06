@@ -55,13 +55,13 @@ export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
         {current.map((keyword) => (
           <li
             key={keyword}
-            className="inline-flex h-3.5 items-center gap-0.5 rounded-sm bg-primary-light pr-0.5 pl-1 text-small font-semibold text-primary-hover"
+            className="text-accent inline-flex h-3.5 items-center gap-0.5 rounded-sm bg-primary-light pr-0.5 pl-1 text-small font-medium"
           >
             {keyword}
             <Button
               variant="icon"
               aria-label={`Stop tracking ${keyword}`}
-              className="h-2.5 w-2.5 text-primary-hover"
+              className="text-accent h-2.5 w-2.5"
               disabled={current.length === 1 || save.isPending}
               onClick={() => replace(current.filter((value) => value !== keyword))}
             >
