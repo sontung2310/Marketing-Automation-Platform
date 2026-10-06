@@ -200,6 +200,23 @@ _(7.1–7.5 implemented and evidenced in [#30](https://github.com/sontung2310/Ma
 | 7-E | **Given** a `503` response in any region, **then** its message appears verbatim with **Retry** while other regions remain usable; at 900px the `Feed | Workspace | Insights` switcher appears and the body never scrolls horizontally. | Playwright with route intercepts and viewport tests |
 | 7-F | A reviewer who did not build the UI signs off the anti-slop checklist in ui-spec §8, including keyboard focus, live-region announcements and token-only styling. | PR checklist |
 
+### Step 7 follow-on: workspace refresh and dark mode
+
+The owner redesigned the workspace on the Marketing Workspace design canvas after Step 7 merged and added a dark board. The follow-on is brought forward ahead of Step 8 and is UI-only. OpenSpec change: `workspace-refresh`.
+
+- [ ] 7.6 Tokens: Geist, the five-size 11–16px scale, dark-theme token overrides and a `Light | Dark | System` TopBar menu that follows the OS by default and persists an override.
+- [ ] 7.7 Panel headers with icon and pill; keyword list rows; segmented platform filter with counts.
+- [ ] 7.8 425px right rail; Execution `Working` status; Strategy recommendation cards with evidence signal lines and **Open plan**; 520px sheet.
+- [ ] 7.9 Compact feed cards and filters; ui-spec updated; light/dark evidence against the canvas.
+- Deferred (needs data, later Step): per-keyword 7-day mention counts and sparklines, and the recommendation sheet's dated plan steps.
+
+| # | Scenario | Verify |
+|---|---|---|
+| 7-G | **Given** the browser prefers dark and no theme was chosen, **when** the page loads at 1440×900, **then** it renders dark from first paint, the theme menu shows `System`, and the axe scan reports no violation. **Given** a light-preferring browser, **when** the marketer picks `Dark` and reloads, **then** it stays dark, and `System` returns it to light. | Playwright + `@axe-core/playwright` |
+| 7-H | **Given** typed fixtures at 1440×900, **then** the right region is 425px, every panel header shows its icon, title and pill, and no `src/**/*.tsx` holds a literal colour. | Playwright; `tokens.test.ts` |
+| 7-I | **Given** a recommendation citing a trend and an activity, **then** its card shows the zero-padded ordinal, verbatim priority, title, a `Trend` and a `Competitor` line and **Open plan**; **Open plan** → **Do this** fills the composer from a 520px sheet without creating a run. | Vitest + Playwright |
+| 7-J | **Given** five seeded keywords, **when** the marketer tabs to a row's remove control and activates it, **then** the control is visible while focused and the saved list drops that term; the platform filter shows a count per option. | Vitest |
+
 ## Step 8 — End-to-end demo and hardening
 
 **Goal:** the client demo runs reliably.
