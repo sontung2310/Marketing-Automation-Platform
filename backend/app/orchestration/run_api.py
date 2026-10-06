@@ -13,7 +13,7 @@ from app.agents.strategy.run import run_strategy
 from app.core.errors import NotFoundError
 from app.intelligence.models import AgentName, Run, RunStatus
 from app.orchestration.references import Unresolved, open_session, resolve_reference
-from app.orchestration.router import Classifier, RouterAnswer, decide
+from app.orchestration.router import Classifier, RouterAnswer, route_message
 from app.orchestration.routing import Trigger
 from app.orchestration.run_service import AgentFn, ChatRoute, RunPlan, RunService
 
@@ -99,22 +99,18 @@ async def start(
             company_id, trigger=trigger, message=message, session_id=session_id
         )
         return plan, accepted(plan.run)
-    decision = await classifier(message, hint)
-    outcome = decide(decision, hint)
+    # Past the cap, refuse before the paid router call; a bad session fails before it too.
+    await asyncio.gather(
+        service.check_daily_cap(),
+        open_session(service.repositories, company_id, session_id, save=False),
+    )
+
+    async def lookup(reference: str) -> dict[str, object] | Unresolved:
+        return await resolve_reference(service.repositories, reference, session_id)
+
+    _, outcome, context = await route_message(classifier, lookup, message, hint)
     if isinstance(outcome, RouterAnswer):
         return None, await _answer(service, company_id, session_id, outcome)
-    context = None
-    for reference in decision.references[:1]:
-        resolved = await resolve_reference(service.repositories, reference, session_id)
-        if isinstance(resolved, Unresolved):
-            unresolved = RouterAnswer(
-                status="NEEDS_CLARIFICATION",
-                message=resolved.message,
-                clarification_options=[],
-                route=outcome,
-            )
-            return None, await _answer(service, company_id, session_id, unresolved)
-        context = resolved
     plan = await service.prepare(
         company_id, message=message, session_id=session_id, chat=ChatRoute(outcome, context)
     )
@@ -177,6 +173,8 @@ async def session_view(service: RunService, session_id: str, company_id: str) ->
     if session is None or session.company_id != company_id:
         raise NotFoundError(f"{session_id} was not found", {"session_id": session_id})
     runs = await service.repositories.runs.list_for_session(session_id)
+    # A RUNNING run goes through load(), which reports a lost worker as interrupted.
+    runs = [await service.load(r.id) if r.status is RunStatus.RUNNING else r for r in runs]
     return SessionView(id=session_id, runs=[run_view(run) for run in runs])
 
 
@@ -191,7 +189,7 @@ async def run_events(
 ) -> AsyncGenerator[dict[str, str | int]]:
     """The run's events after `Last-Event-ID` (their `seq`), live until the run ends."""
     await service.load(run_id)  # 404 before the stream opens
-    sent = int(last_event_id) if last_event_id and last_event_id.isdigit() else 0
+    sent = int(last_event_id) if last_event_id and last_event_id.isdecimal() else 0
     yield {"retry": STREAM_RETRY_MS, "comment": "run stream"}
     deadline = monotonic() + max_seconds
     while monotonic() < deadline and not await is_disconnected():
@@ -204,6 +202,8 @@ async def run_events(
             yield {"event": str(event["type"]), "id": str(seq), "data": _json(event)}
             if event["type"] in TERMINAL_EVENTS:
                 return
+        if run.status is not RunStatus.RUNNING:
+            return  # resumed past its last event: nothing more will come
         await asyncio.sleep(poll_seconds)
 
 

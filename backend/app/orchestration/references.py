@@ -99,7 +99,12 @@ async def _recommendation(
 ) -> dict[str, object] | Unresolved:
     missing = Unresolved(f"No recommendation #{value} in this session")
     latest = next(
-        (r for r in reversed(runs) if r.agent is AgentName.STRATEGY and r.persisted), None
+        (
+            r
+            for r in reversed(runs)
+            if r.agent is AgentName.STRATEGY and r.persisted.get("recommendation_ids")
+        ),
+        None,
     )
     if latest is None or not value.isdigit():
         return missing

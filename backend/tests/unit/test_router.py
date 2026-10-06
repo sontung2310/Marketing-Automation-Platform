@@ -3,14 +3,19 @@
 import pytest
 
 from app.agents.common.intents import Intent
+from app.core.config import get_settings
+from app.core.errors import UpstreamUnavailableError
 from app.intelligence.models import AgentName, DeliverableType
+from app.orchestration.references import Unresolved
 from app.orchestration.router import (
     FALLBACK_OPTIONS,
     OUT_OF_SCOPE_MESSAGE,
     RouteDecision,
     RouterAnswer,
+    classify,
     decide,
     instructions,
+    route_message,
 )
 from app.orchestration.routing import Route, RouteMethod
 
@@ -87,3 +92,40 @@ def test_a_hint_keeps_its_agent_and_skips_clarification() -> None:
 def test_instructions_name_the_hint_only_when_given() -> None:
     assert "{hint}" not in instructions(None)
     assert "chose the STRATEGY agent" in instructions(AgentName.STRATEGY)
+
+
+async def _no_reference(reference: str) -> dict[str, object] | Unresolved:
+    return Unresolved(f"No recommendation #{reference.partition(':')[2]} in this session")
+
+
+@pytest.mark.parametrize("confidence", [0.31, 0.92])
+async def test_an_unresolvable_reference_answers_even_when_the_model_clarifies(
+    confidence: float,
+) -> None:
+    # The real router answers a bare "#7" with CLARIFY, at any confidence (5-C, RT-REF).
+    async def classifier(message: str, hint: AgentName | None) -> RouteDecision:
+        return decision("CLARIFY", confidence=confidence, references=["recommendation:7"])
+
+    _, outcome, _ = await route_message(classifier, _no_reference, "#7", None)
+
+    assert isinstance(outcome, RouterAnswer)
+    assert (outcome.status, outcome.message) == (
+        "NEEDS_CLARIFICATION",
+        "No recommendation #7 in this session",
+    )
+
+
+async def test_out_of_scope_never_resolves_references() -> None:
+    async def classifier(message: str, hint: AgentName | None) -> RouteDecision:
+        return decision("OUT_OF_SCOPE", references=["recommendation:7"])
+
+    _, outcome, _ = await route_message(classifier, _no_reference, "fake reviews for #7", None)
+
+    assert isinstance(outcome, RouterAnswer) and outcome.status == "OUT_OF_SCOPE"
+
+
+async def test_a_blank_router_model_fails_loudly(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(get_settings(), "openai_model_router", "")
+
+    with pytest.raises(UpstreamUnavailableError, match="OPENAI_MODEL_ROUTER"):
+        await classify("hello", None)

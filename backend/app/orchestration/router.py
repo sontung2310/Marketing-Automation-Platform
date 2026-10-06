@@ -5,6 +5,7 @@ into a run route or a direct answer (clarify, out of scope) with no model involv
 the rules are testable on their own.
 """
 
+import logging
 from collections.abc import Awaitable, Callable
 from functools import cache
 from pathlib import Path
@@ -17,10 +18,12 @@ from app.agents.common.errors import run_error
 from app.agents.common.intents import Intent
 from app.agents.common.openai import model_provider
 from app.core.config import get_settings
-from app.core.errors import DomainError
+from app.core.errors import DomainError, UpstreamUnavailableError
 from app.intelligence.models import AgentName, DeliverableType
+from app.orchestration.references import Unresolved
 from app.orchestration.routing import Route, RouteMethod
 
+logger = logging.getLogger(__name__)
 INSTRUCTIONS_PATH = Path(__file__).with_name("router_instructions.md")
 CLARIFY_BELOW = 0.6
 OUT_OF_SCOPE_MESSAGE = (
@@ -90,17 +93,20 @@ HINT_DEFAULT_INTENT: dict[AgentName, Intent] = {
 Classifier = Callable[[str, AgentName | None], Awaitable[RouteDecision]]
 
 
-def decide(decision: RouteDecision, hint: AgentName | None) -> Route | RouterAnswer:
-    """The run route for a decision, or the direct answer when no agent should run."""
-    method = RouteMethod.EXPLICIT if hint else RouteMethod.CLASSIFIER
-    confidence = min(max(decision.confidence, 0.0), 1.0)
-    answered = Route(
+def _answer_route(decision: RouteDecision, hint: AgentName | None) -> Route:
+    return Route(
         agent=hint or AgentName.STRATEGY,  # unused for answers; Route needs an agent
         intent=Intent.CHAT,
-        method=method,
+        method=RouteMethod.EXPLICIT if hint else RouteMethod.CLASSIFIER,
         reason=decision.reason,
-        confidence=confidence,
+        confidence=min(max(decision.confidence, 0.0), 1.0),
     )
+
+
+def decide(decision: RouteDecision, hint: AgentName | None) -> Route | RouterAnswer:
+    """The run route for a decision, or the direct answer when no agent should run."""
+    answered = _answer_route(decision, hint)
+    method, confidence = answered.method, answered.confidence
     if decision.intent == "OUT_OF_SCOPE":  # even with a hint: never run a disallowed ask
         return RouterAnswer(
             status="OUT_OF_SCOPE",
@@ -132,6 +138,34 @@ def decide(decision: RouteDecision, hint: AgentName | None) -> Route | RouterAns
     )
 
 
+ReferenceLookup = Callable[[str], Awaitable[dict[str, object] | Unresolved]]
+
+
+async def route_message(
+    classifier: Classifier, lookup: ReferenceLookup, message: str, hint: AgentName | None
+) -> tuple[RouteDecision, Route | RouterAnswer, dict[str, object] | None]:
+    """Classify a chat message and resolve what it points at in the session.
+
+    A reference that resolves to nothing answers "No recommendation #N in this session"
+    whatever else the model decided, so the marketer learns why nothing ran.
+    """
+    decision = await classifier(message, hint)
+    context = None
+    if decision.intent != "OUT_OF_SCOPE":
+        for reference in decision.references[:1]:
+            resolved = await lookup(reference)
+            if isinstance(resolved, Unresolved):
+                unresolved = RouterAnswer(
+                    status="NEEDS_CLARIFICATION",
+                    message=resolved.message,
+                    clarification_options=[],
+                    route=_answer_route(decision, hint),
+                )
+                return decision, unresolved, None
+            context = resolved
+    return decision, decide(decision, hint), context
+
+
 @cache
 def _instructions_template() -> str:
     return INSTRUCTIONS_PATH.read_text(encoding="utf-8")
@@ -149,10 +183,13 @@ def instructions(hint: AgentName | None) -> str:
 
 async def classify(message: str, hint: AgentName | None) -> RouteDecision:
     """Ask the router model (OPENAI_MODEL_ROUTER) for a structured decision."""
+    model = get_settings().openai_model_router
+    if not model:  # a blank value must not fall back to the SDK's larger default model
+        raise UpstreamUnavailableError("OPENAI_MODEL_ROUTER is not configured")
     agent = Agent(
         name="Request Router",
         instructions=instructions(hint),
-        model=get_settings().openai_model_router,
+        model=model,
         output_type=RouteDecision,
     )
     try:
@@ -165,5 +202,6 @@ async def classify(message: str, hint: AgentName | None) -> RouteDecision:
     except DomainError:
         raise
     except Exception as exc:
+        logger.exception("The router failed")
         raise run_error(exc) from exc
     return result.final_output_as(RouteDecision)

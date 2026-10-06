@@ -72,7 +72,7 @@ async def activity_id(database: AsyncDatabase[Document], activity_type: str) -> 
 
 
 async def read_events(
-    client: httpx.AsyncClient, run_id: str, last_event_id: str | None = None
+    client: httpx.AsyncClient, run_id: str, last_event_id: str | bytes | None = None
 ) -> list[dict[str, Any]]:
     headers = {"Last-Event-ID": last_event_id} if last_event_id else {}
     events: list[dict[str, Any]] = []
@@ -188,6 +188,41 @@ async def test_daily_cap_refuses_runs_but_not_reads(
     assert await seeded_database["runs"].count_documents({}) == 2
     assert await seeded_database["sessions"].count_documents({}) == sessions_before
     assert (await api.get(f"/api/runs/{started[0].json()['run_id']}")).status_code == 200
+
+
+async def test_the_cap_refuses_chat_before_the_router_is_called(
+    api: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "max_runs_per_day", 0)
+
+    async def unpaid(message: str, hint: AgentName | None) -> RouteDecision:
+        raise AssertionError("the router must not be called past the cap")
+
+    api.app_under_test.dependency_overrides[get_classifier] = lambda: unpaid  # type: ignore[attr-defined]
+
+    refused = await api.post("/api/runs", json={"message": "Draft a LinkedIn post"})
+
+    assert refused.status_code == 429
+    assert refused.json()["error"]["code"] == "RATE_LIMITED"
+
+
+async def test_streams_of_finished_runs_end_and_odd_ids_replay_everything(
+    api: httpx.AsyncClient, seeded_database: AsyncDatabase[Document]
+) -> None:
+    trigger = {
+        "kind": "FEED_ACTION",
+        "ref_id": await activity_id(seeded_database, "PRICE_CHANGE"),
+        "action": "WHY_IT_MATTERS",
+    }
+    run_id = (await api.post("/api/runs", json={"trigger": trigger})).json()["run_id"]
+    everything = await read_events(api, run_id)
+
+    started = time.perf_counter()
+    assert await read_events(api, run_id, last_event_id=str(everything[-1]["seq"])) == []
+    assert time.perf_counter() - started < 5  # not the 55 s serverless cap
+
+    # Starlette decodes this byte as latin-1 "²", which isdigit() accepts but int() rejects.
+    assert await read_events(api, run_id, last_event_id=b"\xb2") == everything
 
 
 async def test_6e_real_router_clarifies_and_refuses_without_a_run(
