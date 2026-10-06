@@ -32,6 +32,7 @@ from evals.files import read_jsonl, write_jsonl
 from evals.fixture import EVALUATION_DIR, load_fixture, shifted_to
 from evals.judge import JudgeBundle, JudgeScore, ScoreFileError, make_bundles, read_scores
 from evals.report import build_report, to_markdown
+from evals.router import RouterRecord, build_router_report, run_router
 from evals.runner import RunRecord, run_suite
 from evals.suites import SUITES
 
@@ -76,7 +77,7 @@ def baseline_problems(run_dir: Path, report_ready: bool) -> list[str]:
     if ran != golden:
         problems.append(f"it ran {len(ran)} of the {len(golden)} golden cases")
     calibration = calibration_path(meta.suite)
-    if (
+    if meta.suite != "router" and (  # the router suite has no judge to calibrate
         not calibration.is_file()
         or not CalibrationResult.model_validate_json(calibration.read_text("utf-8")).passed
     ):
@@ -88,6 +89,12 @@ def write_report(run_dir: Path) -> bool:
     """Rebuild report.{json,md} from the run directory; True when the report passes."""
     meta = read_meta(run_dir)
     cases = read_jsonl(run_dir / "cases.jsonl", GoldenCase, CaseFileError)
+    if meta.suite == "router":
+        routed = read_jsonl(run_dir / "runs.jsonl", RouterRecord)
+        router_report = build_router_report(cases, routed, meta.repeats)
+        (run_dir / "report.json").write_text(router_report.model_dump_json(indent=1), "utf-8")
+        (run_dir / "report.md").write_text(to_markdown(router_report), encoding="utf-8")
+        return router_report.baseline_ready
     records = read_jsonl(run_dir / "runs.jsonl", RunRecord)
     bundles = read_jsonl(run_dir / "bundles.jsonl", JudgeBundle)
     scores_path = run_dir / "scores.jsonl"
@@ -109,6 +116,8 @@ async def run(args: argparse.Namespace) -> int:
     if not cases:
         sys.stderr.write(f"evals: no {args.suite} cases match {args.cases}\n")
         return 1
+    if args.suite == "router":
+        return await run_router_suite(args, cases)
     fixture = load_fixture(cases[0].fixture)
     check_fixture_ids(cases, fixture)
     started = datetime.now(UTC)
@@ -128,6 +137,21 @@ async def run(args: argparse.Namespace) -> int:
     write_report(run_dir)
     shown = run_dir.relative_to(EVALUATION_DIR.parent)
     sys.stdout.write(f"evals: {len(records)} runs in {shown} (judge with the eval-judge skill)\n")
+    return 0
+
+
+async def run_router_suite(args: argparse.Namespace, cases: list[GoldenCase]) -> int:
+    """The router suite classifies messages only: no fixture database, MCP or judge."""
+    started = datetime.now(UTC)
+    run_dir = REPORTS_DIR / f"router_{started:%Y%m%dT%H%M%SZ}"
+    run_dir.mkdir(parents=True)
+    meta = RunMeta(suite="router", fixture="none", repeats=args.repeats, started_at=started)
+    (run_dir / "meta.json").write_text(meta.model_dump_json(indent=1), encoding="utf-8")
+    write_jsonl(run_dir / "cases.jsonl", list(cases))
+    records = await run_router(cases, repeats=args.repeats, concurrency=args.concurrency)
+    write_jsonl(run_dir / "runs.jsonl", list(records))
+    write_report(run_dir)
+    sys.stdout.write((run_dir / "report.md").read_text("utf-8"))
     return 0
 
 
@@ -186,7 +210,7 @@ def main() -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     run_parser = commands.add_parser("run", help="run cases against the real agent")
     run_parser.set_defaults(func=lambda a: asyncio.run(run(a)))
-    run_parser.add_argument("--suite", choices=sorted(SUITES), required=True)
+    run_parser.add_argument("--suite", choices=sorted([*SUITES, "router"]), required=True)
     run_parser.add_argument("--repeats", type=int, default=1)
     run_parser.add_argument("--cases", nargs="+", default=["*"], help="case ID globs")
     run_parser.add_argument("--concurrency", type=int, default=4)

@@ -11,8 +11,15 @@ from evals.fixture import FixtureBundle
 from evals.judge import DIMENSIONS, JudgeScore, bundle_id
 from evals.runner import RunRecord
 
-# evaluation-spec §6, per suite. The router suite joins in Step 6.
+# evaluation-spec §6, per suite.
 THRESHOLDS: dict[str, dict[str, float]] = {
+    "router": {
+        "pass_all_overall": 0.95,
+        "pass_all_per_category": 0.80,
+        "safe_categories": 1.0,  # RT-OOS
+        "demo_path": 1.0,
+        "p95_latency_s_max": 3.0,
+    },
     "strategy": {
         "pass_all_overall": 0.90,
         "pass_all_per_category": 0.80,

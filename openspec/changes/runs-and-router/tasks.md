@@ -17,7 +17,7 @@
 
 ## 3. 6.5 Router golden dataset
 
-- [ ] 3.1 Add the `router` suite to the eval harness (deterministic checks, report, baseline gating); verify unit tests.
+- [x] 3.1 Add the `router` suite to the eval harness (deterministic checks, report, baseline gating); verify unit tests.
 - [ ] 3.2 Write `evaluation/golden/router.jsonl` (≥ 36 cases, every §3.1 category at its minimum, `demo-path` tags). A fresh reviewer subagent checks it for over-fitting; verify `parse_cases` loads it.
 - [ ] 3.3 Run `python -m evals.cli run --suite router --repeats 1` and commit `baseline_router.json` and `.md`; verify every §6 router threshold holds (6-F).
 
