@@ -49,7 +49,7 @@ export function DeliverableCard({
       <div className="flex items-center gap-2 p-2">
         <span
           aria-hidden="true"
-          className="grid h-5 w-5 flex-none place-items-center rounded-sm border border-border bg-surface-page text-text-muted"
+          className="grid h-5 w-5 flex-none place-items-center rounded-sm border border-border bg-surface-muted text-text-muted"
         >
           <Icon name="document" size={18} />
         </span>
@@ -100,7 +100,7 @@ export function DeliverableCard({
       ) : null}
 
       {qualityCheck ? (
-        <div className="flex flex-wrap items-center gap-1 border-t border-border bg-surface-page px-2 py-1">
+        <div className="flex flex-wrap items-center gap-1 border-t border-border bg-surface-muted px-2 py-1">
           {(Object.keys(QUALITY_LABEL) as (keyof typeof QUALITY_LABEL)[]).map((key) => (
             <span key={key} className="text-small">
               <span className="text-text-muted">{QUALITY_LABEL[key]} </span>

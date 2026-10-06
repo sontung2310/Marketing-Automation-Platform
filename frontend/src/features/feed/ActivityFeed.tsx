@@ -89,7 +89,7 @@ export function ActivityFeed() {
       {paused ? (
         <p
           role="status"
-          className="border-b border-border bg-surface-page px-2 py-1 text-small text-text-attention"
+          className="border-b border-border bg-surface-muted px-2 py-1 text-small text-text-attention"
         >
           Live updates paused — reconnecting…
         </p>

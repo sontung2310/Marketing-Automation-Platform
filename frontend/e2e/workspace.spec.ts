@@ -62,6 +62,9 @@ test.describe("7-A the workspace loads at the design target", () => {
       page.getByText("Pick an item from the feed, or ask Execution for a deliverable."),
     ).toBeVisible();
 
+    const rail = await page.getByRole("region", { name: "Strategy recommendations" }).boundingBox();
+    expect(rail?.width).toBe(425);
+
     // Every panel header carries its icon tile, title and count or status pill.
     for (const [region, pill] of [
       ["Social listening", /5 keywords · \d+ trends/],
@@ -199,6 +202,12 @@ test.describe("7-C an Execution run streams into the transcript", () => {
     const started = Date.now();
     await blogCard.getByRole("button", { name: "Create a similar blog" }).click();
 
+    // The panel header says the agent is working while the run streams.
+    const status = page
+      .getByRole("region", { name: "Execution agent" })
+      .getByText("Working", { exact: true });
+    await expect(status).toBeVisible();
+
     // Scope to this run's own turn: the session restore brings an older,
     // already-finished turn into the same transcript.
     const turn = transcript.getByRole("article", {
@@ -225,6 +234,7 @@ test.describe("7-C an Execution run streams into the transcript", () => {
     expect(longestGap).toBeLessThan(AGENT_UPDATE_BUDGET_MS);
 
     await expect(turn).toBeVisible();
+    await expect(status).toBeHidden();
 
     const thinking = turn.getByRole("button", { name: /Thought for \d+s, used \d+ tools/ });
     await expect(thinking).toBeVisible();
@@ -412,7 +422,7 @@ test.describe("7-D the evidence loop", () => {
 
     const sheet = page.getByRole("dialog", { name: "Recommendation 1" });
     await expect(sheet).toBeVisible();
-    await expect(sheet).toHaveCSS("width", "440px");
+    await expect(sheet).toHaveCSS("width", "520px");
     await expect(sheet.getByText("Hold price, publish the reasoning")).toBeVisible();
     await expect(
       sheet.getByText(/Brightlane raised its executive visibility package/),
@@ -506,7 +516,9 @@ test.describe("7-E degraded regions and narrow viewports", () => {
 
   test("long clarification options wrap inside a narrow transcript", async ({ page }) => {
     await openWorkspace(page);
-    await page.setViewportSize({ width: 760, height: 800 });
+    // Narrow enough that the ~110-character option cannot fit one line at the
+    // 12px type size, whichever font has loaded.
+    await page.setViewportSize({ width: 480, height: 800 });
     await page
       .getByRole("tablist", { name: "Workspace region" })
       .getByRole("tab", { name: "Workspace" })
@@ -541,7 +553,7 @@ test.describe("7-E degraded regions and narrow viewports", () => {
     await switcher.getByRole("tab", { name: "Feed" }).click();
     await expect(page.getByRole("region", { name: "Competitor activity" })).toBeVisible();
 
-    for (const width of [1440, 1280, 900, 760]) {
+    for (const width of [1440, 1300, 1280, 900, 760]) {
       await page.setViewportSize({ width, height: 800 });
       await page.waitForTimeout(150);
       // The body is clipped by design, so also check the content itself fits:

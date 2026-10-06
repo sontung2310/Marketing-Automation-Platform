@@ -67,7 +67,7 @@ export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
           variant="quiet"
           aria-expanded={adding}
           onClick={() => setAdding((value) => !value)}
-          className="h-3 gap-0.5 rounded-sm px-1 text-small text-text hover:bg-bg-subtle"
+          className="h-3 gap-0.5 rounded-sm px-1 text-small text-text hover:bg-surface-muted"
         >
           <Icon name="plus" size={12} />
           Add keyword
@@ -95,7 +95,7 @@ export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
         {current.map((keyword) => (
           <li
             key={keyword}
-            className="group grid h-4.5 layout-keyword-row items-center gap-1 border-t border-border bg-surface-card pr-1 pl-1.5 transition-colors first:border-t-0 hover:bg-bg-subtle"
+            className="group grid h-4.5 layout-keyword-row items-center gap-1 border-t border-border bg-surface-card pr-1 pl-1.5 transition-colors first:border-t-0 hover:bg-surface-muted"
           >
             <span
               aria-hidden="true"

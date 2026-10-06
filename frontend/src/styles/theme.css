@@ -38,6 +38,9 @@
 
   /* Semantic aliases: prefer these in components. */
   --color-surface-page: var(--color-bg-subtle);
+  /* Quiet fills on a card: badges, bubbles, hovers. Not the page ground,
+   * which the dark theme takes darker than the cards. */
+  --color-surface-muted: var(--color-bg-subtle);
   --color-surface-card: var(--color-bg);
   --color-surface-selected: var(--color-primary-light);
   --color-favorable: var(--color-secondary);
@@ -139,17 +142,12 @@
   grid-template-columns: minmax(0, 1fr);
 
   @variant tablet {
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(0, 1fr) 425px;
   }
 
   @variant desktop {
-    grid-template-columns: 320px minmax(560px, 1fr) 360px;
+    grid-template-columns: 320px minmax(0, 1fr) 425px;
   }
-}
-
-/* Ordinal, decision, status: the compact recommendation row (ui-spec §3). */
-@utility layout-recommendation-row {
-  grid-template-columns: 16px 1fr auto;
 }
 
 /* Tag glyph, term, remove: one tracked-keyword row (ui-spec §3). */
@@ -157,9 +155,14 @@
   grid-template-columns: 20px 1fr 20px;
 }
 
-/* The recommendation sheet overlays the right rail at a fixed 440px (ui-spec §3). */
+/* Kind tile, kind label, note: one signal line on a recommendation card. */
+@utility layout-signal-row {
+  grid-template-columns: 18px 72px minmax(0, 1fr);
+}
+
+/* The recommendation sheet overlays the right rail at a fixed 520px (ui-spec §3). */
 @utility sheet-width {
-  width: 440px;
+  width: 520px;
 }
 
 /* The composer grows with its content from two to six body lines, then scrolls

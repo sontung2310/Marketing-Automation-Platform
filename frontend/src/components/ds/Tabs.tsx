@@ -31,7 +31,7 @@ const STYLE: Record<
   },
   segmented: {
     wrapper: "border-b border-border px-2 py-1",
-    list: "grid auto-cols-fr grid-flow-col gap-px rounded-md border border-border bg-bg-subtle p-px",
+    list: "grid auto-cols-fr grid-flow-col gap-px rounded-md border border-border bg-surface-muted p-px",
     tab: "inline-flex h-3.5 items-center justify-center gap-0.5 rounded-sm px-0.5 text-small font-medium whitespace-nowrap transition-colors",
     on: "bg-surface-card text-text shadow-xs",
     off: "text-text-muted hover:text-text",

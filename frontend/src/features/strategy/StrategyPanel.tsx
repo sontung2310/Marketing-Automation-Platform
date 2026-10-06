@@ -1,28 +1,26 @@
 import { useMemo, useState } from "react";
 
-import { ApiError, type Recommendation } from "../../api";
+import { ApiError } from "../../api";
+import { Badge } from "../../components/ds/Badge";
+import { Button } from "../../components/ds/Button";
 import { EmptyState } from "../../components/ds/EmptyState";
 import { ErrorState } from "../../components/ds/ErrorState";
 import { Panel, PanelCount } from "../../components/ds/Panel";
+import { Icon } from "../../components/ds/Icon";
 import { SkeletonList } from "../../components/ds/Skeleton";
 import { Spinner } from "../../components/ds/Spinner";
 import { useRecommendations } from "../../hooks/queries";
 import { cn } from "../../lib/cn";
 import { useWorkspace } from "../workspace/workspaceContext";
 
+import { EVIDENCE_KIND } from "./evidenceKind";
+import { PRIORITY_TONE } from "./priority";
 import { RecommendationSheet } from "./RecommendationSheet";
 
-const STATUS_COLOR: Record<Recommendation["status"], string> = {
-  OPEN: "text-text-favorable",
-  IN_PROGRESS: "text-text-attention",
-  DONE: "text-text-muted",
-};
+const MAX_SIGNALS = 3;
 
-const PRIORITY_CLASS: Record<Recommendation["priority"], string> = {
-  HIGH: "bg-primary-light text-accent",
-  MEDIUM: "bg-surface-page text-text-muted",
-  LOW: "bg-surface-page text-text-muted",
-};
+/** Two digits, as the canvas numbers its picks: 1 → "01". */
+const padOrdinal = (ordinal: number) => String(ordinal).padStart(2, "0");
 
 export function StrategyPanel() {
   const recommendations = useRecommendations();
@@ -30,16 +28,6 @@ export function StrategyPanel() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   const items = useMemo(() => recommendations.data?.items ?? [], [recommendations.data]);
-  const grouped = useMemo(() => {
-    const byRun = new Map<string, Recommendation[]>();
-    for (const item of items) {
-      const group = byRun.get(item.run_id);
-      if (group) group.push(item);
-      else byRun.set(item.run_id, [item]);
-    }
-    return [...byRun.values()];
-  }, [items]);
-
   const open = items.find((item) => item.id === openId) ?? null;
   // The latest Strategy run stays tracked after it ends, so a failure keeps its
   // message and Retry here instead of vanishing (ui-spec §8).
@@ -57,7 +45,9 @@ export function StrategyPanel() {
         activeRun ? (
           <Spinner label={latestStep} />
         ) : (
-          <PanelCount>{items.filter((item) => item.status === "OPEN").length} open</PanelCount>
+          <PanelCount>
+            {items.length} {items.length === 1 ? "pick" : "picks"}
+          </PanelCount>
         )
       }
     >
@@ -86,55 +76,62 @@ export function StrategyPanel() {
         <EmptyState message="No open recommendations — ask Strategy for a plan." />
       ) : null}
 
-      {grouped.map((group) => (
-        <div key={group[0]?.run_id}>
-          <p className="border-b border-border bg-surface-page px-2 py-1 text-small text-text-muted">
-            From: {group[0]?.run_label ?? group[0]?.run_id}
-          </p>
-          {group.map((recommendation) => (
-            <button
-              key={recommendation.id}
-              type="button"
+      {items.map((recommendation) => (
+        <article
+          key={recommendation.id}
+          aria-label={recommendation.title}
+          className={cn(
+            "flex flex-col gap-1 border-b border-border px-2 pt-1.5 pb-2 transition-colors duration-300",
+            openId === recommendation.id ? "bg-surface-selected" : "bg-surface-card",
+          )}
+        >
+          <div className="flex min-h-3.5 items-center gap-1">
+            <span className="text-accent text-small font-medium">
+              {padOrdinal(recommendation.ordinal)}
+            </span>
+            <Badge tone={PRIORITY_TONE[recommendation.priority]}>{recommendation.priority}</Badge>
+            <Button
+              aria-label={`Open plan for ${recommendation.title}`}
               aria-expanded={openId === recommendation.id}
               onClick={() => setOpenId(recommendation.id)}
-              className={cn(
-                "grid w-full cursor-pointer layout-recommendation-row gap-x-1 border-b border-border px-2 py-1 text-left transition-colors",
-                openId === recommendation.id ? "bg-surface-selected" : "bg-surface-card",
-              )}
+              className="ml-auto h-3.5 font-medium shadow-xs hover:border-text hover:bg-text hover:text-surface-card"
             >
-              <span className="text-accent row-span-2 text-small font-medium">
-                {recommendation.ordinal}
-              </span>
-              <span className="flex min-w-0 items-center gap-1">
-                <span
-                  className={cn(
-                    "flex-none rounded-sm px-0.5 text-small font-medium tracking-label",
-                    PRIORITY_CLASS[recommendation.priority],
-                  )}
+              <Icon name="list" size={12} />
+              Open plan
+              <Icon name="chevronRight" size={12} />
+            </Button>
+          </div>
+
+          <h3 className="text-body font-medium text-text">{recommendation.title}</h3>
+
+          <ul className="flex flex-col gap-0.5">
+            {recommendation.evidence.slice(0, MAX_SIGNALS).map((evidence) => {
+              const kind = EVIDENCE_KIND[evidence.kind];
+              return (
+                <li
+                  key={evidence.id}
+                  className="grid layout-signal-row items-start gap-x-0.75 text-small text-text"
                 >
-                  {recommendation.priority}
-                </span>
-                <span className="truncate text-body font-medium text-text">
-                  {recommendation.title}
-                </span>
-              </span>
-              <span
-                className={cn(
-                  "self-start text-small font-medium tracking-label",
-                  STATUS_COLOR[recommendation.status],
-                )}
-              >
-                {recommendation.status}
-              </span>
-              <span className="col-span-2 truncate text-small text-text-muted">
-                {recommendation.next_action
-                  ? `Next: ${recommendation.next_action.brief}`
-                  : "Nothing to do yet, watching"}
-              </span>
-            </button>
-          ))}
-        </div>
+                  <span
+                    aria-hidden="true"
+                    className={cn("grid h-2.25 w-2.25 place-items-center rounded-sm", kind.tile)}
+                  >
+                    <Icon name={kind.icon} size={12} />
+                  </span>
+                  <span className="text-text-muted">{kind.label}</span>
+                  <span>{evidence.note}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </article>
       ))}
+
+      {items.length > 0 ? (
+        <p className="px-2 py-1 text-small text-text-muted">
+          Moves without a pick stay in the feed below.
+        </p>
+      ) : null}
 
       {open ? <RecommendationSheet recommendation={open} onClose={() => setOpenId(null)} /> : null}
     </Panel>

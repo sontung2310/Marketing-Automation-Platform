@@ -124,7 +124,8 @@ utility goes from 440px to 520px.
 ### D6. Layout and sizes live in named utilities
 
 The right column goes from `360px` to `425px` in `layout-workspace`, at both
-desktop and tablet. `sheet-width` becomes 520px. Keyword rows use a new
+desktop and tablet. The centre becomes `minmax(0, 1fr)`, as on the canvas:
+with 560px, the desktop arrangement overflowed at 1281–1384px. `sheet-width` becomes 520px. Keyword rows use a new
 `layout-keyword-row` utility, `20px 1fr 20px`: the canvas's sparkline and
 count columns are dropped (non-goal). Spacing stays on the 8px unit, with
 half steps (4px and 12px) allowed. The canvas uses 12px card padding.

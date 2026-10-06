@@ -41,7 +41,7 @@ export function Panel({ title, icon, meta, className, children }: PanelProps) {
 /** The header's count pill, such as `5 keywords` or `3 picks`. */
 export function PanelCount({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded-full border border-border bg-surface-page px-1 text-small whitespace-nowrap text-text-muted">
+    <span className="rounded-full border border-border bg-surface-muted px-1 text-small whitespace-nowrap text-text-muted">
       {children}
     </span>
   );

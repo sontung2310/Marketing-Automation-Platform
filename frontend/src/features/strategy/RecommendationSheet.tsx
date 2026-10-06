@@ -18,7 +18,7 @@ const STATUS_TONE: Record<Recommendation["status"], BadgeTone> = {
 };
 
 /**
- * The 440px detail pop-out. "Do this" writes the brief into the Execution
+ * The 520px detail pop-out. "Do this" writes the brief into the Execution
  * composer and sends nothing (ui-spec §4).
  */
 export function RecommendationSheet({ recommendation, onClose }: RecommendationSheetProps) {
@@ -77,7 +77,7 @@ export function RecommendationSheet({ recommendation, onClose }: RecommendationS
 
       <div className="flex flex-col gap-1">
         <span className="text-small font-medium tracking-label text-text-muted uppercase">
-          Evidence
+          Based on
         </span>
         <div className="flex flex-wrap gap-1">
           {recommendation.evidence.map((evidence) => (

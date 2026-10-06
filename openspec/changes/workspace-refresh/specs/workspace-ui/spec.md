@@ -6,8 +6,9 @@ The page SHALL render, without a route change, a sticky TopBar over three
 independently scrolling regions: social listening on the left, the Execution
 transcript in the centre, and Strategy recommendations above the competitor
 activity feed on the right. At the 1440×900 design target the grid SHALL be
-`320px / minmax(560px, 1fr) / 425px` with 16px gutters and 24px page
-padding. The TopBar SHALL carry the tenant selector, the `Marketing workspace`
+`320px / minmax(0, 1fr) / 425px` with 16px gutters and 24px page
+padding, so the centre absorbs the width and the body never scrolls
+horizontally down to the 1281px desktop breakpoint. The TopBar SHALL carry the tenant selector, the `Marketing workspace`
 context label, the last-sync time, the theme menu and the Simulate menu, and
 SHALL carry no logo. Each panel header SHALL show an icon, the panel title and
 a count or status pill. Every color, spacing, radius, shadow and type value

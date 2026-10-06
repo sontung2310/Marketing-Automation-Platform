@@ -101,7 +101,7 @@ export function MenuItem({
       onClick={onSelect}
       className={cn(
         "flex cursor-pointer flex-col items-start gap-0.5 rounded-sm p-1 text-left",
-        checked ? "bg-surface-page" : "bg-surface-card",
+        checked ? "bg-surface-muted" : "bg-surface-card",
       )}
     >
       <span className="flex w-full items-center gap-1 text-body font-medium text-text">

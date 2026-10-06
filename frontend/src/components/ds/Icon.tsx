@@ -86,6 +86,7 @@ const PATHS: Record<string, ReactNode> = {
     </>
   ),
   pulse: <path d="M3 12h4l3-8 4 16 3-8h4" />,
+  trendUp: <path d="M3 17l6-6 4 4 8-8M14 7h7v7" />,
   plus: <path d="M12 5v14M5 12h14" />,
   list: (
     <>

@@ -1,14 +1,7 @@
-import type { Evidence, EvidenceKind } from "../../api";
+import type { Evidence } from "../../api";
 import { cn } from "../../lib/cn";
 import { EVIDENCE_HAS_TARGET, useWorkspace } from "../workspace/workspaceContext";
-
-/** The short prefix a chip shows, keyed by evidence kind (agents-spec §6.2). */
-const PREFIX: Record<EvidenceKind, string> = {
-  activity: "act",
-  trend: "trd",
-  influencer: "inf",
-  company: "co",
-};
+import { EVIDENCE_KIND } from "./evidenceKind";
 
 const CHIP =
   "inline-flex min-h-3 items-center gap-1 rounded-sm border border-border bg-surface-card px-1 py-0.5 text-left text-small text-text";
@@ -22,9 +15,7 @@ interface EvidenceChipProps {
 export function EvidenceChip({ evidence, onNavigate }: EvidenceChipProps) {
   const { highlight } = useWorkspace();
   const prefix = (
-    <span className="font-medium tracking-label text-text-muted uppercase">
-      {PREFIX[evidence.kind]}
-    </span>
+    <span className="font-medium text-text-muted">{EVIDENCE_KIND[evidence.kind].label}</span>
   );
 
   // Company context has no row on the page. A chip for it stays a label rather

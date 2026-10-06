@@ -5,11 +5,11 @@ import { cn } from "../../lib/cn";
 export type BadgeTone = "neutral" | "brand" | "favorable" | "unfavorable" | "attention";
 
 const TONE: Record<BadgeTone, string> = {
-  neutral: "bg-surface-page text-text-muted",
+  neutral: "bg-surface-muted text-text-muted",
   brand: "bg-primary-light text-accent",
   favorable: "bg-secondary-light text-text-favorable",
   unfavorable: "bg-primary-light text-text-unfavorable",
-  attention: "bg-surface-page text-text-attention",
+  attention: "bg-surface-muted text-text-attention",
 };
 
 interface BadgeProps {

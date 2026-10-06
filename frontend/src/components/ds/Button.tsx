@@ -10,7 +10,7 @@ const VARIANT: Record<ButtonVariant, string> = {
   secondary:
     "h-4 rounded-sm border border-border bg-surface-card px-1 text-small text-text transition-colors hover:border-border-strong",
   quiet: "h-4 text-body font-medium text-text-muted transition-colors hover:text-text",
-  icon: "grid h-4 w-4 place-items-center rounded-sm text-text-muted transition-colors hover:bg-surface-page hover:text-text",
+  icon: "grid h-4 w-4 place-items-center rounded-sm text-text-muted transition-colors hover:bg-surface-muted hover:text-text",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
