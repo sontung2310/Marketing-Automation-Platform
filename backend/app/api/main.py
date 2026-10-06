@@ -9,24 +9,44 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.applications import Starlette
 
 from app.api.routes import actions, feed, health, runs
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
+from app.core.db import get_database
 from app.core.errors import DomainError
 from app.core.logging import configure_logging
 from app.intelligence.startup import ensure_owned_indexes
+from app.mcp_server.server import McpRepositories, build_mcp_app
 
 logger = logging.getLogger(__name__)
+
+
+def mcp_app_for(settings: Settings) -> Starlette:
+    return build_mcp_app(
+        McpRepositories.for_database(get_database()),
+        company_id=settings.default_company_id,
+        allowed_hosts=settings.mcp_allowed_hosts,
+        stateless=True,
+    )
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
 
+    # The Marketing Intelligence MCP rides along in the API process (Vercel has no second
+    # long-lived service); agents still reach it over HTTP at MCP_URL, so layering holds.
+    mcp_app = mcp_app_for(settings) if settings.mongodb_uri is not None else None
+
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         await ensure_owned_indexes()
-        yield
+        if mcp_app is None:
+            yield
+            return
+        async with mcp_app.router.lifespan_context(mcp_app):
+            yield
 
     app = FastAPI(title="Marketing Automation Platform API", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
@@ -59,6 +79,8 @@ def create_app() -> FastAPI:
     app.include_router(actions.router, prefix="/api")
     app.include_router(feed.router, prefix="/api")
     app.include_router(runs.router, prefix="/api")
+    if mcp_app is not None:
+        app.router.routes.extend(mcp_app.routes)  # serves /mcp
     return app
 
 

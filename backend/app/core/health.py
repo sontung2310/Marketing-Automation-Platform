@@ -25,8 +25,13 @@ class HealthChecker:
 
     async def mcp_ok(self) -> bool:
         try:
-            async with httpx.AsyncClient(timeout=1.5) as client:
-                await client.get(self._settings.mcp_url)
+            # Any response means the MCP is up; a stateless MCP answers a GET with a
+            # stream that stays open, so read the headers only.
+            async with (
+                httpx.AsyncClient(timeout=1.5) as client,
+                client.stream("GET", self._settings.mcp_url),
+            ):
+                pass
         except httpx.HTTPError:
             return False
         return True

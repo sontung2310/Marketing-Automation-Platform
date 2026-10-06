@@ -313,15 +313,25 @@ def build_mcp_app(
     company_id: str,
     now: Callable[[], datetime] | None = None,
     allowed_hosts: Sequence[str],
+    stateless: bool = False,
 ) -> Starlette:
-    """Build the streamable-HTTP ASGI application without a database dependency."""
+    """Build the streamable-HTTP ASGI application without a database dependency.
+
+    stateless=True keeps no session between requests, so each call is self-contained:
+    what a serverless host needs, where consecutive calls may reach different instances.
+    """
 
     server = build_mcp_server(repositories, company_id=company_id, now=now)
     security = TransportSecuritySettings(
         enable_dns_rebinding_protection=True,
         allowed_hosts=list(allowed_hosts),
     )
-    return server.streamable_http_app(streamable_http_path="/mcp", transport_security=security)
+    return server.streamable_http_app(
+        streamable_http_path="/mcp",
+        transport_security=security,
+        stateless_http=stateless,
+        json_response=stateless,
+    )
 
 
 def _tool_boundary(
