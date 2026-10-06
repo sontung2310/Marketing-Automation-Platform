@@ -9,16 +9,19 @@ a clickable piece of evidence.
 
 ### Requirement: The workspace renders three regions on one page
 
-The page SHALL render, without a route change, a sticky inverted TopBar over
-three independently scrolling regions: social listening on the left,
-the Execution transcript in the centre, and Strategy recommendations above
-the competitor activity feed on the right. At the 1440×900 design target the
-grid SHALL be `320px / minmax(560px, 1fr) / 360px` with 16px gutters and
-24px page padding. The TopBar SHALL carry the tenant selector, the
-`Marketing workspace` context label, the last-sync time and the Simulate
-menu, and SHALL carry no logo. Every color, spacing, radius, shadow and type
-value SHALL come from a token in `frontend/src/styles/theme.css`; no
-component may use an inline `style` attribute or a Tailwind arbitrary value.
+The page SHALL render, without a route change, a sticky TopBar over three
+independently scrolling regions: social listening on the left, the Execution
+transcript in the centre, and Strategy recommendations above the competitor
+activity feed on the right. At the 1440×900 design target the grid SHALL be
+`320px / minmax(0, 1fr) / 425px` with 16px gutters and 24px page
+padding, so the centre absorbs the width and the body never scrolls
+horizontally down to the 1281px desktop breakpoint. The TopBar SHALL carry the tenant selector, the `Marketing workspace`
+context label, the last-sync time, the theme menu and the Simulate menu, and
+SHALL carry no logo. Each panel header SHALL show an icon, the panel title and
+a count or status pill. Every color, spacing, radius, shadow and type value
+SHALL come from a token in `frontend/src/styles/theme.css`, type SHALL use only
+that file's five sizes, and no component may use an inline `style` attribute,
+a Tailwind arbitrary value or a literal color.
 
 #### Scenario: The seeded workspace loads at the design target
 
@@ -26,10 +29,11 @@ component may use an inline `style` attribute or a Tailwind arbitrary value.
   influencers and agent streams
 - **WHEN** the page loads at 1440×900
 - **THEN** the left social-listening region, the centre Execution empty
-  state and the right Strategy and feed regions all render, the tenant
-  selector, the five tracking keywords and the last-sync label are visible,
-  no console error is logged, and an axe accessibility scan reports no
-  violation
+  state and the right Strategy and feed regions all render, the right region
+  is 425px wide, every panel header shows its icon, title and pill, the
+  tenant selector, the five tracking keywords and the last-sync label are
+  visible, no console error is logged, and an axe accessibility scan reports
+  no violation
 
 #### Scenario: The layout collapses at the documented breakpoints
 
@@ -68,11 +72,13 @@ SHALL carry the corresponding badge.
 
 ### Requirement: Tracked keywords scope social listening only
 
-The listening panel SHALL show the company's tracked keywords and let the
-marketer edit them. The editor SHALL trim each term, reject empty terms,
-enforce 1–20 terms unique case-insensitively, and show the canonical list
-the API returns. Saving keywords SHALL NOT change the competitor feed's
-filters or contents.
+The listening panel SHALL show the company's tracked keywords as a list, one
+row per term, with a labelled remove control that is visible on row hover or
+keyboard focus and an **Add keyword** control. The editor SHALL trim each term,
+reject empty terms, enforce 1–20 terms unique case-insensitively, and show the
+canonical list the API returns. Saving keywords SHALL NOT change the
+competitor feed's filters or contents. The trend platform filter SHALL be a
+segmented control whose options each show the number of trends they hold.
 
 #### Scenario: A duplicate keyword is rejected without color as the only signal
 
@@ -81,6 +87,13 @@ filters or contents.
   different case
 - **THEN** the editor shows the validation message as text, the list is
   unchanged, and no request is sent
+
+#### Scenario: A keyword is removed from the keyboard
+
+- **GIVEN** the keyword list holds the five seeded terms
+- **WHEN** the marketer tabs to a row's remove control and activates it
+- **THEN** the control is visible while focused, and the saved list no
+  longer holds that term
 
 ### Requirement: The Execution transcript streams one structured turn per run
 
@@ -122,24 +135,35 @@ seconds, and no spinner SHALL appear without a text label.
 ### Requirement: Strategy output stays in its own panel and reaches Execution by an explicit action
 
 Strategy recommendations SHALL never enter the Execution transcript. Each
-recommendation SHALL render as a compact row grouped under the run that
-produced it, showing its ordinal, priority, the decision at body weight 600,
-its status and its `next_action` in plain words. Opening a row SHALL open a
-440px sheet with what to do, why, evidence chips and **Do this**. **Do this**
-SHALL write the recommendation's brief into the Execution composer and SHALL
-NOT start a run. When the marketer sends that brief unedited, the run SHALL
-start from the `RECOMMENDATION` `DO_THIS` trigger, so Execution receives that
-recommendation; an edited brief SHALL be sent as a chat message. An evidence
-chip SHALL show a short title, keep its raw evidence ID in its tooltip, and on
+recommendation SHALL render as a card showing its zero-padded ordinal, its
+priority verbatim, its title, up to three signal lines drawn from its
+evidence (each labelled `Trend` or `Competitor` with the evidence note), and
+an **Open plan** button that names the recommendation in its accessible name.
+The panel header SHALL count the recommendations shown. **Open plan** SHALL
+open a 520px sheet with what to make, the channel, why, the evidence chips
+under `Based on`, and **Do this**. **Do this** SHALL write the
+recommendation's brief into the Execution composer and SHALL NOT start a run.
+When the marketer sends that brief unedited, the run SHALL start from the
+`RECOMMENDATION` `DO_THIS` trigger, so Execution receives that recommendation;
+an edited brief SHALL be sent as a chat message. An evidence chip SHALL show
+its kind and a short title, keep its raw evidence ID in its tooltip, and on
 activation scroll to and flash-highlight its target item.
 
 #### Scenario: Do this prefills the composer without sending
 
 - **GIVEN** Strategy recommendations in the fixture
-- **WHEN** the marketer opens a recommendation and clicks **Do this**
-- **THEN** the 440px sheet showed the decision, rationale and evidence, the
+- **WHEN** the marketer clicks a card's **Open plan** and then **Do this**
+- **THEN** the 520px sheet showed the decision, rationale and evidence, the
   recommendation's request is in the Execution composer, and no run was
   created
+
+#### Scenario: A recommendation card summarises its signals
+
+- **GIVEN** a recommendation citing one trend and one activity
+- **WHEN** the Strategy panel renders
+- **THEN** its card shows the zero-padded ordinal, the verbatim priority, the
+  title, a `Trend` line and a `Competitor` line with their notes, and an
+  **Open plan** button
 
 #### Scenario: Sending the unedited brief runs that recommendation
 
@@ -169,3 +193,28 @@ retry with bounded backoff.
 - **WHEN** one region's endpoint returns `503` with an error envelope
 - **THEN** that region shows the envelope's `message` verbatim with
   **Retry**, and every other region stays usable
+
+### Requirement: The workspace offers light and dark themes
+
+The workspace SHALL render in a light or a dark theme. With no saved choice
+it SHALL follow the operating system's color scheme and track changes to it
+live. The TopBar SHALL offer a `Light | Dark | System` menu; a `Light` or
+`Dark` choice SHALL override the system and persist across reloads in this
+browser, and `System` SHALL clear the override. The page SHALL render in the
+resolved theme from its first paint, with no flash of the other theme. Both
+themes SHALL meet WCAG AA text contrast. A browser that cannot store the
+choice SHALL still follow the system.
+
+#### Scenario: The system dark preference is followed
+
+- **GIVEN** the browser prefers a dark color scheme and no theme was chosen
+- **WHEN** the workspace loads at 1440×900
+- **THEN** it renders in the dark theme, the theme menu shows `System`
+  checked, and an axe accessibility scan reports no violation
+
+#### Scenario: A chosen theme overrides the system and persists
+
+- **GIVEN** the browser prefers a light color scheme
+- **WHEN** the marketer picks `Dark` from the theme menu and reloads the page
+- **THEN** the workspace renders dark before and after the reload, and
+  picking `System` returns it to light
