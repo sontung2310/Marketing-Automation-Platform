@@ -62,12 +62,39 @@ test.describe("7-A the workspace loads at the design target", () => {
       page.getByText("Pick an item from the feed, or ask Execution for a deliverable."),
     ).toBeVisible();
 
+    // Every panel header carries its icon tile, title and count or status pill.
+    for (const [region, pill] of [
+      ["Social listening", /5 keywords · \d+ trends/],
+      ["Influencers", /\d+ ranked/],
+      ["Execution agent", /0 requests/],
+      ["Strategy recommendations", /\d+ (open|picks?)/],
+      ["Competitor activity", /\d+ new/],
+    ] as const) {
+      const header = page.getByRole("region", { name: region }).locator("> div").first();
+      await expect(header.getByRole("heading", { name: region })).toBeVisible();
+      await expect(header.locator("svg")).toHaveCount(1);
+      await expect(header.getByText(pill)).toBeVisible();
+    }
+
     expect(consoleErrors).toEqual([]);
   });
 
   test("passes an axe accessibility scan with no violations", async ({ page }) => {
     await openWorkspace(page);
     await expectAccessible(page);
+  });
+});
+
+test.describe("7-J tracked keywords", () => {
+  test("a row's remove control shows on keyboard focus and removes the term", async ({ page }) => {
+    await openWorkspace(page);
+    const remove = page.getByRole("button", { name: "Stop tracking AI in Marketing" });
+    await expect(remove).toHaveCSS("opacity", "0");
+
+    await remove.focus();
+    await expect(remove).toHaveCSS("opacity", "1");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("listitem").filter({ hasText: "AI in Marketing" })).toHaveCount(0);
   });
 });
 

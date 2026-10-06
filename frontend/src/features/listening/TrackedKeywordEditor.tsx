@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { ApiError } from "../../api";
 import { Button } from "../../components/ds/Button";
@@ -13,20 +13,30 @@ interface TrackedKeywordEditorProps {
 }
 
 /**
- * Edits the terms that scope social listening. Validation is shown as text, and
- * the canonical list always comes back from the API (api-contract,
- * `PUT /company/tracked-keywords`).
+ * Edits the terms that scope social listening, one row per term. Validation is
+ * shown as text, and the canonical list always comes back from the API
+ * (api-contract, `PUT /company/tracked-keywords`).
  */
 export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
+  const [adding, setAdding] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
   const [term, setTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const save = useSaveTrackedKeywords();
   const current = save.data?.tracked_keywords ?? keywords;
 
+  // Opening the form is an explicit request to type, so focus follows it.
+  useEffect(() => {
+    if (adding) form.current?.querySelector("input")?.focus();
+  }, [adding]);
+
   const replace = (next: string[]) => {
     setError(null);
     save.mutate(next, {
-      onError: (cause) => setError(cause instanceof ApiError ? cause.message : "Save failed."),
+      onError: (cause) => {
+        setAdding(true); // the message lives in the form, so keep it on screen
+        setError(cause instanceof ApiError ? cause.message : "Save failed.");
+      },
     });
   };
 
@@ -50,18 +60,54 @@ export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
   };
 
   return (
-    <div className="flex flex-col gap-1 border-b border-border-strong px-2 pt-1 pb-2">
-      <ul className="flex flex-wrap gap-1">
+    <div className="flex flex-col gap-1 border-b border-border px-2 pt-1.5 pb-2">
+      <div className="flex h-3 items-center justify-between">
+        <span className="text-small text-text-muted">Tracked keywords</span>
+        <Button
+          variant="quiet"
+          aria-expanded={adding}
+          onClick={() => setAdding((value) => !value)}
+          className="h-3 gap-0.5 rounded-sm px-1 text-small text-text hover:bg-bg-subtle"
+        >
+          <Icon name="plus" size={12} />
+          Add keyword
+        </Button>
+      </div>
+
+      {adding ? (
+        <form ref={form} onSubmit={add} className="flex items-end gap-1">
+          <TextInput
+            label="Add a tracking keyword"
+            labelHidden
+            placeholder="Add a keyword"
+            value={term}
+            onChange={(event) => setTerm(event.target.value)}
+            error={error ?? undefined}
+            className="flex-1"
+          />
+          <Button type="submit" disabled={save.isPending}>
+            {save.isPending ? "Saving…" : "Add"}
+          </Button>
+        </form>
+      ) : null}
+
+      <ul className="overflow-hidden rounded-md border border-border">
         {current.map((keyword) => (
           <li
             key={keyword}
-            className="text-accent inline-flex h-3.5 items-center gap-0.5 rounded-sm bg-primary-light pr-0.5 pl-1 text-small font-medium"
+            className="group grid h-4.5 layout-keyword-row items-center gap-1 border-t border-border bg-surface-card pr-1 pl-1.5 transition-colors first:border-t-0 hover:bg-bg-subtle"
           >
-            {keyword}
+            <span
+              aria-hidden="true"
+              className="text-accent grid h-2.5 w-2.5 place-items-center rounded-sm bg-primary-light text-small font-medium"
+            >
+              #
+            </span>
+            <span className="truncate text-small font-medium text-text">{keyword}</span>
             <Button
               variant="icon"
               aria-label={`Stop tracking ${keyword}`}
-              className="text-accent h-2.5 w-2.5"
+              className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
               disabled={current.length === 1 || save.isPending}
               onClick={() => replace(current.filter((value) => value !== keyword))}
             >
@@ -70,21 +116,6 @@ export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
           </li>
         ))}
       </ul>
-
-      <form onSubmit={add} className="flex items-end gap-1">
-        <TextInput
-          label="Add a tracking keyword"
-          labelHidden
-          placeholder="Add a keyword"
-          value={term}
-          onChange={(event) => setTerm(event.target.value)}
-          error={error ?? undefined}
-          className="flex-1"
-        />
-        <Button type="submit" disabled={save.isPending}>
-          {save.isPending ? "Saving…" : "Add"}
-        </Button>
-      </form>
 
       <p className="text-small text-text-muted">
         Scopes the social data we collect. The competitor feed is not filtered.

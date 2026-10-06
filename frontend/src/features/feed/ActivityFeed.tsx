@@ -81,6 +81,7 @@ export function ActivityFeed() {
     <Panel
       className="flex-none"
       title="Competitor activity"
+      icon="pulse"
       meta={unseenCount > 0 ? <Badge tone="brand">{unseenCount} new</Badge> : null}
     >
       <LiveRegion message={announcement} />

@@ -3,7 +3,7 @@ import { Badge } from "../../components/ds/Badge";
 import { Button } from "../../components/ds/Button";
 import { EmptyState } from "../../components/ds/EmptyState";
 import { ErrorState } from "../../components/ds/ErrorState";
-import { Panel } from "../../components/ds/Panel";
+import { Panel, PanelCount } from "../../components/ds/Panel";
 import { SkeletonList } from "../../components/ds/Skeleton";
 import { useInfluencers } from "../../hooks/queries";
 import { cn } from "../../lib/cn";
@@ -20,11 +20,8 @@ export function InfluencerTable() {
     <Panel
       className="flex-none"
       title="Influencers"
-      meta={
-        influencers.isSuccess ? (
-          <span className="text-small text-text-muted">{items.length} ranked</span>
-        ) : null
-      }
+      icon="people"
+      meta={influencers.isSuccess ? <PanelCount>{items.length} ranked</PanelCount> : null}
     >
       {influencers.isPending ? <SkeletonList rows={5} label="Loading influencers" /> : null}
 

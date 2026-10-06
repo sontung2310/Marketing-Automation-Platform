@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { ApiError, type Recommendation } from "../../api";
 import { EmptyState } from "../../components/ds/EmptyState";
 import { ErrorState } from "../../components/ds/ErrorState";
-import { Panel } from "../../components/ds/Panel";
+import { Panel, PanelCount } from "../../components/ds/Panel";
 import { SkeletonList } from "../../components/ds/Skeleton";
 import { Spinner } from "../../components/ds/Spinner";
 import { useRecommendations } from "../../hooks/queries";
@@ -52,13 +52,12 @@ export function StrategyPanel() {
     <Panel
       className="flex-none"
       title="Strategy recommendations"
+      icon="target"
       meta={
         activeRun ? (
           <Spinner label={latestStep} />
         ) : (
-          <span className="text-small text-text-muted">
-            {items.filter((item) => item.status === "OPEN").length} open
-          </span>
+          <PanelCount>{items.filter((item) => item.status === "OPEN").length} open</PanelCount>
         )
       }
     >

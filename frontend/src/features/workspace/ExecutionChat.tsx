@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { Button } from "../../components/ds/Button";
 import { EmptyState } from "../../components/ds/EmptyState";
-import { Panel } from "../../components/ds/Panel";
+import { Panel, PanelCount } from "../../components/ds/Panel";
 import { ClarificationBlock } from "./ClarificationBlock";
 import { Composer } from "./Composer";
 import { ExecutionTurn } from "./ExecutionTurn";
@@ -25,11 +25,12 @@ export function ExecutionChat() {
   return (
     <Panel
       title="Execution agent"
+      icon="pen"
       className="flex min-h-0 flex-1 flex-col"
       meta={
-        <span className="text-small text-text-muted">
-          Session · {transcript.filter((entry) => entry.kind === "run").length} requests
-        </span>
+        <PanelCount>
+          {transcript.filter((entry) => entry.kind === "run").length} requests
+        </PanelCount>
       }
     >
       <div

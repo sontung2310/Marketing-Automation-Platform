@@ -1,8 +1,8 @@
 import { ApiError } from "../../api";
 import { ErrorState } from "../../components/ds/ErrorState";
-import { Panel } from "../../components/ds/Panel";
+import { Panel, PanelCount } from "../../components/ds/Panel";
 import { SkeletonList } from "../../components/ds/Skeleton";
-import { useCompany } from "../../hooks/queries";
+import { useCompany, useTrends } from "../../hooks/queries";
 import { InfluencerTable } from "./InfluencerTable";
 import { TrackedKeywordEditor } from "./TrackedKeywordEditor";
 import { TrendList } from "./TrendList";
@@ -10,15 +10,20 @@ import { TrendList } from "./TrendList";
 export function SocialListeningPanel() {
   const company = useCompany();
   const keywords = company.data?.tracked_keywords;
+  const trendCount = useTrends("ALL").data?.items.length;
 
   return (
     <div className="flex min-h-0 scrollbar-thin flex-col gap-2 overflow-y-auto">
       <Panel
         className="flex-none"
         title="Social listening"
+        icon="listening"
         meta={
           keywords ? (
-            <span className="text-small text-text-muted">{keywords.length} keywords</span>
+            <PanelCount>
+              {keywords.length} keywords
+              {trendCount === undefined ? "" : ` · ${trendCount} trends`}
+            </PanelCount>
           ) : null
         }
       >

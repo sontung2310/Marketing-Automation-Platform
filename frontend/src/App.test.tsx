@@ -4,6 +4,7 @@ import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
 
 import { App } from "./App";
+import { trends } from "./test/fixtures/records";
 import { server } from "./test/fixtures/server";
 
 describe("workspace shell", () => {
@@ -35,11 +36,55 @@ describe("workspace shell", () => {
     render(<App />);
 
     await screen.findByText("Marketing Strategy");
+    await user.click(screen.getByRole("button", { name: "Add keyword" }));
     await user.type(screen.getByLabelText("Add a tracking keyword"), "marketing STRATEGY");
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     expect(await screen.findByText('"marketing STRATEGY" is already tracked.')).toBeInTheDocument();
     expect(screen.getAllByText(/^Marketing Strategy$/)).toHaveLength(1);
+  });
+
+  it("removes a keyword from the keyboard and saves the canonical list", async () => {
+    const user = userEvent.setup();
+    const saved: unknown[] = [];
+    server.use(
+      http.put("/api/company/tracked-keywords", async ({ request }) => {
+        const body = (await request.json()) as { tracked_keywords: string[] };
+        saved.push(body.tracked_keywords);
+        return HttpResponse.json(body);
+      }),
+    );
+    render(<App />);
+
+    const remove = await screen.findByRole("button", { name: "Stop tracking AI in Marketing" });
+    remove.focus();
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => expect(screen.queryByText("AI in Marketing")).not.toBeInTheDocument());
+    expect(saved).toEqual([
+      [
+        "Marketing Strategy",
+        "Digital Marketing Trends",
+        "Marketing Automation",
+        "Social Media Marketing",
+      ],
+    ]);
+  });
+
+  it("counts the trends each platform tab holds", async () => {
+    render(<App />);
+
+    const tabs = await screen.findByRole("tablist", { name: "Platform" });
+    await within(tabs).findByRole("tab", { name: `All ${trends.length}` });
+    for (const [label, channel] of [
+      ["LinkedIn", "LINKEDIN"],
+      ["X", "X"],
+      ["Reddit", "REDDIT"],
+      ["News", "NEWS"],
+    ] as const) {
+      const expected = trends.filter((trend) => trend.channel === channel).length;
+      expect(within(tabs).getByRole("tab", { name: `${label} ${expected}` })).toBeInTheDocument();
+    }
   });
 
   it("shows the company error verbatim instead of skeletons that never resolve", async () => {

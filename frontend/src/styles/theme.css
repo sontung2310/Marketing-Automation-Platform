@@ -84,6 +84,7 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --shadow-*: initial;
+  --shadow-xs: 0 1px 2px rgb(26 26 26 / 6%);
   --shadow-hover: 0 4px 16px rgb(26 26 26 / 8%);
   --shadow-overlay: 0 12px 32px rgb(26 26 26 / 14%);
 
@@ -121,6 +122,7 @@
   --color-text-attention: #f5b04c;
   --color-text-unfavorable: #f87171;
   --color-text-accent: #ff8a7f;
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 30%);
   --shadow-hover: 0 4px 16px rgb(0 0 0 / 40%);
   --shadow-overlay: 0 12px 32px rgb(0 0 0 / 50%);
 }
@@ -148,6 +150,11 @@
 /* Ordinal, decision, status: the compact recommendation row (ui-spec §3). */
 @utility layout-recommendation-row {
   grid-template-columns: 16px 1fr auto;
+}
+
+/* Tag glyph, term, remove: one tracked-keyword row (ui-spec §3). */
+@utility layout-keyword-row {
+  grid-template-columns: 20px 1fr 20px;
 }
 
 /* The recommendation sheet overlays the right rail at a fixed 440px (ui-spec §3). */

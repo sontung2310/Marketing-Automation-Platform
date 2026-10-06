@@ -27,16 +27,16 @@
 
 ## 2. Panel headers and social listening (Roadmap 7.7)
 
-- [ ] 2.1 Add a required `icon` to `Panel` and render the framed icon tile,
+- [x] 2.1 Add a required `icon` to `Panel` and render the framed icon tile,
   the sentence-case title and the meta pill (D4). Add the five panel glyphs
   plus `plus` and `list` to `Icon`. Update every `Panel` call site. Verify
   that the Playwright 7-A test asserts each header's title and pill.
-- [ ] 2.2 Rebuild `TrackedKeywordEditor` as list rows (`layout-keyword-row`).
+- [x] 2.2 Rebuild `TrackedKeywordEditor` as list rows (`layout-keyword-row`).
   The remove control shows on hover or focus. **Add keyword** reveals the
-  existing labelled input, and validation and undo behaviour are kept. Verify
+  existing labelled input, and validation is kept. The canvas's undo line is not added, because the spec doesn't ask for one. Verify
   that the duplicate-keyword scenario still passes, plus a new keyboard-remove
   test.
-- [ ] 2.3 Add a `segmented` variant to `Tabs` and use it for the trend
+- [x] 2.3 Add a `segmented` variant to `Tabs` and use it for the trend
   platform filter, with per-tab counts from the trends already loaded for
   `ALL`. Restyle trend and influencer rows to the new scale. Verify with a
   Vitest test for the counts and with `npm run check`.
