@@ -31,6 +31,14 @@ EVENT_FLUSH_SECONDS = 0.5
 RUN_WALL_CLOCK = timedelta(seconds=120)
 
 
+@dataclass(frozen=True)
+class ChatRoute:
+    """A chat message the router already routed, with what its reference resolved to."""
+
+    route: Route
+    trigger_context: dict[str, object] | None = None
+
+
 @dataclass
 class RunPlan:
     """A prepared run: persisted as RUNNING, ready to execute."""
@@ -69,6 +77,7 @@ class RunService:
         message: str | None = None,
         agent: AgentName | None = None,
         session_id: str | None = None,
+        chat: ChatRoute | None = None,
     ) -> RunPlan:
         if (trigger is None) == (message is None):
             raise ValidationError("Send exactly one of message or trigger")
@@ -78,7 +87,7 @@ class RunService:
             raise ValidationError(f"Runs are not available for company {company_id}")
         # Independent lookups, so one round trip to Mongo instead of three.
         (route, trigger_context), session, _ = await asyncio.gather(
-            self._route(company_id, trigger, agent),
+            self._route(company_id, trigger, agent, chat),
             open_session(self.repositories, company_id, session_id, save=False),
             self._check_daily_cap(),
         )
@@ -232,9 +241,15 @@ class RunService:
         return run
 
     async def _route(
-        self, company_id: str, trigger: Trigger | None, agent: AgentName | None
+        self,
+        company_id: str,
+        trigger: Trigger | None,
+        agent: AgentName | None,
+        chat: ChatRoute | None = None,
     ) -> tuple[Route, dict[str, object] | None]:
-        if trigger is not None:
+        if chat is not None:
+            route, context = chat.route, chat.trigger_context
+        elif trigger is not None:
             route = route_trigger(trigger)
             context = await resolve_trigger(self.repositories, trigger, company_id)
         elif agent is None:

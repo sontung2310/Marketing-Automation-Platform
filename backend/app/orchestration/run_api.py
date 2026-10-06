@@ -12,7 +12,10 @@ from app.agents.execution.run import run_execution
 from app.agents.strategy.run import run_strategy
 from app.core.errors import NotFoundError
 from app.intelligence.models import AgentName, Run, RunStatus
-from app.orchestration.run_service import AgentFn, RunService
+from app.orchestration.references import Unresolved, open_session, resolve_reference
+from app.orchestration.router import Classifier, RouterAnswer, decide
+from app.orchestration.routing import Trigger
+from app.orchestration.run_service import AgentFn, ChatRoute, RunPlan, RunService
 
 # The agents a live run can reach (agents-spec §1).
 RUN_AGENTS: dict[AgentName, AgentFn] = {
@@ -42,6 +45,21 @@ class RunAccepted(BaseModel):
     route: RouteView
 
 
+class AnswerBody(BaseModel):
+    status: str
+    message: str
+    clarification_options: list[str]
+
+
+class RouterAnswerView(BaseModel):
+    """The router answered without a run (api-contract `POST /runs`, 200)."""
+
+    run_id: None = None
+    session_id: str
+    route: RouteView
+    response: AnswerBody
+
+
 class RunView(BaseModel):
     id: str
     session_id: str
@@ -63,6 +81,64 @@ class RunView(BaseModel):
 class SessionView(BaseModel):
     id: str
     runs: list[RunView]
+
+
+async def start(
+    service: RunService,
+    classifier: Classifier,
+    company_id: str,
+    *,
+    message: str | None,
+    trigger: Trigger | None,
+    hint: AgentName | None,
+    session_id: str | None,
+) -> tuple[RunPlan | None, RunAccepted | RouterAnswerView]:
+    """Route one request: a prepared run to execute, or the router's direct answer."""
+    if trigger is not None or message is None:  # buttons route deterministically
+        plan = await service.prepare(
+            company_id, trigger=trigger, message=message, session_id=session_id
+        )
+        return plan, accepted(plan.run)
+    decision = await classifier(message, hint)
+    outcome = decide(decision, hint)
+    if isinstance(outcome, RouterAnswer):
+        return None, await _answer(service, company_id, session_id, outcome)
+    context = None
+    for reference in decision.references[:1]:
+        resolved = await resolve_reference(service.repositories, reference, session_id)
+        if isinstance(resolved, Unresolved):
+            unresolved = RouterAnswer(
+                status="NEEDS_CLARIFICATION",
+                message=resolved.message,
+                clarification_options=[],
+                route=outcome,
+            )
+            return None, await _answer(service, company_id, session_id, unresolved)
+        context = resolved
+    plan = await service.prepare(
+        company_id, message=message, session_id=session_id, chat=ChatRoute(outcome, context)
+    )
+    return plan, accepted(plan.run)
+
+
+async def _answer(
+    service: RunService, company_id: str, session_id: str | None, answer: RouterAnswer
+) -> RouterAnswerView:
+    # The answer still belongs to a session, so the marketer's reply continues it.
+    session = await open_session(service.repositories, company_id, session_id)
+    return RouterAnswerView(
+        session_id=session.id,
+        route=RouteView(
+            method=answer.route.method,
+            reason=answer.route.reason,
+            confidence=answer.route.confidence,
+        ),
+        response=AnswerBody(
+            status=answer.status,
+            message=answer.message,
+            clarification_options=answer.clarification_options,
+        ),
+    )
 
 
 def accepted(run: Run) -> RunAccepted:

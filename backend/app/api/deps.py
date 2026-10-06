@@ -11,6 +11,7 @@ from app.core.health import HealthChecker
 from app.intelligence.repositories import ProposedActionsRepository
 from app.orchestration.actions import ActionService
 from app.orchestration.references import RunRepositories
+from app.orchestration.router import Classifier, classify
 from app.orchestration.run_api import RUN_AGENTS
 from app.orchestration.run_service import RunService
 
@@ -40,3 +41,10 @@ def get_run_service(database: DatabaseDep) -> RunService:
 
 
 RunServiceDep = Annotated[RunService, Depends(get_run_service)]
+
+
+def get_classifier() -> Classifier:
+    return classify
+
+
+ClassifierDep = Annotated[Classifier, Depends(get_classifier)]

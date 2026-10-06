@@ -13,12 +13,13 @@ from pymongo.asynchronous.database import AsyncDatabase
 from sse_starlette.sse import AppStatus
 
 from app.agents.common.context import AgentOutcome, RunContext
-from app.api.deps import get_run_service
+from app.api.deps import get_classifier, get_run_service
 from app.api.main import create_app
 from app.core.config import get_settings
 from app.core.db import Document, get_database
 from app.intelligence.models import AgentName, RunStatus
 from app.orchestration.references import RunRepositories
+from app.orchestration.router import RouteDecision
 from app.orchestration.run_service import RunService
 from evals.runtime import serve_app
 from tests.execution_samples import execution_output
@@ -59,6 +60,7 @@ async def api(seeded_database: AsyncDatabase[Document]) -> AsyncIterator[httpx.A
     ):
         # Open the Mongo connections first, so timings measure the endpoint, not TLS setup.
         await asyncio.gather(*(client.get("/api/runs/run_warm") for _ in range(3)))
+        client.app_under_test = app  # type: ignore[attr-defined]  # for per-test overrides
         yield client
 
 
@@ -186,3 +188,66 @@ async def test_daily_cap_refuses_runs_but_not_reads(
     assert await seeded_database["runs"].count_documents({}) == 2
     assert await seeded_database["sessions"].count_documents({}) == sessions_before
     assert (await api.get(f"/api/runs/{started[0].json()['run_id']}")).status_code == 200
+
+
+async def test_6e_real_router_clarifies_and_refuses_without_a_run(
+    api: httpx.AsyncClient, seeded_database: AsyncDatabase[Document]
+) -> None:
+    if get_settings().openai_api_key is None:
+        pytest.skip("OPENAI_API_KEY is not configured")
+    runs_before = await seeded_database["runs"].count_documents({})
+
+    vague = await api.post("/api/runs", json={"message": "LinkedIn"})
+    assert vague.status_code == 200, vague.text
+    body = vague.json()
+    assert body["run_id"] is None and body["route"]["method"] == "CLASSIFIER"
+    assert body["response"]["status"] == "NEEDS_CLARIFICATION"
+    assert 2 <= len(body["response"]["clarification_options"]) <= 3
+
+    weather = await api.post("/api/runs", json={"message": "What's the weather in Sydney?"})
+    assert weather.status_code == 200
+    assert weather.json()["response"]["status"] == "OUT_OF_SCOPE"
+
+    assert await seeded_database["runs"].count_documents({}) == runs_before
+
+
+async def test_recommendation_references_route_or_clarify(
+    api: httpx.AsyncClient, seeded_database: AsyncDatabase[Document]
+) -> None:
+    trigger = {
+        "kind": "FEED_ACTION",
+        "ref_id": await activity_id(seeded_database, "PRICE_CHANGE"),
+        "action": "RESPONSE_PLAN",
+    }
+    plan = (await api.post("/api/runs", json={"trigger": trigger})).json()
+    await read_events(api, plan["run_id"])
+    session_id = plan["session_id"]
+
+    async def references(message: str, hint: AgentName | None) -> RouteDecision:
+        return RouteDecision(
+            agent="EXECUTION",
+            intent="FROM_RECOMMENDATION",
+            deliverable_type=None,
+            references=[f"recommendation:{message.removeprefix('#')}"],
+            confidence=0.95,
+            reason="asked to deliver a recommendation",
+            clarification_question=None,
+            clarification_options=[],
+        )
+
+    api_app = api.app_under_test  # type: ignore[attr-defined]
+    api_app.dependency_overrides[get_classifier] = lambda: references
+
+    missing = await api.post("/api/runs", json={"message": "#7", "session_id": session_id})
+    assert missing.status_code == 200
+    assert missing.json()["response"] == {
+        "status": "NEEDS_CLARIFICATION",
+        "message": "No recommendation #7 in this session",
+        "clarification_options": [],
+    }
+
+    found = await api.post("/api/runs", json={"message": "#1", "session_id": session_id})
+    assert found.status_code == 202, found.text
+    assert (found.json()["agent"], found.json()["intent"]) == ("EXECUTION", "FROM_RECOMMENDATION")
+    events = await read_events(api, found.json()["run_id"])
+    assert events[-1]["type"] == "run.completed"

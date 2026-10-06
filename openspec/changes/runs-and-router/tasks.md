@@ -13,7 +13,7 @@
 
 - [x] 2.1 Add `orchestration/router.py` (`RouteDecision`, `router_instructions.md`, `classify()` on `OPENAI_MODEL_ROUTER`) and the decision-outcome registry (run, clarify, out of scope). Verify unit tests with a stubbed classifier for every outcome, the 0.6 confidence rule and hint handling.
 - [x] 2.2 Add `resolve_reference()` for `recommendation:N` and `deliverable:last`, with the "No recommendation #N in this session" clarification. Verify unit and integration tests for the 5-C scenarios.
-- [ ] 2.3 Wire the router into `prepare` for chat. Verify 6-E against the real router model.
+- [x] 2.3 Wire the router into `prepare` for chat. Verify 6-E against the real router model.
 
 ## 3. 6.5 Router golden dataset
 

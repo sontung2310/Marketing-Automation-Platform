@@ -202,6 +202,32 @@
         "title": "AgentName",
         "type": "string"
       },
+      "AnswerBody": {
+        "properties": {
+          "clarification_options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clarification Options",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "message",
+          "clarification_options"
+        ],
+        "title": "AnswerBody",
+        "type": "object"
+      },
       "ApproveRequest": {
         "additionalProperties": false,
         "properties": {
@@ -965,6 +991,32 @@
           "confidence"
         ],
         "title": "RouteView",
+        "type": "object"
+      },
+      "RouterAnswerView": {
+        "description": "The router answered without a run (api-contract `POST /runs`, 200).",
+        "properties": {
+          "response": {
+            "$ref": "#/components/schemas/AnswerBody"
+          },
+          "route": {
+            "$ref": "#/components/schemas/RouteView"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "null"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "route",
+          "response"
+        ],
+        "title": "RouterAnswerView",
         "type": "object"
       },
       "RunAccepted": {
@@ -2293,6 +2345,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouterAnswerView"
+                }
+              }
+            },
+            "description": "OK"
+          },
           "202": {
             "content": {
               "application/json": {
