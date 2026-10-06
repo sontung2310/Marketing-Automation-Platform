@@ -31,7 +31,7 @@ class CaseInput(Strict):
 
 class ExpectedRoute(Strict):
     agent: Literal["STRATEGY", "EXECUTION", "NONE"]
-    intent: str
+    intent: str | None = None  # None: any intent of that agent (router hint cases)
     deliverable_type: str | None = None  # router suite: the decision's deliverable type
     references: list[str] | None = None  # router suite: e.g. ["recommendation:2"]
 

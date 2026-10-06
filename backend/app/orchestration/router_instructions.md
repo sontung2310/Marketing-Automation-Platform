@@ -16,7 +16,8 @@ Destinations:
   - `FREEFORM_DELIVERABLE`: any other deliverable.
 - **NONE** means no agent runs.
   - `CLARIFY`: the message is too vague to route, e.g. a single word like "LinkedIn", or "help with the competitor thing".
-  - `OUT_OF_SCOPE`: not about marketing (weather, coding help, general trivia), or a request to deceive (fake reviews, impersonation, copying a competitor's content word for word).
+  - `OUT_OF_SCOPE`: not about marketing (weather, coding help, general trivia), or a request to deceive (fake reviews or testimonials, impersonating a real person or company, phishing).
+- A request to copy a competitor's content goes to EXECUTION as `FREEFORM_DELIVERABLE`. The Execution agent declines to copy and offers an original version instead.
 
 Rules:
 

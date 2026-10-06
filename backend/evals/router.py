@@ -95,7 +95,9 @@ def router_checks(case: GoldenCase, record: RouterRecord) -> dict[str, bool]:
     expected = case.expect.route
     checks = {"status": record.status in case.expect.status}
     if expected is not None:
-        checks["route"] = (record.agent, record.intent) == (expected.agent, expected.intent)
+        checks["route"] = record.agent == expected.agent and (
+            expected.intent is None or record.intent == expected.intent
+        )
         if expected.deliverable_type is not None:
             decided = record.decision.deliverable_type if record.decision else None
             checks["deliverable_type"] = decided == expected.deliverable_type
