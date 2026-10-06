@@ -15,6 +15,7 @@ from sse_starlette.sse import AppStatus
 from app.agents.common.context import AgentOutcome, RunContext
 from app.api.deps import get_run_service
 from app.api.main import create_app
+from app.core.config import get_settings
 from app.core.db import Document, get_database
 from app.intelligence.models import AgentName, RunStatus
 from app.orchestration.references import RunRepositories
@@ -157,3 +158,31 @@ async def test_invalid_requests_use_the_envelope(api: httpx.AsyncClient) -> None
 
     for path in ("/api/runs/run_missing", "/api/runs/run_missing/events", "/api/sessions/ses_x"):
         assert (await api.get(path)).status_code == 404
+
+
+async def test_daily_cap_refuses_runs_but_not_reads(
+    api: httpx.AsyncClient,
+    seeded_database: AsyncDatabase[Document],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(get_settings(), "max_runs_per_day", 2)
+    trigger = {
+        "kind": "FEED_ACTION",
+        "ref_id": await activity_id(seeded_database, "PRICE_CHANGE"),
+        "action": "WHY_IT_MATTERS",
+    }
+    started = [(await api.post("/api/runs", json={"trigger": trigger})) for _ in range(2)]
+    assert [r.status_code for r in started] == [202, 202]
+    sessions_before = await seeded_database["sessions"].count_documents({})
+
+    refused = await api.post("/api/runs", json={"trigger": trigger})
+
+    assert refused.status_code == 429
+    assert refused.json()["error"] == {
+        "code": "RATE_LIMITED",
+        "message": "The demo's daily run limit is reached. Try again tomorrow.",
+        "details": {},
+    }
+    assert await seeded_database["runs"].count_documents({}) == 2
+    assert await seeded_database["sessions"].count_documents({}) == sessions_before
+    assert (await api.get(f"/api/runs/{started[0].json()['run_id']}")).status_code == 200

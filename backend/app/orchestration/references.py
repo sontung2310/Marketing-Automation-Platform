@@ -69,12 +69,17 @@ async def resolve_trigger(
 
 
 async def open_session(
-    repositories: RunRepositories, company_id: str, session_id: str | None
+    repositories: RunRepositories, company_id: str, session_id: str | None, *, save: bool = True
 ) -> Session:
-    """Continue the company's session, or start a new one when none is given."""
+    """Continue the company's session, or start a new one when none is given.
+
+    With save=False a new session is only built; the caller saves it once the run
+    is certain to start, so a rejected request leaves no empty session behind.
+    """
     if session_id is None:
         session = Session(id=Session.new_id(), company_id=company_id, created_at=datetime.now(UTC))
-        await repositories.sessions.upsert(session)
+        if save:
+            await repositories.sessions.upsert(session)
         return session
     existing = await repositories.sessions.get(session_id)
     if existing is None or existing.company_id != company_id:

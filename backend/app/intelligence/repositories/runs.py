@@ -1,5 +1,7 @@
 """Repository for agent runs."""
 
+from datetime import datetime
+
 from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.database import AsyncDatabase
 
@@ -18,7 +20,8 @@ class RunsRepository(Repository[Run]):
             IndexModel(
                 [("session_id", ASCENDING), ("started_at", DESCENDING)],
                 name="session_started",
-            )
+            ),
+            IndexModel([("started_at", DESCENDING)], name="started_at"),  # daily run cap
         ]
 
     async def set_events(self, run_id: str, events: list[dict[str, object]]) -> None:
@@ -31,3 +34,6 @@ class RunsRepository(Repository[Run]):
             .limit(limit)
         )
         return [self.model_type.model_validate(document) async for document in documents]
+
+    async def count_started_since(self, since: datetime) -> int:
+        return await self.collection.count_documents({"started_at": {"$gte": since}})

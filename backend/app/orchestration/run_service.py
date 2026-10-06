@@ -15,7 +15,7 @@ from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.common.errors import CancelledRunError, run_error
 from app.agents.common.mcp import collect_ids
 from app.core.config import get_settings
-from app.core.errors import DomainError, NotFoundError, ValidationError
+from app.core.errors import DomainError, NotFoundError, RateLimitedError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus, Session
 from app.orchestration.persistence import PERSISTERS
 from app.orchestration.references import RunRepositories, open_session, resolve_trigger
@@ -76,10 +76,11 @@ class RunService:
         # Accept other companies once the MCP is tenant-aware.
         if company_id != get_settings().default_company_id:
             raise ValidationError(f"Runs are not available for company {company_id}")
-        # Independent lookups, so one round trip to Mongo instead of two.
-        (route, trigger_context), session = await asyncio.gather(
+        # Independent lookups, so one round trip to Mongo instead of three.
+        (route, trigger_context), session, _ = await asyncio.gather(
             self._route(company_id, trigger, agent),
-            open_session(self.repositories, company_id, session_id),
+            open_session(self.repositories, company_id, session_id, save=False),
+            self._check_daily_cap(),
         )
         previous = None
         if session.last_run_id is not None:
@@ -115,7 +116,10 @@ class RunService:
             events=list(context.events),
             started_at=datetime.now(UTC),
         )
-        await self.repositories.runs.upsert(run)
+        saves = [self.repositories.runs.upsert(run)]
+        if session_id is None:
+            saves.append(self.repositories.sessions.upsert(session))
+        await asyncio.gather(*saves)
         return RunPlan(run=run, context=context, session=session, message=message)
 
     async def execute(self, plan: RunPlan) -> Run:
@@ -184,6 +188,14 @@ class RunService:
         )
         await self.repositories.runs.upsert(run)
         return run
+
+    async def _check_daily_cap(self) -> None:
+        # ponytail: a count, not a reserved slot; two runs at the boundary may both start.
+        midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        if await self.repositories.runs.count_started_since(midnight) >= (
+            get_settings().max_runs_per_day
+        ):
+            raise RateLimitedError("The demo's daily run limit is reached. Try again tomorrow.")
 
     async def _write_events(self, run_id: str, context: RunContext, written: int) -> None:
         """Copy new events to Mongo while the agent works, so the stream is live."""

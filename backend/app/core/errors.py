@@ -31,3 +31,8 @@ class ConflictError(DomainError):
 class UpstreamUnavailableError(DomainError):
     code = "UPSTREAM_UNAVAILABLE"
     http_status = 503
+
+
+class RateLimitedError(DomainError):
+    code = "RATE_LIMITED"
+    http_status = 429
