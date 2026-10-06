@@ -25,16 +25,15 @@ class HealthChecker:
 
     async def mcp_ok(self) -> bool:
         try:
-            # Any response means the MCP is up; a stateless MCP answers a GET with a
-            # stream that stays open, so read the headers only.
+            # A stateless MCP answers a GET with a stream that stays open, so read the
+            # headers only. A 4xx other than 404 is a live MCP refusing a bare GET.
             async with (
                 httpx.AsyncClient(timeout=1.5) as client,
-                client.stream("GET", self._settings.mcp_url),
+                client.stream("GET", self._settings.mcp_url) as response,
             ):
-                pass
+                return response.status_code != 404 and response.status_code < 500
         except httpx.HTTPError:
             return False
-        return True
 
     async def report(self) -> HealthReport:
         return HealthReport(
