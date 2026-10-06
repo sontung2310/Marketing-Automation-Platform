@@ -87,7 +87,7 @@ export function ExecutionChat() {
         <div className="mx-auto flex w-full max-w-80 flex-col gap-1">
           <div role="group" aria-label="Try" className="flex flex-wrap justify-center gap-1">
             {PROMPT_CHIPS.map((chip) => (
-              <Button key={chip} className="rounded-md px-2" onClick={() => setDraft(chip)}>
+              <Button key={chip} variant="chip" onClick={() => setDraft(chip)}>
                 {chip}
               </Button>
             ))}

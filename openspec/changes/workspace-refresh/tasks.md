@@ -61,10 +61,10 @@
 
 ## 4. Feed, docs and evidence (Roadmap 7.9)
 
-- [ ] 4.1 Compact `ActivityCard` to the canvas: 14px title, a small primary
+- [x] 4.1 Compact `ActivityCard` to the canvas: 14px title, a small primary
   button and a single-line truncated link. Put `FeedFilters` in a two-column
   grid. Verify that `ActivityCard.test.tsx` (7-B) passes.
-- [ ] 4.2 Update ui-spec:
+- [x] 4.2 Update ui-spec:
   - §2: layout widths;
   - §3: Panel, keyword editor, Strategy cards, 520px sheet, theme menu;
   - §6: dark-mode contrast;
@@ -77,7 +77,7 @@
 - [ ] 4.3 Capture evidence: 1440×900 screenshots in light and dark next to
   the canvas boards, the full Playwright and axe run in both themes, and
   `npm run check` green. Attach them to the PR.
-- [ ] 4.4 Fix the canvas's two dark contrast issues (filled button, red type)
+- [x] 4.4 Fix the canvas's two dark contrast issues (filled button, red type)
   so the design and the app agree. Verify that the canvas dark board uses
   `#c42e22` fills and `#ff8a7f` red type.
 

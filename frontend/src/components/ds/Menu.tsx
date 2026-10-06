@@ -15,6 +15,8 @@ interface MenuProps {
    * the overlay's right edge with the trigger's, for controls near the page edge. */
   placement?: Placement;
   triggerClassName?: string;
+  /** Stretch the trigger across its container, label left and chevron right. */
+  fill?: boolean;
   children: (close: () => void) => ReactNode;
 }
 
@@ -33,6 +35,7 @@ export function Menu({
   role = "menu",
   placement = "down",
   triggerClassName,
+  fill = false,
   children,
 }: MenuProps) {
   const [open, setOpen] = useState(false);
@@ -41,7 +44,7 @@ export function Menu({
   useDismissable(open, containerRef, close);
 
   return (
-    <div ref={containerRef} className="relative flex-none">
+    <div ref={containerRef} className={cn("relative", fill ? "min-w-0" : "flex-none")}>
       <button
         type="button"
         aria-haspopup={role}
@@ -50,6 +53,7 @@ export function Menu({
         onClick={() => setOpen((value) => !value)}
         className={cn(
           "inline-flex h-4 cursor-pointer items-center gap-1 rounded-sm px-1 text-small font-medium whitespace-nowrap",
+          fill && "w-full justify-between",
           triggerClassName ?? "border border-border bg-surface-card text-text",
         )}
       >

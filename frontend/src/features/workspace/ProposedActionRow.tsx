@@ -64,7 +64,8 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
         {pending ? <Spinner label="Approving…" /> : null}
         <Button
           variant="quiet"
-          className="ml-auto text-small"
+          size="sm"
+          className="ml-auto"
           disabled={pending}
           onClick={() => discard.mutate(current.id)}
         >
@@ -72,7 +73,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
         </Button>
         <Button
           variant="primary"
-          className="h-4 text-small"
+          size="sm"
           disabled={pending}
           onClick={() =>
             approve.mutate({

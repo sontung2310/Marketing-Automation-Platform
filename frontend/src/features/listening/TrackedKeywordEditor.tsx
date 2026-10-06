@@ -67,7 +67,8 @@ export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
           variant="quiet"
           aria-expanded={adding}
           onClick={() => setAdding((value) => !value)}
-          className="h-3 gap-0.5 rounded-sm px-1 text-small text-text hover:bg-surface-muted"
+          size="sm"
+          className="gap-0.5"
         >
           <Icon name="plus" size={12} />
           Add keyword
@@ -107,7 +108,8 @@ export function TrackedKeywordEditor({ keywords }: TrackedKeywordEditorProps) {
             <Button
               variant="icon"
               aria-label={`Stop tracking ${keyword}`}
-              className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+              size="sm"
+              className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
               disabled={current.length === 1 || save.isPending}
               onClick={() => replace(current.filter((value) => value !== keyword))}
             >

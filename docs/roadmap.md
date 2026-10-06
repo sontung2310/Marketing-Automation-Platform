@@ -204,10 +204,10 @@ _(7.1–7.5 implemented and evidenced in [#30](https://github.com/sontung2310/Ma
 
 The owner redesigned the workspace on the Marketing Workspace design canvas after Step 7 merged and added a dark board. The follow-on is brought forward ahead of Step 8 and is UI-only. OpenSpec change: `workspace-refresh`.
 
-- [ ] 7.6 Tokens: Geist, the five-size 11–16px scale, dark-theme token overrides and a `Light | Dark | System` TopBar menu that follows the OS by default and persists an override.
-- [ ] 7.7 Panel headers with icon and pill; keyword list rows; segmented platform filter with counts.
-- [ ] 7.8 425px right rail; Execution `Working` status; Strategy recommendation cards with evidence signal lines and **Open plan**; 520px sheet.
-- [ ] 7.9 Compact feed cards and filters; ui-spec updated; light/dark evidence against the canvas.
+- [x] 7.6 Tokens: Geist, the five-size 11–16px scale, dark-theme token overrides and a `Light | Dark | System` TopBar menu that follows the OS by default and persists an override.
+- [x] 7.7 Panel headers with icon and pill; keyword list rows; segmented platform filter with counts.
+- [x] 7.8 425px right rail; Execution `Working` status; Strategy recommendation cards with evidence signal lines and **Open plan**; 520px sheet.
+- [x] 7.9 Compact feed cards and filters; ui-spec updated; light/dark evidence against the canvas.
 - Deferred (needs data, later Step): per-keyword 7-day mention counts and sparklines, and the recommendation sheet's dated plan steps.
 
 | # | Scenario | Verify |

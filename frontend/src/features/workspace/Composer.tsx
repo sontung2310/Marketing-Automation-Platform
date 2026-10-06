@@ -42,7 +42,7 @@ export function Composer() {
         <Button
           variant="primary"
           aria-label="Send"
-          className="h-4 w-4 justify-center rounded-lg px-0"
+          size="square"
           disabled={draft.trim().length === 0}
           onClick={send}
         >

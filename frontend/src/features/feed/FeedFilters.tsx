@@ -14,12 +14,13 @@ interface FeedFiltersProps {
 
 export function FeedFilters({ competitors, value, onChange }: FeedFiltersProps) {
   return (
-    <div className="flex gap-1 border-b border-border px-2 py-1">
+    <div className="grid grid-cols-2 gap-1 border-b border-border px-2 py-1">
       <Menu
         label="Filter by activity type"
         role="listbox"
         trigger={value.activityType ?? "All types"}
         triggerClassName="border border-border bg-surface-card text-text-muted"
+        fill
       >
         {(close) => (
           <>
@@ -58,6 +59,7 @@ export function FeedFilters({ competitors, value, onChange }: FeedFiltersProps) 
           "All competitors"
         }
         triggerClassName="border border-border bg-surface-card text-text-muted"
+        fill
       >
         {(close) => (
           <>

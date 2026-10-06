@@ -123,7 +123,7 @@ export function ExecutionTurn({ run }: { run: RunState }) {
           <span>{run.error.message}</span>
           <Button
             variant="quiet"
-            className="text-small"
+            size="sm"
             onClick={() => startRun(run.request, run.trigger_label, { retry: true })}
           >
             Retry run

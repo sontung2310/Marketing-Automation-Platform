@@ -94,7 +94,9 @@ export function StrategyPanel() {
               aria-label={`Open plan for ${recommendation.title}`}
               aria-expanded={openId === recommendation.id}
               onClick={() => setOpenId(recommendation.id)}
-              className="ml-auto h-3.5 font-medium shadow-xs hover:border-text hover:bg-text hover:text-surface-card"
+              variant="outline"
+              size="sm"
+              className="ml-auto"
             >
               <Icon name="list" size={12} />
               Open plan

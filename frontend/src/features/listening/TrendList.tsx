@@ -80,7 +80,8 @@ export function TrendList() {
                 <Button
                   key={action.action}
                   variant="quiet"
-                  className="text-small opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                  size="sm"
+                  className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
                   onClick={() =>
                     startRun({
                       trigger: { kind: "TREND", ref_id: trend.id, action: action.action },
