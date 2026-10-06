@@ -32,6 +32,8 @@
    - **If it survives:** use `BackgroundTasks`.
    - **If not, fallback:** the first `GET /runs/{id}/events` atomically claims the run (`execution_claimed_at` set only if absent) and runs it inside that streaming request, which stays open for the run's duration.
 
+   **Spike result (task 1.1, 2026-10-06):** on a preview of the API project, `POST` returned `202` in 0.31 s, and the background task wrote its marker 40 s later. A streaming request whose client hung up after 5 s also finished its work. So runs execute through `BackgroundTasks`, and the fallback is not needed.
+
    Either way, a run left `RUNNING` past `RUN_WALL_CLOCK_S` (120 s) reads as `FAILED` with "The run was interrupted".
 4. **The router is an orchestration service, not a third agent package.** `orchestration/router.py` holds `RouteDecision`, the router instructions (`router_instructions.md`) and a typed `classify()` (OpenAI Agents SDK, `output_type=RouteDecision`, `OPENAI_MODEL_ROUTER`). It never touches the MCP or Mongo. Its decision maps through one registry, `DECISION_OUTCOMES: dict[Intent, Outcome]`, to a run, a clarification or an out-of-scope answer. `references.py` gains `resolve_reference()`, which turns `recommendation:N` or `deliverable:last` into the same trigger context as the matching UI button.
 5. **The router suite reuses the harness.** It is a new entry in `evals/suites.py`, with deterministic checks only (no judge, no MCP, no fixture database beyond a session stub for `RT-REF`). Cases follow evaluation-spec §4 with a `route` expectation. A fresh reviewer subagent checks every case for over-fitting before the baseline (owner decision).
