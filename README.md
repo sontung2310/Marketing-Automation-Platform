@@ -64,7 +64,8 @@ production build never imports the worker.
   - **Web** (repo root): the static Vite build. `vercel.json` rewrites
     `/api/*` to the API project, so the browser stays same-origin.
   - **API** (Root Directory `backend`): FastAPI as a Python function, from
-    `backend/index.py`. Set `MONGODB_URI`, `MONGODB_DATABASE`,
+    `backend/index.py`; `backend/vercel.json` pins the FastAPI framework so the
+    project is never built as a static site. Set `MONGODB_URI`, `MONGODB_DATABASE`,
     `DEFAULT_COMPANY_ID` and `OPENAI_API_KEY` there, and allow Vercel's
     dynamic egress in MongoDB Atlas Network Access (`0.0.0.0/0`, or the Atlas
     Vercel integration). If the API project's domain is not
