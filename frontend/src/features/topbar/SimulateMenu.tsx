@@ -27,11 +27,7 @@ export function SimulateMenu() {
         {simulate.error instanceof ApiError
           ? simulate.error.message
           : "The signal could not be simulated."}
-        <Button
-          variant="quiet"
-          className="text-small text-text-inverse"
-          onClick={() => simulate.reset()}
-        >
+        <Button variant="quietInverse" size="sm" onClick={() => simulate.reset()}>
           Dismiss
         </Button>
       </span>
@@ -41,7 +37,11 @@ export function SimulateMenu() {
   return (
     <Menu
       label="Simulate a signal"
-      trigger="🎭 Simulate a signal"
+      trigger={
+        <span>
+          🎭 Simulate<span className="hidden tablet:inline"> a signal</span>
+        </span>
+      }
       triggerClassName="border border-text-inverse-muted text-text-inverse"
     >
       {(close) => (

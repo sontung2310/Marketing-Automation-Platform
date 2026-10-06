@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ApiError, type Channel, type Trend } from "../../api";
 import { Badge } from "../../components/ds/Badge";
@@ -31,11 +31,21 @@ const DIRECTION_COLOR: Record<Trend["direction"], string> = {
 export function TrendList() {
   const [tab, setTab] = useState<TrendTab>("ALL");
   const trends = useTrends(tab);
+  const all = useTrends("ALL").data?.items;
+  const options = useMemo(
+    () =>
+      TABS.map((option) => ({
+        ...option,
+        count: all?.filter((trend) => option.value === "ALL" || trend.channel === option.value)
+          .length,
+      })),
+    [all],
+  );
   const { startRun, highlightedId } = useWorkspace();
 
   return (
     <>
-      <Tabs label="Platform" options={TABS} value={tab} onChange={setTab} />
+      <Tabs label="Platform" variant="segmented" options={options} value={tab} onChange={setTab} />
 
       {trends.isPending ? <SkeletonList rows={5} label="Loading trends" /> : null}
 
@@ -61,7 +71,7 @@ export function TrendList() {
         >
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 items-center gap-1">
-              <span className="truncate text-body font-semibold text-text">{trend.topic}</span>
+              <span className="truncate text-body font-medium text-text">{trend.topic}</span>
               {trend.is_mock ? <Badge title="Demo data, not a measured trend">MOCK</Badge> : null}
             </span>
             <span className="flex items-center gap-1 text-small text-text-muted">
@@ -70,7 +80,8 @@ export function TrendList() {
                 <Button
                   key={action.action}
                   variant="quiet"
-                  className="text-small opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                  size="sm"
+                  className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
                   onClick={() =>
                     startRun({
                       trigger: { kind: "TREND", ref_id: trend.id, action: action.action },
@@ -84,7 +95,7 @@ export function TrendList() {
           </span>
           <span
             className={cn(
-              "ml-auto flex-none text-h3 font-semibold",
+              "ml-auto flex-none text-small font-medium",
               DIRECTION_COLOR[trend.direction],
             )}
           >

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { Button } from "../../components/ds/Button";
 import { EmptyState } from "../../components/ds/EmptyState";
-import { Panel } from "../../components/ds/Panel";
+import { Panel, PanelCount } from "../../components/ds/Panel";
 import { ClarificationBlock } from "./ClarificationBlock";
 import { Composer } from "./Composer";
 import { ExecutionTurn } from "./ExecutionTurn";
@@ -16,6 +16,8 @@ const PROMPT_CHIPS = [
 
 export function ExecutionChat() {
   const { transcript, runs, setDraft } = useWorkspace();
+  const requests = transcript.filter((entry) => entry.kind === "run");
+  const working = requests.some((entry) => runs[entry.id]?.status === "RUNNING");
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,11 +27,21 @@ export function ExecutionChat() {
   return (
     <Panel
       title="Execution agent"
+      icon="pen"
       className="flex min-h-0 flex-1 flex-col"
       meta={
-        <span className="text-small text-text-muted">
-          Session · {transcript.filter((entry) => entry.kind === "run").length} requests
-        </span>
+        <>
+          {working ? (
+            <span className="flex items-center gap-0.5 text-small text-text-muted">
+              <span
+                aria-hidden="true"
+                className="h-0.75 w-0.75 rounded-full bg-secondary ring-3 ring-secondary-light"
+              />
+              Working
+            </span>
+          ) : null}
+          <PanelCount>{requests.length} requests</PanelCount>
+        </>
       }
     >
       <div
@@ -40,15 +52,7 @@ export function ExecutionChat() {
       >
         <div className="mx-auto flex w-full max-w-80 flex-col gap-3">
           {transcript.length === 0 ? (
-            <EmptyState message="Pick an item from the feed, or ask Execution for a deliverable.">
-              <div className="flex flex-wrap gap-1">
-                {PROMPT_CHIPS.map((chip) => (
-                  <Button key={chip} onClick={() => setDraft(chip)}>
-                    {chip}
-                  </Button>
-                ))}
-              </div>
-            </EmptyState>
+            <EmptyState message="Pick an item from the feed, or ask Execution for a deliverable." />
           ) : null}
 
           {transcript.map((entry) => {
@@ -56,7 +60,7 @@ export function ExecutionChat() {
               return (
                 <p
                   key={entry.id}
-                  className="max-w-4/5 self-end rounded-lg bg-surface-page px-2 py-1 text-body text-text"
+                  className="max-w-4/5 self-end rounded-lg bg-surface-muted px-2 py-1 text-body text-text"
                 >
                   {entry.text}
                 </p>
@@ -80,7 +84,14 @@ export function ExecutionChat() {
       </div>
 
       <div className="px-3 pb-2">
-        <div className="mx-auto w-full max-w-80">
+        <div className="mx-auto flex w-full max-w-80 flex-col gap-1">
+          <div role="group" aria-label="Try" className="flex flex-wrap justify-center gap-1">
+            {PROMPT_CHIPS.map((chip) => (
+              <Button key={chip} variant="chip" onClick={() => setDraft(chip)}>
+                {chip}
+              </Button>
+            ))}
+          </div>
           <Composer />
         </div>
       </div>

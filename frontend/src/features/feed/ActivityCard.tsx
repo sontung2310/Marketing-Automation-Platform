@@ -26,7 +26,7 @@ export function ActivityCard({ activity, onAction, highlighted }: ActivityCardPr
       id={evidenceTargetId(activity.id)}
       aria-label={activity.title}
       className={cn(
-        "flex flex-col gap-1 border-b border-border p-2 transition-colors duration-300",
+        "flex flex-col gap-1 border-b border-border px-2 pt-1.5 pb-2 transition-colors duration-300",
         highlighted ? "bg-surface-selected" : "bg-surface-card",
       )}
     >
@@ -57,8 +57,10 @@ export function ActivityCard({ activity, onAction, highlighted }: ActivityCardPr
       {activity.price && delta !== null ? (
         <p className="text-body text-text">
           {money(activity.price.before, activity.price.currency)} →{" "}
-          <b>{money(activity.price.after, activity.price.currency)}</b>{" "}
-          <span className="font-semibold text-text-unfavorable">{signedPercent(delta)}</span>
+          <span className="font-medium">
+            {money(activity.price.after, activity.price.currency)}
+          </span>{" "}
+          <span className="font-medium text-text-unfavorable">{signedPercent(delta)}</span>
         </p>
       ) : null}
 
@@ -67,21 +69,21 @@ export function ActivityCard({ activity, onAction, highlighted }: ActivityCardPr
           href={activity.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-0.5 self-start text-small text-text-muted"
+          className="inline-flex max-w-full min-w-0 items-center gap-0.5 self-start text-small text-text-muted"
         >
-          {displayUrl(activity.url)}
+          <span className="truncate">{displayUrl(activity.url)}</span>
           <Icon name="externalLink" size={12} />
         </a>
       ) : null}
 
-      <div className="flex items-center gap-2 pt-0.5">
+      <div className="flex items-center justify-end gap-1.5 pt-0.5">
         {secondary.map((action) => (
-          <Button key={action.action} variant="quiet" onClick={() => onAction(action)}>
+          <Button key={action.action} variant="quiet" size="sm" onClick={() => onAction(action)}>
             {action.label}
           </Button>
         ))}
         {primary ? (
-          <Button variant="primary" className="ml-auto" onClick={() => onAction(primary)}>
+          <Button variant="primary" size="sm" onClick={() => onAction(primary)}>
             {primary.label}
           </Button>
         ) : null}

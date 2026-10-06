@@ -27,7 +27,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
 
   if (current.status === "EXECUTED" && current.receipt) {
     return (
-      <div className="flex items-center gap-1 border-t border-border bg-surface-page px-2 py-1">
+      <div className="flex items-center gap-1 border-t border-border bg-surface-muted px-2 py-1">
         <Badge tone="favorable">EXECUTED</Badge>
         <span className="text-small text-text">{current.summary}</span>
         <span className="ml-auto text-small text-text-muted">
@@ -39,7 +39,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
 
   if (current.status === "FAILED") {
     return (
-      <div className="flex items-center gap-1 border-t border-border bg-surface-page px-2 py-1">
+      <div className="flex items-center gap-1 border-t border-border bg-surface-muted px-2 py-1">
         <Badge tone="unfavorable">FAILED</Badge>
         <span className="text-small text-text">{current.summary}</span>
         <span className="ml-auto text-small text-text-unfavorable">{current.error}</span>
@@ -49,7 +49,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
 
   if (current.status === "DISCARDED") {
     return (
-      <div className="flex items-center gap-1 border-t border-border bg-surface-page px-2 py-1">
+      <div className="flex items-center gap-1 border-t border-border bg-surface-muted px-2 py-1">
         <Badge>DISCARDED</Badge>
         <span className="text-small text-text-muted">{current.summary}</span>
       </div>
@@ -57,14 +57,15 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
   }
 
   return (
-    <div className="flex flex-col gap-1 border-t border-border bg-surface-page px-2 py-1">
+    <div className="flex flex-col gap-1 border-t border-border bg-surface-muted px-2 py-1">
       <div className="flex items-center gap-1">
-        <span className="flex-none text-small font-semibold text-text">{current.action_type}</span>
+        <span className="flex-none text-small font-medium text-text">{current.action_type}</span>
         <span className="text-small text-text-muted">{current.summary}</span>
         {pending ? <Spinner label="Approving…" /> : null}
         <Button
           variant="quiet"
-          className="ml-auto text-small"
+          size="sm"
+          className="ml-auto"
           disabled={pending}
           onClick={() => discard.mutate(current.id)}
         >
@@ -72,7 +73,7 @@ export function ProposedActionRow({ action }: { action: ProposedAction }) {
         </Button>
         <Button
           variant="primary"
-          className="h-4 text-small"
+          size="sm"
           disabled={pending}
           onClick={() =>
             approve.mutate({

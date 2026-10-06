@@ -1,17 +1,20 @@
 import { useId, type ReactNode } from "react";
 
 import { cn } from "../../lib/cn";
+import { Icon, type IconName } from "./Icon";
 
 interface PanelProps {
   title: string;
-  /** Right-aligned meta text or control in the panel header. */
+  /** The framed glyph before the title (ui-spec §3). */
+  icon: IconName;
+  /** Right-aligned header content: usually a PanelCount, or a labelled status. */
   meta?: ReactNode;
   className?: string;
   children: ReactNode;
 }
 
-/** White bordered region with an uppercase label heading (design system: Card). */
-export function Panel({ title, meta, className, children }: PanelProps) {
+/** Bordered region with an icon, a sentence-case title and a count (design system: Card). */
+export function Panel({ title, icon, meta, className, children }: PanelProps) {
   const headingId = useId();
   return (
     <section
@@ -21,16 +24,25 @@ export function Panel({ title, meta, className, children }: PanelProps) {
         className,
       )}
     >
-      <div className="flex items-center gap-1 border-b border-border-strong px-2 py-1">
-        <h2
-          id={headingId}
-          className="text-small font-semibold tracking-label text-text-muted uppercase"
-        >
+      <div className="flex h-6 flex-none items-center gap-1 border-b border-border px-2">
+        <span className="grid h-3 w-3 flex-none place-items-center rounded-sm border border-border bg-surface-card text-text shadow-xs">
+          <Icon name={icon} size={14} />
+        </span>
+        <h2 id={headingId} className="text-body font-medium text-text">
           {title}
         </h2>
         {meta ? <div className="ml-auto flex items-center gap-1">{meta}</div> : null}
       </div>
       {children}
     </section>
+  );
+}
+
+/** The header's count pill, such as `5 keywords` or `3 picks`. */
+export function PanelCount({ children }: { children: ReactNode }) {
+  return (
+    <span className="rounded-full border border-border bg-surface-muted px-1 text-small whitespace-nowrap text-text-muted">
+      {children}
+    </span>
   );
 }

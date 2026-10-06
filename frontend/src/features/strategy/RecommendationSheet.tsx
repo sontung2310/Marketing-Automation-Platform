@@ -18,7 +18,7 @@ const STATUS_TONE: Record<Recommendation["status"], BadgeTone> = {
 };
 
 /**
- * The 440px detail pop-out. "Do this" writes the brief into the Execution
+ * The 520px detail pop-out. "Do this" writes the brief into the Execution
  * composer and sends nothing (ui-spec §4).
  */
 export function RecommendationSheet({ recommendation, onClose }: RecommendationSheetProps) {
@@ -31,7 +31,7 @@ export function RecommendationSheet({ recommendation, onClose }: RecommendationS
       onClose={onClose}
       header={
         <>
-          <span className="text-h2 text-primary">{recommendation.ordinal}</span>
+          <span className="text-h2 text-text-accent">{recommendation.ordinal}</span>
           <Badge tone={PRIORITY_TONE[recommendation.priority]}>{recommendation.priority}</Badge>
           <Badge>{recommendation.kind}</Badge>
           <Badge tone={STATUS_TONE[recommendation.status]}>{recommendation.status}</Badge>
@@ -65,19 +65,19 @@ export function RecommendationSheet({ recommendation, onClose }: RecommendationS
       <h3 className="text-h3 text-text">{recommendation.title}</h3>
 
       <dl className="grid grid-cols-3 gap-1 text-small">
-        <dt className="font-semibold tracking-label text-text-muted uppercase">Make</dt>
+        <dt className="font-medium tracking-label text-text-muted uppercase">Make</dt>
         <dd className="col-span-2 text-body text-text">
           {next ? next.deliverable_type : "Nothing yet"}
         </dd>
-        <dt className="font-semibold tracking-label text-text-muted uppercase">Channel</dt>
+        <dt className="font-medium tracking-label text-text-muted uppercase">Channel</dt>
         <dd className="col-span-2 text-body text-text">{recommendation.channel ?? "—"}</dd>
       </dl>
 
       <p className="text-body text-text">{recommendation.rationale}</p>
 
       <div className="flex flex-col gap-1">
-        <span className="text-small font-semibold tracking-label text-text-muted uppercase">
-          Evidence
+        <span className="text-small font-medium tracking-label text-text-muted uppercase">
+          Based on
         </span>
         <div className="flex flex-wrap gap-1">
           {recommendation.evidence.map((evidence) => (

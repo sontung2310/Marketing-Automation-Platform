@@ -5,11 +5,11 @@ import { cn } from "../../lib/cn";
 export type BadgeTone = "neutral" | "brand" | "favorable" | "unfavorable" | "attention";
 
 const TONE: Record<BadgeTone, string> = {
-  neutral: "bg-surface-page text-text-muted",
-  brand: "bg-primary-light text-primary-hover",
+  neutral: "bg-surface-muted text-text-muted",
+  brand: "bg-primary-light text-text-accent",
   favorable: "bg-secondary-light text-text-favorable",
   unfavorable: "bg-primary-light text-text-unfavorable",
-  attention: "bg-surface-page text-text-attention",
+  attention: "bg-surface-muted text-text-attention",
 };
 
 interface BadgeProps {
@@ -24,7 +24,7 @@ export function Badge({ tone = "neutral", title, children }: BadgeProps) {
     <span
       title={title}
       className={cn(
-        "inline-flex flex-none items-center rounded-sm px-1 text-small font-semibold tracking-label uppercase",
+        "inline-flex flex-none items-center rounded-sm px-1 text-small font-medium tracking-label uppercase",
         TONE[tone],
       )}
     >

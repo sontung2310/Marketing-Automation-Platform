@@ -46,7 +46,7 @@ export function ExecutionTurn({ run }: { run: RunState }) {
       className="flex flex-col gap-1 bg-surface-card"
     >
       <div className="flex items-center gap-1 text-small text-text-muted">
-        <span className="font-semibold text-text">EXECUTION</span>
+        <span className="font-medium text-text">EXECUTION</span>
         <span>{run.trigger_label}</span>
       </div>
 
@@ -84,7 +84,7 @@ export function ExecutionTurn({ run }: { run: RunState }) {
                 <Icon name={TOOL_ICON[call.tool] ?? "database"} size={14} />
               </span>
               <span className="flex h-3.5 flex-1 items-center gap-1 rounded-sm border border-border px-1 text-small">
-                <span className="font-semibold text-text">{call.args_summary}</span>
+                <span className="font-medium text-text">{call.args_summary}</span>
                 <span className="text-text-muted">{call.tool}</span>
                 {call.result_count !== null ? (
                   <span className="text-text-muted">{call.result_count} results</span>
@@ -123,7 +123,7 @@ export function ExecutionTurn({ run }: { run: RunState }) {
           <span>{run.error.message}</span>
           <Button
             variant="quiet"
-            className="text-small"
+            size="sm"
             onClick={() => startRun(run.request, run.trigger_label, { retry: true })}
           >
             Retry run

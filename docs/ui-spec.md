@@ -6,6 +6,8 @@
 > `readme.md` is binding for color, type, spacing, shape, motion, iconography
 > and content voice. This document covers the page-specific workspace and its
 > deliberate deviations from that system.
+> Visual target: the owner's **Marketing Workspace** design canvas, with a
+> light and a dark board at 1440×900.
 
 ## 1. Principles
 
@@ -34,7 +36,7 @@ The design target is 1440×900.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│ TopBar: [Marketing Eye ▾]  Marketing workspace  Last sync 3 min ago  [🎭 Simulate ▾]     │
+│ TopBar: [Marketing Eye ▾]  Marketing workspace  Last sync 3 min ago [System ▾] [🎭 Simulate ▾] │
 ├──────────────────────────────┬──────────────────────────────────┬────────────────────────┤
 │ SOCIAL LISTENING              │ EXECUTION                        │ STRATEGY               │
 │ Tracking keywords [edit]      │ fixed-height transcript           │ Recommendations         │
@@ -50,26 +52,36 @@ The design target is 1440×900.
 │                              │ Ask for a deliverable… [Send]      │ │ Brightlane · Web     │ │
 │                              │                                    │ │ [Create similar]     │ │
 └──────────────────────────────┴──────────────────────────────────┴────────────────────────┘
-       320px fixed                         flex                         360px fixed
+       320px fixed                         flex                         425px fixed
 ```
 
-- The page ground is `--surface-page`. The three working regions are white
-  panels with a 1px border. Gutters are 16px and page padding is 24px. At the
-  1440×900 design target the grid is `320px / minmax(560px, 1fr) / 360px`: the
-  right rail stacks Strategy over the feed and needs the extra width, while the
-  left rail holds a keyword editor and two compact tables.
+- The page ground is `--surface-page`. The three working regions are card
+  panels with a 1px border. Each panel header shows a framed icon, the title
+  in sentence case and a count or status pill. Gutters are 16px and page
+  padding is 24px. At the 1440×900 design target the grid is
+  `320px / minmax(0, 1fr) / 425px`: the right rail stacks Strategy cards over
+  the feed and needs the extra width, the left rail holds a keyword list and
+  two compact tables, and the centre absorbs the rest, so the body never
+  scrolls sideways down to the 1281px desktop breakpoint.
 - The left region contains tracking keywords, trends and influencers. The
   right region puts Strategy recommendations above the competitor activity
   feed. The centre region is the only chat transcript.
 - Each region scrolls independently. The TopBar is sticky. The Execution
   composer is docked to the bottom of the centre transcript.
 - The TopBar has no logo. It contains the tenant selector, context label, last
-  sync time and the Simulate menu.
+  sync time, the theme menu and the Simulate menu.
+- **Themes:** light and dark. With no saved choice the page follows the
+  operating system's colour scheme, live. The TopBar's `Light | Dark | System`
+  menu overrides it; the choice persists in this browser, and `System` clears
+  it. The theme is resolved before first paint. The dark theme remaps the same
+  tokens (`frontend/src/styles/theme.css`), so no component has a dark variant.
 - **Responsive:**
   - At 1280px and below, the left social-listening region becomes a tab in the
     workspace shell while Strategy and the feed remain available.
   - At 900px and below, the page is one column with a bottom segmented switcher
     `Feed | Workspace | Insights`.
+  - Below 901px, the TopBar keeps only its controls: the context label and
+    last-sync text hide, and the theme and Simulate triggers shorten.
   - At every width, the body never scrolls horizontally.
 
 ## 3. Components
@@ -81,22 +93,22 @@ Components are rebuilt as Tailwind components in
 
 | Component              | Built from                  | Notes                                                                                                                                                                                                                                                                                                                                                           |
 | ---------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TopBar`               | DS controls                 | Tenant selector, `Marketing workspace` context label, last-sync meta text and Simulate menu. No logo.                                                                                                                                                                                                                                                           |
+| `TopBar`               | DS controls                 | Tenant selector, `Marketing workspace` context label, last-sync meta text, the `Light \| Dark \| System` theme menu and the Simulate menu. Ink band in light, brand red in dark. No logo. |
 | `SimulateMenu`         | DS `Button` + overlay       | Lists all 9 `ActivityType` values plus `Random`; shows a labelled `Simulating…` state while the request is in flight.                                                                                                                                                                                                                                           |
-| `SocialListeningPanel` | DS `Card`, `Input`, `Tabs`  | Tracking-keyword editor in the header, then Trends and Influencers panels. Keywords scope social listening only; they do not filter the competitor feed.                                                                                                                                                                                                        |
-| `TrackedKeywordEditor` | DS `Input` + quiet controls | Shows five seeded terms, trims on save, rejects empty values, and enforces 1–20 case-insensitively unique terms.                                                                                                                                                                                                                                                |
-| `TrendRow`             | DS row primitives           | Topic, channel, momentum with arrow and sign, mention count, sample-post links and a **Get topic ideas** quiet button.                                                                                                                                                                                                                                          |
+| `SocialListeningPanel` | DS `Panel`, `Input`, `Tabs` | Tracked-keyword list in the header, then Trends and Influencers panels. The header pill counts keywords and trends. Keywords scope social listening only; they do not filter the competitor feed. |
+| `TrackedKeywordEditor` | DS list rows + quiet controls | One row per term with a tag glyph; the labelled remove control shows on row hover or keyboard focus. **Add keyword** reveals the labelled input and moves focus into it. Shows five seeded terms, trims on save, rejects empty values, and enforces 1–20 case-insensitively unique terms. |
+| `TrendRow`             | DS row primitives           | Topic, channel, momentum with arrow and sign, mention count and a **Get topic ideas** quiet button. Filtered by a segmented platform control whose options show their trend counts. |
 | `InfluencerTable`      | DS table                    | Exactly two visible columns: Influencer and Followers. Each row shows a monogram, linked handle, channel, compact followers, engagement and up to three topic labels, plus **Draft outreach**. No avatar images.                                                                                                                                                |
-| `ExecutionChat`        | DS `Card`, `Input`          | Fixed-height, independently scrolling transcript. The composer is docked beneath it and offers an auto-growing textarea (max 6 lines) and **Send**. There is no agent selector: the centre belongs to the Execution agent alone, Strategy is reached from a feed item, and a strategy-shaped message comes back as one clarification line pointing at the feed. |
+| `ExecutionChat`        | DS `Panel`, `Input`         | Fixed-height, independently scrolling transcript. The header shows a labelled `Working` status while a run streams, and the request count. Three prompt chips sit centred above the docked composer, which offers an auto-growing textarea (max 6 lines) and **Send**. There is no agent selector: the centre belongs to the Execution agent alone, Strategy is reached from a feed item, and a strategy-shaped message comes back as one clarification line pointing at the feed. |
 | `ExecutionTurn`        | Structured blocks           | Shows the `EXECUTION` label and trigger, one collapsed line for thinking/tool calls that expands to reasoning and one row per tool, then the answer and deliverable block. Only marketer messages may use a quiet bubble.                                                                                                                                       |
 | `DeliverableCard`      | DS `Card`                   | Type, channel, title, sanitized markdown body, word/character count, **Copy**, variants, four quality statuses and proposed-action controls.                                                                                                                                                                                                                    |
 | `ProposedActionRow`    | DS buttons                  | Editable schedule (`scheduled_for` for social posts, `date` for calendar entries), **Discard** and **Approve**. Approval ends with `EXECUTED`, receipt ID and `mock`, or a terminal `FAILED` row showing `error`.                                                                                                                                               |
 | `ClarificationBlock`   | DS secondary buttons        | One clarification line with 2–3 quick replies. A Strategy-shaped question points at the feed instead of entering the Execution transcript.                                                                                                                                                                                                                      |
-| `StrategyPanel`        | DS rows + sheet             | Recommendation rows show ordinal, priority, decision at body weight 600, status and plain-language `next_action`.                                                                                                                                                                                                                                               |
-| `RecommendationSheet`  | DS pop-out sheet            | 440px wide. Shows what to do, why, evidence chips and **Do this**. Clicking **Do this** writes the request into the Execution composer without sending it.                                                                                                                                                                                                      |
-| `EvidenceChip`         | DS pill                     | Displays a short title and keeps the raw evidence ID in a tooltip. Click scrolls to and flash-highlights the target item.                                                                                                                                                                                                                                       |
+| `StrategyPanel`        | DS cards + sheet            | One card per recommendation, not grouped by run: zero-padded ordinal, priority verbatim, title, up to three signal lines from its evidence (`Trend`, `Competitor`, `Influencer`, `Company` with the note) and an **Open plan** button. The header pill counts the picks. |
+| `RecommendationSheet`  | DS pop-out sheet            | 520px wide. Shows what to make, the channel, why, `Based on` evidence chips and **Do this**. Clicking **Do this** writes the request into the Execution composer without sending it. |
+| `EvidenceChip`         | DS pill                     | Displays the evidence kind and a short title, and keeps the raw evidence ID in a tooltip. Click scrolls to and flash-highlights the target item. |
 | `ActivityFeed`         | DS `Card`, `EmptyState`     | Header, unseen count, type and competitor filters, newest-first cursor pagination, live inserts and seen state. Lives below Strategy on the right.                                                                                                                                                                                                              |
-| `ActivityCard`         | DS `Card`, badges           | Type, relative time, competitor/channel, two-line title, conditional author or price delta, safe external URL, primary action from `actions[]`, quiet secondary action, and `MOCK`/`🧪 SIMULATED` badges.                                                                                                                                                       |
+| `ActivityCard`         | DS `Card`, badges           | Type, relative time, competitor/channel, two-line 14px title, conditional author or price delta, safe external URL truncated to one line, a small primary action from `actions[]` with a quiet secondary beside it, and `MOCK`/`🧪 SIMULATED` badges. |
 | `ActivityTypeBadge`    | DS `ChangeTypeBadge`        | Covers all 9 `ActivityType` values using existing tones; no new colors.                                                                                                                                                                                                                                                                                         |
 
 **Until the Platform API exists** (Step 7 is brought forward ahead of Step 6),
@@ -131,7 +143,7 @@ and useful: never apologize, and render enum values verbatim.
 | Social listening | 5 keyword/trend/influencer skeleton rows | `No trends computed yet.` or `No influencers matched these keywords.`                  | API `message` verbatim plus **Retry**                                         |
 | Activity feed    | 4 flat skeleton cards                    | `No competitor activity in the last 30 days — run the pipelines or simulate a signal.` | API `message` verbatim plus **Retry**                                         |
 | Strategy panel   | 3 recommendation skeleton rows           | `No open recommendations — ask Strategy for a plan.`                                   | API `message` verbatim plus **Retry**                                         |
-| Execution chat   | Run progress checklist                   | `Pick an item from the feed, or ask Execution for a deliverable.` with 3 prompt chips  | `run.failed` message verbatim plus **Retry run**                              |
+| Execution chat   | Run progress checklist                   | `Pick an item from the feed, or ask Execution for a deliverable.`; 3 prompt chips above the composer | `run.failed` message verbatim plus **Retry run**                              |
 | SSE connection   | —                                        | —                                                                                      | Thin warning bar: `Live updates paused — reconnecting…`, with bounded backoff |
 
 ## 6. Accessibility
@@ -149,7 +161,12 @@ and useful: never apologize, and render enum values verbatim.
   `--color-text-attention` and `--color-text-unfavorable` tokens, which clear
   4.5:1 on white, on the page ground and on their own tints. The fill tokens
   are unchanged and still carry badges, dots and borders.
-- Enum badges use the 13px uppercase label style, and an enum is never
+- The dark theme meets the same bar. Its values come from the design canvas's
+  dark board, lightened where the canvas missed AA: status text, red type
+  (`--color-text-accent`) and the TopBar's muted text on the red band. Filled
+  buttons keep `--color-primary-hover` in both themes. The axe scan runs in
+  both themes.
+- Enum badges use the 12px uppercase label style, and an enum is never
   re-cased for display: a lowercase value such as `schedule_social_post`
   renders as itself.
 - The keyword editor labels every input and exposes validation text without
@@ -163,6 +180,8 @@ and useful: never apologize, and render enum values verbatim.
 | Nothing is sticky except the sidebar and TopBar | The Execution composer is docked at the bottom of its fixed-height transcript.    | It must remain reachable while a long turn is visible.                                                                                                                                             |
 | Max content width ~1100px, single column        | Full-width three-region workspace, capped at 320/flex/360.                        | Watching, deciding and acting are simultaneous jobs.                                                                                                                                               |
 | `--color-primary` fills the primary button      | Filled buttons use `--color-primary-hover` and press to `--color-primary-strong`. | White on `--color-primary` is 4.32:1, below the AA 4.5:1 that §6 requires. `--color-primary` is unchanged and still carries every accent that is not type on a fill, and no longer sets 13px type. |
+| Inter at 13/15/18/24/32px, weight 600 | Geist at 11/12/13/14/16px, weight 500. | The owner's redesigned workspace canvas sets a quieter, denser scale for a three-region screen. |
+| Light only | A dark theme remapping the same tokens; the TopBar band turns brand red. | The owner's canvas adds a dark board. |
 
 ## 8. Anti-slop checklist
 
@@ -178,8 +197,12 @@ The build fails review if any item fails.
 - [ ] No AI-sparkle iconography or labels such as `✨ Generate with AI`.
 - [ ] One primary button per card; all other controls are secondary or quiet.
 - [ ] Colors, spacing, radius, shadow and type use only the tokens in
-      `frontend/src/styles/theme.css`; no arbitrary values or inline styles.
-- [ ] Spacing follows the 8px grid and type uses only the five DS sizes.
+      `frontend/src/styles/theme.css`; no arbitrary values, inline styles or
+      literal colours in any component.
+- [ ] Spacing follows the 8px grid (4px half-steps allowed) and type uses
+      only the five sizes in `theme.css`.
+- [ ] Both themes are checked: every region reads in light and dark, and the
+      axe scan passes in each.
 - [ ] Enums render verbatim (`NEW_BLOG`, not `New blog post`).
 - [ ] Numbers are tabular and concrete (`$2,500 → $1,990`, `▲142%`).
 - [ ] No spinner appears without a text label, and motion stays within DS

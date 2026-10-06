@@ -3,7 +3,7 @@ import { Badge } from "../../components/ds/Badge";
 import { Button } from "../../components/ds/Button";
 import { EmptyState } from "../../components/ds/EmptyState";
 import { ErrorState } from "../../components/ds/ErrorState";
-import { Panel } from "../../components/ds/Panel";
+import { Panel, PanelCount } from "../../components/ds/Panel";
 import { SkeletonList } from "../../components/ds/Skeleton";
 import { useInfluencers } from "../../hooks/queries";
 import { cn } from "../../lib/cn";
@@ -20,11 +20,8 @@ export function InfluencerTable() {
     <Panel
       className="flex-none"
       title="Influencers"
-      meta={
-        influencers.isSuccess ? (
-          <span className="text-small text-text-muted">{items.length} ranked</span>
-        ) : null
-      }
+      icon="people"
+      meta={influencers.isSuccess ? <PanelCount>{items.length} ranked</PanelCount> : null}
     >
       {influencers.isPending ? <SkeletonList rows={5} label="Loading influencers" /> : null}
 
@@ -49,13 +46,13 @@ export function InfluencerTable() {
             <tr>
               <th
                 scope="col"
-                className="border-b border-border-strong px-2 py-1 text-left text-small font-semibold text-text-muted"
+                className="border-b border-border-strong px-2 py-1 text-left text-small font-medium text-text-muted"
               >
                 Influencer
               </th>
               <th
                 scope="col"
-                className="border-b border-border-strong px-2 py-1 text-right text-small font-semibold text-text-muted"
+                className="border-b border-border-strong px-2 py-1 text-right text-small font-medium text-text-muted"
               >
                 Followers
               </th>
@@ -75,7 +72,7 @@ export function InfluencerTable() {
                   <span className="flex min-w-0 items-center gap-1">
                     <span
                       aria-hidden="true"
-                      className="grid h-3.5 w-3.5 flex-none place-items-center rounded-full border border-border text-small font-semibold text-text-muted"
+                      className="grid h-3.5 w-3.5 flex-none place-items-center rounded-full border border-border text-small font-medium text-text-muted"
                     >
                       {initials(influencer.name)}
                     </span>
@@ -84,7 +81,7 @@ export function InfluencerTable() {
                         href={influencer.profile_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="truncate text-body font-semibold text-text"
+                        className="truncate text-body font-medium text-text"
                       >
                         {influencer.handle}
                       </a>
@@ -97,7 +94,8 @@ export function InfluencerTable() {
                           <Button
                             key={action.action}
                             variant="quiet"
-                            className="text-small opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                            size="sm"
+                            className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
                             onClick={() =>
                               startRun(
                                 {
@@ -118,7 +116,7 @@ export function InfluencerTable() {
                     </span>
                   </span>
                 </td>
-                <td className="border-b border-border px-2 py-1 text-right text-body font-semibold text-text tabular-nums">
+                <td className="border-b border-border px-2 py-1 text-right text-body font-medium text-text tabular-nums">
                   {compactNumber(influencer.followers)}
                 </td>
               </tr>

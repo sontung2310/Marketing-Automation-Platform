@@ -16,6 +16,25 @@ async function openWorkspace(page: Page): Promise<string[]> {
   return consoleErrors;
 }
 
+/** The ui-spec §6 accessibility gate, in whichever theme the page is in. */
+async function expectAccessible(page: Page): Promise<void> {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+
+  expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+
+  // axe files short text and unlabelled generics under `incomplete` rather
+  // than `violations`, which is where a real 4.32:1 contrast miss hid. The
+  // rules ui-spec §6 turns on must come back clean from that bucket too.
+  const GATED = ["color-contrast", "aria-prohibited-attr"];
+  expect(
+    results.incomplete
+      .filter((item) => GATED.includes(item.id))
+      .flatMap((item) => item.nodes.map((node) => `${item.id}: ${node.target.join(" ")}`)),
+  ).toEqual([]);
+}
+
 test.describe("7-A the workspace loads at the design target", () => {
   test("renders every region, the tenant, the keywords and the last sync", async ({ page }) => {
     const consoleErrors = await openWorkspace(page);
@@ -43,26 +62,107 @@ test.describe("7-A the workspace loads at the design target", () => {
       page.getByText("Pick an item from the feed, or ask Execution for a deliverable."),
     ).toBeVisible();
 
+    const rail = await page.getByRole("region", { name: "Strategy recommendations" }).boundingBox();
+    expect(rail?.width).toBe(425);
+
+    // Every panel header carries its icon tile, title and count or status pill.
+    for (const [region, pill] of [
+      ["Social listening", /5 keywords · \d+ trends/],
+      ["Influencers", /\d+ ranked/],
+      ["Execution agent", /0 requests/],
+      ["Strategy recommendations", /\d+ (open|picks?)/],
+      ["Competitor activity", /\d+ new/],
+    ] as const) {
+      const header = page.getByRole("region", { name: region }).locator("> div").first();
+      await expect(header.getByRole("heading", { name: region })).toBeVisible();
+      await expect(header.locator("svg")).toHaveCount(1);
+      await expect(header.getByText(pill)).toBeVisible();
+    }
+
     expect(consoleErrors).toEqual([]);
   });
 
   test("passes an axe accessibility scan with no violations", async ({ page }) => {
     await openWorkspace(page);
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .analyze();
+    await expectAccessible(page);
+  });
+});
 
-    expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+test.describe("7-I Strategy cards", () => {
+  // jsdom has no stylesheet, so only a real browser can prove the accent
+  // utility resolves to the token rather than inheriting the body colour.
+  for (const [scheme, colour] of [
+    ["light", "rgb(196, 46, 34)"],
+    ["dark", "rgb(255, 138, 127)"],
+  ] as const) {
+    test(`ordinals render in the ${scheme} accent colour`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await openWorkspace(page);
+      const card = page.getByRole("article", { name: "Hold price, publish the reasoning" });
+      await expect(card.getByText("01", { exact: true })).toHaveCSS("color", colour);
+    });
+  }
+});
 
-    // axe files short text and unlabelled generics under `incomplete` rather
-    // than `violations`, which is where a real 4.32:1 contrast miss hid. The
-    // rules ui-spec §6 turns on must come back clean from that bucket too.
-    const GATED = ["color-contrast", "aria-prohibited-attr"];
-    expect(
-      results.incomplete
-        .filter((item) => GATED.includes(item.id))
-        .flatMap((item) => item.nodes.map((node) => `${item.id}: ${node.target.join(" ")}`)),
-    ).toEqual([]);
+test.describe("7-J tracked keywords", () => {
+  test("a row's remove control shows on keyboard focus and removes the term", async ({ page }) => {
+    await openWorkspace(page);
+    const remove = page.getByRole("button", { name: "Stop tracking AI in Marketing" });
+    await expect(remove).toHaveCSS("opacity", "0");
+
+    await remove.focus();
+    await expect(remove).toHaveCSS("opacity", "1");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("listitem").filter({ hasText: "AI in Marketing" })).toHaveCount(0);
+  });
+});
+
+test.describe("7-G light and dark themes", () => {
+  const theme = (page: Page) => page.evaluate(() => document.documentElement.dataset.theme);
+  const pageGround = (page: Page) =>
+    page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+
+  test("follows a dark system preference and passes the axe scan", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await openWorkspace(page);
+
+    expect(await theme(page)).toBe("dark");
+    expect(await pageGround(page)).toBe("rgb(17, 18, 20)");
+    await page.getByRole("button", { name: "Choose the theme" }).click();
+    await expect(page.getByRole("menuitemradio", { name: "System" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await page.keyboard.press("Escape");
+    await expectAccessible(page);
+  });
+
+  test("resolves the theme before the app renders", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    // Block the bundle: only index.html's pre-paint script can set the theme.
+    await page.route(/\/src\/main\.tsx/, (route) => route.abort());
+    await page.goto("/");
+    expect(await theme(page)).toBe("dark");
+  });
+
+  test("a chosen theme overrides the system, persists, and System clears it", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await openWorkspace(page);
+    expect(await theme(page)).toBe("light");
+
+    const pick = async (option: string) => {
+      await page.getByRole("button", { name: "Choose the theme" }).click();
+      await page.getByRole("menuitemradio", { name: option }).click();
+    };
+
+    await pick("Dark");
+    expect(await theme(page)).toBe("dark");
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Social listening" })).toBeVisible();
+    expect(await theme(page)).toBe("dark");
+
+    await pick("System");
+    expect(await theme(page)).toBe("light");
   });
 });
 
@@ -118,6 +218,12 @@ test.describe("7-C an Execution run streams into the transcript", () => {
     const started = Date.now();
     await blogCard.getByRole("button", { name: "Create a similar blog" }).click();
 
+    // The panel header says the agent is working while the run streams.
+    const status = page
+      .getByRole("region", { name: "Execution agent" })
+      .getByText("Working", { exact: true });
+    await expect(status).toBeVisible();
+
     // Scope to this run's own turn: the session restore brings an older,
     // already-finished turn into the same transcript.
     const turn = transcript.getByRole("article", {
@@ -144,6 +250,7 @@ test.describe("7-C an Execution run streams into the transcript", () => {
     expect(longestGap).toBeLessThan(AGENT_UPDATE_BUDGET_MS);
 
     await expect(turn).toBeVisible();
+    await expect(status).toBeHidden();
 
     const thinking = turn.getByRole("button", { name: /Thought for \d+s, used \d+ tools/ });
     await expect(thinking).toBeVisible();
@@ -331,7 +438,7 @@ test.describe("7-D the evidence loop", () => {
 
     const sheet = page.getByRole("dialog", { name: "Recommendation 1" });
     await expect(sheet).toBeVisible();
-    await expect(sheet).toHaveCSS("width", "440px");
+    await expect(sheet).toHaveCSS("width", "520px");
     await expect(sheet.getByText("Hold price, publish the reasoning")).toBeVisible();
     await expect(
       sheet.getByText(/Brightlane raised its executive visibility package/),
@@ -425,7 +532,9 @@ test.describe("7-E degraded regions and narrow viewports", () => {
 
   test("long clarification options wrap inside a narrow transcript", async ({ page }) => {
     await openWorkspace(page);
-    await page.setViewportSize({ width: 760, height: 800 });
+    // Narrow enough that the ~110-character option cannot fit one line at the
+    // 12px type size, whichever font has loaded.
+    await page.setViewportSize({ width: 480, height: 800 });
     await page
       .getByRole("tablist", { name: "Workspace region" })
       .getByRole("tab", { name: "Workspace" })
@@ -460,20 +569,40 @@ test.describe("7-E degraded regions and narrow viewports", () => {
     await switcher.getByRole("tab", { name: "Feed" }).click();
     await expect(page.getByRole("region", { name: "Competitor activity" })).toBeVisible();
 
-    for (const width of [1440, 1280, 900, 760]) {
+    for (const width of [1440, 1300, 1280, 900, 760, 375]) {
       await page.setViewportSize({ width, height: 800 });
       await page.waitForTimeout(150);
       // The body is clipped by design, so also check the content itself fits:
       // a region wider than its column would be hidden rather than reported.
       const overflow = await page.evaluate(() => {
         const main = document.querySelector("main");
+        const header = document.querySelector("header");
         return {
           body: document.documentElement.scrollWidth - document.documentElement.clientWidth,
           content: main ? main.scrollWidth - main.clientWidth : 0,
+          header: header ? header.scrollWidth - header.clientWidth : 0,
         };
       });
       expect(overflow.body, `body overflow at ${width}px`).toBeLessThanOrEqual(0);
       expect(overflow.content, `content overflow at ${width}px`).toBeLessThanOrEqual(0);
+      expect(overflow.header, `TopBar overflow at ${width}px`).toBeLessThanOrEqual(0);
     }
+  });
+
+  test("the recommendation sheet stays inside a phone-width viewport", async ({ page }) => {
+    await openWorkspace(page);
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.getByRole("button", { name: /Open plan for Hold price/ }).click();
+
+    const sheet = page.getByRole("dialog", { name: "Recommendation 1" });
+    const box = await sheet.boundingBox();
+    expect(box && box.x >= 0 && box.x + box.width <= 375).toBe(true);
+    // The content must fit too: the sheet clips overflow, and focusing Close
+    // would otherwise scroll it sideways with no way back.
+    const fit = await sheet.evaluate((node) => ({
+      scrollLeft: node.scrollLeft,
+      overflow: node.scrollWidth - node.clientWidth,
+    }));
+    expect(fit).toEqual({ scrollLeft: 0, overflow: 0 });
   });
 });

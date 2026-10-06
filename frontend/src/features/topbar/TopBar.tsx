@@ -2,14 +2,15 @@ import { Menu, MenuItem } from "../../components/ds/Menu";
 import { useCompany } from "../../hooks/queries";
 import { relativeTime } from "../../lib/format";
 import { SimulateMenu } from "./SimulateMenu";
+import { ThemeMenu } from "./ThemeMenu";
 
-/** The page's one inverted band. No logo (ui-spec §7). */
+/** The page's one inverted band: ink in light, brand red in dark. No logo (ui-spec §7). */
 export function TopBar() {
   const company = useCompany();
   const lastSync = company.data?.last_sync_at;
 
   return (
-    <header className="sticky top-0 z-30 flex h-7 flex-none items-center gap-2 bg-surface-ink px-3 text-text-inverse">
+    <header className="sticky top-0 z-30 flex h-7 flex-none items-center gap-1 bg-surface-ink px-2 text-text-inverse tablet:gap-2 tablet:px-3">
       <Menu
         label="Choose the tenant"
         trigger={company.data?.name ?? "Loading…"}
@@ -22,16 +23,19 @@ export function TopBar() {
         )}
       </Menu>
 
-      <span aria-hidden="true" className="h-2.5 w-px bg-text-inverse-muted" />
+      <span aria-hidden="true" className="hidden h-2.5 w-px bg-text-inverse-muted tablet:block" />
 
-      <span className="text-small tracking-label text-text-inverse-muted uppercase">
+      <span className="hidden text-small tracking-label text-text-inverse-muted uppercase tablet:inline">
         Marketing workspace
       </span>
 
-      <span className="ml-auto text-small text-text-inverse-muted">
+      {/* Below tablet width only the controls fit; the meta text returns at 901px. */}
+      <span className="ml-auto hidden text-small text-text-inverse-muted tablet:inline">
         {lastSync ? `Last sync ${relativeTime(lastSync)}` : "Last sync pending"}
       </span>
 
+      <span className="ml-auto tablet:hidden" />
+      <ThemeMenu />
       <SimulateMenu />
     </header>
   );
