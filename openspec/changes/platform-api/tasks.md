@@ -19,6 +19,14 @@
 ## 4. Hosting, docs and close
 
 - [x] 4.1 Add `backend/index.py` and the `/api` rewrite in `vercel.json`; verify locally with `docker compose up` that the UI at :5173 loads real data with fixtures off.
-- [ ] 4.2 The owner creates the Vercel API project (root `backend/`), sets `MONGODB_URI`, `MONGODB_DATABASE`, `DEFAULT_COMPANY_ID` and `OPENAI_API_KEY`, and opens Atlas network access; verify on the PR preview that `GET /api/health` reports `mongo: ok`, the feed, trends and influencers render, and Simulate → `EXECUTIVE_POST` shows a live card (screenshot in the PR).
-- [ ] 4.3 Update api-contract (stream close and resume), specs §4 deployment row, AGENTS §1, `.env.example` and roadmap (6.1, 6.3, 6.6 brought forward and ticked; 6.2, 6.4, 6.5 follow Steps 4–5); verify the docs match the code.
-- [ ] 4.4 Evaluation-spec §6 is not applicable (no agent, skill or MCP change); record that in the PR. Run `npm run check` and `npm run test:integration`; verify both are green and attach the 6-A and 6-B pass lines.
+- [x] 4.2 The owner creates the Vercel API project (root `backend/`), sets `MONGODB_URI`, `MONGODB_DATABASE`, `DEFAULT_COMPANY_ID` and `OPENAI_API_KEY`, and opens Atlas network access; verify on the PR preview that `GET /api/health` reports `mongo: ok`, the feed, trends and influencers render, and Simulate → `EXECUTIVE_POST` shows a live card (screenshot in the PR).
+- [x] 4.3 Update api-contract (stream close and resume), specs §4 deployment row, AGENTS §1, `.env.example` and roadmap (6.1, 6.3, 6.6 brought forward and ticked; 6.2, 6.4, 6.5 follow Steps 4–5); verify the docs match the code.
+- [x] 4.4 Evaluation-spec §6 is not applicable (golden cases stay on the unchanged `intelligence_v2`); record that in the PR. Run `npm run check` and `npm run test:integration`; verify both are green and attach the 6-A and 6-B pass lines.
+
+## 5. Alignment after Steps 4–5 merged
+
+- [x] 5.1 Rebase onto Steps 4–5; reuse `routing.TriggerAction`; expose the now-required `spokesperson` on `GET /company`; verify `npm run check` and the drift check pass.
+- [x] 5.2 Return the `INTERNAL` envelope for unexpected errors; verify with an integration test.
+- [x] 5.3 Accept researched trends (`LAST30DAYS`, `TIKTOK`, `summary`) so the shared database's 26 imported trends load; verify the model unit test and `GET /api/trends?limit=50` returning 42 items live.
+- [x] 5.4 Keep golden cases on `intelligence_v2` and snapshot `intelligence_v3` (evaluation-spec §7); verify `test_eval_fixture.py` and that v1/v2 are byte-identical to `main`.
+- [x] 5.5 Let the activity stream reconnect natively with `Last-Event-ID` and show "paused" only after 5 s; verify the hook tests (the routine-close test fails on the old hook).

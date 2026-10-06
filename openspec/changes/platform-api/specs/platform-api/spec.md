@@ -48,6 +48,11 @@ The API SHALL return the configured company's context with `tracked_keywords` an
 - **WHEN** `POST /api/activities/simulate {activity_type: "EXECUTIVE_POST"}` is called
 - **THEN** `201` returns the item with `is_simulated: true`, and an `activity.created` event with that item's `id` arrives within 3 s
 
+#### Scenario: Routine stream close is invisible to the user
+- **GIVEN** a browser subscribed to the activity stream
+- **WHEN** the server ends the stream on its bounded schedule and the browser reconnects within 5 s
+- **THEN** no "paused" warning appears, and an activity created during the gap still arrives once
+
 #### Scenario: Real competitor cannot be simulated
 - **WHEN** simulate names a non-fictional competitor
 - **THEN** `422` returns "Simulated activity can only be created for fictional demo competitors" and nothing is written
@@ -69,3 +74,21 @@ The API's OpenAPI document SHALL be exported to the repository, and `npm run che
 - **GIVEN** a response field renamed in the backend without re-export
 - **WHEN** `npm run check` runs
 - **THEN** it fails and names the OpenAPI drift
+
+### Requirement: Every error uses the envelope
+
+Every non-2xx response from these routes SHALL use the api-contract error envelope, including request validation failures and unexpected server errors (`INTERNAL`, 500, with a generic message that reveals no internals).
+
+#### Scenario: Unexpected failure
+- **GIVEN** a route whose service raises an unexpected exception
+- **WHEN** it is called
+- **THEN** `500` returns `{error: {code: "INTERNAL", message: "Unexpected server error", details: {}}}`
+
+### Requirement: Researched trends are readable
+
+Trends imported from researched sources SHALL be served alongside pipeline and seed trends: source system `LAST30DAYS`, channel `TIKTOK` and an optional one-line `summary`.
+
+#### Scenario: Shared database trends load
+- **GIVEN** the shared database holds `LAST30DAYS` trends with summaries, some on `TIKTOK`
+- **WHEN** `GET /api/trends?limit=50` is called
+- **THEN** `200` returns every trend, with `summary` where the source provided one
