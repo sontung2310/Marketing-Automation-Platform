@@ -268,6 +268,18 @@ const ROUTER_ANSWERS: Record<
       ],
     },
   },
+  // Long options, as the real router writes them (complete requests), must wrap.
+  "Audit our service pages": {
+    reason: "Could mean a framework or a page-by-page audit",
+    response: {
+      status: "NEEDS_CLARIFICATION",
+      message: "Would you like an audit framework, or a page-by-page audit of specific pages?",
+      clarification_options: [
+        "Audit these service pages and recommend clearer package scope, outcomes, inclusions and qualification guidance",
+        "Create an audit framework for improving Marketing Eye's service-page packages without changing prices",
+      ],
+    },
+  },
   "What's the weather in Sydney?": {
     reason: "Not a marketing request",
     response: {

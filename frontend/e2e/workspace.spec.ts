@@ -423,6 +423,28 @@ test.describe("7-E degraded regions and narrow viewports", () => {
     await expect(page.getByLabel("Message the Execution agent")).toBeEditable();
   });
 
+  test("long clarification options wrap inside a narrow transcript", async ({ page }) => {
+    await openWorkspace(page);
+    await page.setViewportSize({ width: 760, height: 800 });
+    await page
+      .getByRole("tablist", { name: "Workspace region" })
+      .getByRole("tab", { name: "Workspace" })
+      .click();
+
+    await page.getByLabel("Message the Execution agent").fill("Audit our service pages");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    const transcript = page.getByRole("log", { name: "Execution transcript" });
+    const option = transcript.getByRole("button", { name: /^Audit these service pages/ });
+    await expect(option).toBeVisible();
+    const [optionBox, transcriptBox] = await Promise.all([
+      option.boundingBox(),
+      transcript.boundingBox(),
+    ]);
+    expect(optionBox && transcriptBox && optionBox.width <= transcriptBox.width).toBe(true);
+    expect(optionBox?.height ?? 0).toBeGreaterThan(32); // more than one line
+  });
+
   test("collapses to one column with the region switcher and never scrolls sideways", async ({
     page,
   }) => {

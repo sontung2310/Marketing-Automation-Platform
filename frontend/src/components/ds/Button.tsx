@@ -32,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...rest}
       className={cn(
         "inline-flex flex-none cursor-pointer items-center gap-1 disabled:cursor-default",
-        wrap ? "h-auto min-h-4 py-0.5 text-left" : "whitespace-nowrap",
+        wrap ? "h-auto min-h-4 max-w-full py-0.5 text-left" : "whitespace-nowrap",
         VARIANT[variant],
         className,
       )}
