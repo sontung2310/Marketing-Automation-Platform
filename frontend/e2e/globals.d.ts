@@ -2,4 +2,5 @@
 interface Window {
   __runPosts?: number;
   __fixtureRunFailure?: { code: string; message: string };
+  __fixtureRunStreamCut?: number;
 }

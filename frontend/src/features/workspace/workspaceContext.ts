@@ -29,6 +29,8 @@ export interface RunState {
   error: { code: string; message: string } | null;
   started_at: string;
   finished_at: string | null;
+  /** The last event applied, so a replayed stream never applies one twice. */
+  last_seq: number;
 }
 
 export type TranscriptEntry =

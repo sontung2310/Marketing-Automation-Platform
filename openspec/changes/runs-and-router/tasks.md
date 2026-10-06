@@ -7,7 +7,7 @@
 - [x] 1.3 Add `POST /runs`, `GET /runs/{id}`, `GET /runs/{id}/events` (SSE, `seq` IDs, replay, 55 s close) and `GET /sessions/{id}`, with `run.output` holding the `output.final` payload. Verify integration tests for 6-C (202 within 500 ms, ordered events), 6-D (replay after `seq` 3), 422 and 404, and the restored-approve scenario.
 - [x] 1.4 Add the daily run cap (`MAX_RUNS_PER_DAY`, `429 RATE_LIMITED`); verify the cap scenario.
 - [x] 1.5 Mount the MCP at `/mcp` in the API app, stateless. Verify that a run on the local API with `MCP_URL` pointing at its own `/mcp` completes, and that `/health` reports `mcp: ok`.
-- [ ] 1.6 Frontend: the run stream reconnects natively with `Last-Event-ID`, is reopened only after the browser gives up, restores from `run.output` with persisted IDs, and shows the rate-limit message. Verify hook and component tests and the Playwright run specs.
+- [x] 1.6 Frontend: the run stream reconnects natively with `Last-Event-ID`, is reopened only after the browser gives up, restores from `run.output` with persisted IDs, and shows the rate-limit message. Verify hook and component tests and the Playwright run specs.
 
 ## 2. 6.4 Chat router
 

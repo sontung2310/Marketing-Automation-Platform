@@ -168,6 +168,69 @@ test.describe("7-C an Execution run streams into the transcript", () => {
   });
 });
 
+test.describe("6.2 a run stream closed mid-run", () => {
+  test("resumes from Last-Event-ID and ends exactly like an uninterrupted run", async ({
+    browser,
+  }) => {
+    const finalTurn = async (cutAfterSeq: number | null): Promise<string> => {
+      const page = await browser.newPage();
+      if (cutAfterSeq !== null) {
+        await page.addInitScript((cut) => {
+          window.__fixtureRunStreamCut = cut;
+        }, cutAfterSeq);
+      }
+      await openWorkspace(page);
+      const blogCard = page
+        .getByRole("region", { name: "Competitor activity" })
+        .getByRole("article")
+        .filter({ hasText: "NEW_BLOG" })
+        .first();
+      await blogCard.getByRole("button", { name: "Create a similar blog" }).click();
+      const turn = page
+        .getByRole("log", { name: "Execution transcript" })
+        .getByRole("article", { name: "EXECUTION CREATE_SIMILAR · BLOG_DRAFT" });
+      await expect(turn.getByText("CEO_POST · LINKEDIN · 218 words")).toBeVisible({
+        timeout: 20_000,
+      });
+      // Compare finished runs: the spinner goes once run.completed has arrived.
+      await expect(turn.locator(".animate-spin")).toHaveCount(0, { timeout: 10_000 });
+      const text = (await turn.innerText()).replace(/\b\d+s\b/g, "");
+      await page.close();
+      return text;
+    };
+
+    const uninterrupted = await finalTurn(null);
+    const resumed = await finalTurn(3);
+    expect(resumed).toBe(uninterrupted);
+  });
+});
+
+test.describe("6.2 the daily run cap", () => {
+  test("shows the RATE_LIMITED message verbatim in the transcript", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__fixtureFailures = [
+        {
+          path: "/api/runs",
+          method: "post",
+          status: 429,
+          code: "RATE_LIMITED",
+          message: "The demo's daily run limit is reached. Try again tomorrow.",
+        },
+      ];
+    });
+    await openWorkspace(page);
+
+    await page.getByLabel("Message the Execution agent").fill("Write a LinkedIn post on AI search");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(
+      page
+        .getByRole("log", { name: "Execution transcript" })
+        .getByText("The demo's daily run limit is reached. Try again tomorrow."),
+    ).toBeVisible();
+  });
+});
+
 test.describe("7-C a failed run", () => {
   test("shows the run.failed message verbatim and retries from the transcript", async ({
     page,
