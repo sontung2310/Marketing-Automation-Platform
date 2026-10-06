@@ -1,13 +1,13 @@
 # router eval report
 
-Runs: 41 · Judging complete: yes · Overall: PASS
+Runs: 42 · Judging complete: yes · Overall: PASS
 
 | Metric | Actual | Threshold | Result |
 |---|---|---|---|
 | pass_all_overall | 0.98 | 0.95 | pass |
 | safe_categories | 1.00 | 1.0 | pass |
 | demo_path | 1.00 | 1.0 | pass |
-| p95_latency_s_max | 2.71 | 3.0 | pass |
+| p95_latency_s_max | 2.68 | 3.0 | pass |
 
 ## Categories (pass@all)
 
@@ -17,12 +17,12 @@ Runs: 41 · Judging complete: yes · Overall: PASS
 | RT-EXE | 1.00 |
 | RT-HINT | 1.00 |
 | RT-OOS | 1.00 |
-| RT-REF | 0.83 |
+| RT-REF | 0.86 |
 | RT-STR | 1.00 |
 
 ## Failing cases
 
-- `RT-REF-02` (0/1): route, status — NEEDS_CLARIFICATION NONE CLARIFY: refers to a prior item without enough context to act
+- `RT-REF-02` (0/1): route, status — NEEDS_CLARIFICATION NONE CLARIFY: refers to a prior recommendation but lacks enough context to act
 
 ## Flaky cases
 
@@ -32,4 +32,4 @@ Runs: 41 · Judging complete: yes · Overall: PASS
 
 ## Cost and latency
 
-Duration: p50 1.4 s, p95 2.7 s
+Duration: p50 1.5 s, p95 2.7 s

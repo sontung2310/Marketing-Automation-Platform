@@ -73,6 +73,7 @@ class Expect(Strict):
     implications_min: int | None = None
     implications_max: int | None = None
     deliverable: DeliverableExpect | None = None  # execution only
+    answer: str | None = None  # router only: the exact reply when no run starts
     proposed_actions_any: list[str] = []  # execution: one of these action types is proposed
     max_tool_calls: int = 12
 

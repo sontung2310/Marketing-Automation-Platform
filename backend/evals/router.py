@@ -1,8 +1,10 @@
 """Router suite (evaluation-spec §3.1): classify each golden message, check the decision.
 
-Deterministic checks only: no judge, no MCP, no fixture database. A case passes when the
-routed outcome (a run's agent and intent, a clarification or an out-of-scope answer), and
-any expected deliverable type and references, match its `expect` block.
+Deterministic checks only: no judge, no MCP, no fixture database. Each message is routed
+exactly as `POST /runs` routes it, against a stub session holding 3 recommendations and
+one deliverable. A case passes when the routed outcome (a run's agent and intent, a
+clarification or an out-of-scope answer), and any expected deliverable type, references
+and answer message, match its `expect` block.
 """
 
 import asyncio
@@ -11,7 +13,14 @@ import time
 from pydantic import BaseModel
 
 from app.intelligence.models import AgentName
-from app.orchestration.router import Classifier, RouteDecision, RouterAnswer, classify, decide
+from app.orchestration.references import Unresolved
+from app.orchestration.router import (
+    Classifier,
+    RouteDecision,
+    RouterAnswer,
+    classify,
+    route_message,
+)
 from evals.cases import GoldenCase
 from evals.report import (
     THRESHOLDS,
@@ -25,6 +34,20 @@ from evals.report import (
 # A router answer reads as the NONE agent with its own intent, like the golden cases.
 ANSWER_INTENT = {"NEEDS_CLARIFICATION": "CLARIFY", "OUT_OF_SCOPE": "OUT_OF_SCOPE"}
 SAFE_PREFIXES = ("SAFE-", "RT-OOS")
+# The stub session RT-REF cases run against: its latest Strategy run has 3 recommendations.
+SESSION_RECOMMENDATIONS = 3
+
+
+async def session_stub(reference: str) -> dict[str, object] | Unresolved:
+    """References resolved as `resolve_reference` would in that session."""
+    kind, _, value = reference.partition(":")
+    if kind == "recommendation" and value.isdecimal():
+        if 1 <= int(value) <= SESSION_RECOMMENDATIONS:
+            return {"id": f"rec_stub_{value}", "ordinal": int(value)}
+        return Unresolved(f"No recommendation #{value} in this session")
+    if reference == "deliverable:last":
+        return {"id": "del_stub_last"}
+    return Unresolved(f"I could not tell what {reference!r} refers to")
 
 
 class RouterRecord(BaseModel):
@@ -34,6 +57,7 @@ class RouterRecord(BaseModel):
     status: str | None  # RUN, NEEDS_CLARIFICATION or OUT_OF_SCOPE
     agent: str | None
     intent: str | None
+    answer: str | None = None  # the router's message when no run starts
     seconds: float
     error: str | None = None
 
@@ -43,7 +67,9 @@ async def route_case(case: GoldenCase, repeat: int, classifier: Classifier) -> R
     agent_hint = None if hint == "AUTO" else AgentName(hint)
     started = time.perf_counter()
     try:
-        decision = await classifier(case.input.message or "", agent_hint)
+        decision, outcome, _ = await route_message(
+            classifier, session_stub, case.input.message or "", agent_hint
+        )
     except Exception as exc:  # recorded as a failed case, never a crashed suite
         seconds = time.perf_counter() - started
         return RouterRecord(
@@ -57,10 +83,11 @@ async def route_case(case: GoldenCase, repeat: int, classifier: Classifier) -> R
             error=f"{type(exc).__name__}: {exc}"[:200],
         )
     seconds = time.perf_counter() - started
-    outcome = decide(decision, agent_hint)
     status: str
+    answer = None
     if isinstance(outcome, RouterAnswer):
         status, agent, intent = outcome.status, "NONE", ANSWER_INTENT[outcome.status]
+        answer = outcome.message
     else:
         status, agent, intent = "RUN", str(outcome.agent), str(outcome.intent)
     return RouterRecord(
@@ -70,6 +97,7 @@ async def route_case(case: GoldenCase, repeat: int, classifier: Classifier) -> R
         status=status,
         agent=agent,
         intent=intent,
+        answer=answer,
         seconds=seconds,
     )
 
@@ -94,6 +122,8 @@ async def run_router(
 def router_checks(case: GoldenCase, record: RouterRecord) -> dict[str, bool]:
     expected = case.expect.route
     checks = {"status": record.status in case.expect.status}
+    if case.expect.answer is not None:
+        checks["answer"] = record.answer == case.expect.answer
     if expected is not None:
         checks["route"] = record.agent == expected.agent and (
             expected.intent is None or record.intent == expected.intent

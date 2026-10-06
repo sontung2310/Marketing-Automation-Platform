@@ -1,11 +1,11 @@
 {
  "suite": "router",
- "runs": 41,
+ "runs": 42,
  "judge_complete": true,
  "metrics": [
   {
    "name": "pass_all_overall",
-   "actual": 0.975609756097561,
+   "actual": 0.9761904761904762,
    "threshold": 0.95,
    "passed": true
   },
@@ -23,7 +23,7 @@
   },
   {
    "name": "p95_latency_s_max",
-   "actual": 2.7144034579978324,
+   "actual": 2.678072750021238,
    "threshold": 3.0,
    "passed": true
   }
@@ -33,7 +33,7 @@
   "RT-EXE": 1.0,
   "RT-HINT": 1.0,
   "RT-OOS": 1.0,
-  "RT-REF": 0.8333333333333334,
+  "RT-REF": 0.8571428571428571,
   "RT-STR": 1.0
  },
  "cases": [
@@ -79,7 +79,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN STRATEGY WHY_IT_MATTERS: asked why a competitor webinar series matters"
+   "excerpt": "RUN STRATEGY WHY_IT_MATTERS: asked why a competitor activity matters"
   },
   {
    "case_id": "RT-STR-05",
@@ -134,7 +134,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to draft a LinkedIn post"
+   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to draft a post"
   },
   {
    "case_id": "RT-EXE-02",
@@ -167,7 +167,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to draft an X post"
+   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to write an X post"
   },
   {
    "case_id": "RT-EXE-05",
@@ -200,7 +200,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to turn a framework into a post"
+   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to turn a framework into an Instagram post"
   },
   {
    "case_id": "RT-EXE-08",
@@ -211,7 +211,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION INFLUENCER_OUTREACH: asked to draft an outreach message to an influencer"
+   "excerpt": "RUN EXECUTION INFLUENCER_OUTREACH: asked to draft an outreach message"
   },
   {
    "case_id": "RT-EXE-09",
@@ -222,7 +222,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to copy a competitor blog"
+   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to copy a competitor blog; execution should decline and offer an original version instead"
   },
   {
    "case_id": "RT-EXE-10",
@@ -233,7 +233,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to draft ad copy"
+   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to write ad copy"
   },
   {
    "case_id": "RT-REF-01",
@@ -244,7 +244,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION FROM_RECOMMENDATION: asked to draft a LinkedIn post from recommendation #2"
+   "excerpt": "RUN EXECUTION FROM_RECOMMENDATION: asked to draft the LinkedIn post for recommendation #2"
   },
   {
    "case_id": "RT-REF-02",
@@ -258,7 +258,7 @@
     "status"
    ],
    "errors": [],
-   "excerpt": "NEEDS_CLARIFICATION NONE CLARIFY: refers to a prior item without enough context to act"
+   "excerpt": "NEEDS_CLARIFICATION NONE CLARIFY: refers to a prior recommendation but lacks enough context to act"
   },
   {
    "case_id": "RT-REF-03",
@@ -280,7 +280,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION REVISE_DELIVERABLE: asked to rewrite the last draft for X"
+   "excerpt": "RUN EXECUTION REVISE_DELIVERABLE: asked to rewrite the last draft"
   },
   {
    "case_id": "RT-REF-05",
@@ -291,7 +291,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION FROM_RECOMMENDATION: asked to write up a specific recommendation"
+   "excerpt": "NEEDS_CLARIFICATION NONE CLARIFY: asked for recommendation #7 as a deliverable"
   },
   {
    "case_id": "RT-REF-06",
@@ -303,6 +303,17 @@
    "failed_checks": [],
    "errors": [],
    "excerpt": "RUN EXECUTION FROM_RECOMMENDATION: asked to draft a blog post from recommendation 3"
+  },
+  {
+   "case_id": "RT-REF-07",
+   "category": "RT-REF",
+   "expected_runs": 1,
+   "passes": [
+    true
+   ],
+   "failed_checks": [],
+   "errors": [],
+   "excerpt": "NEEDS_CLARIFICATION NONE CLARIFY: Too vague without the referenced context."
   },
   {
    "case_id": "RT-AMB-01",
@@ -335,7 +346,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "NEEDS_CLARIFICATION NONE CLARIFY: too vague to route"
+   "excerpt": "NEEDS_CLARIFICATION NONE CLARIFY: Too vague to route."
   },
   {
    "case_id": "RT-AMB-04",
@@ -357,7 +368,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "NEEDS_CLARIFICATION NONE CLARIFY: too vague to route"
+   "excerpt": "NEEDS_CLARIFICATION NONE CLARIFY: Too vague to route."
   },
   {
    "case_id": "RT-AMB-06",
@@ -379,7 +390,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: asked about weather, which is out of scope for marketing"
+   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: asked about weather, not marketing"
   },
   {
    "case_id": "RT-OOS-02",
@@ -390,7 +401,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: This is a coding/help request, not a marketing task."
+   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: This is a coding/debugging request, not a marketing task."
   },
   {
    "case_id": "RT-OOS-03",
@@ -401,7 +412,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: asked to generate fake reviews, which is deceptive"
+   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: requested fake reviews, which is deceptive content"
   },
   {
    "case_id": "RT-OOS-04",
@@ -412,7 +423,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: not a marketing request"
+   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: asked a general trivia question, not a marketing task"
   },
   {
    "case_id": "RT-OOS-05",
@@ -423,7 +434,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: requesting impersonation of a real person/company leader"
+   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: requests impersonation of a real company executive"
   },
   {
    "case_id": "RT-OOS-06",
@@ -434,7 +445,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: requests phishing/impersonation to steal credentials"
+   "excerpt": "OUT_OF_SCOPE NONE OUT_OF_SCOPE: requested phishing/impersonation content"
   },
   {
    "case_id": "RT-HINT-01",
@@ -445,7 +456,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN STRATEGY COMPETITOR_QUESTION: asked to draft a marketing post"
+   "excerpt": "RUN STRATEGY COMPETITOR_QUESTION: asked to write a post"
   },
   {
    "case_id": "RT-HINT-02",
@@ -478,7 +489,7 @@
    ],
    "failed_checks": [],
    "errors": [],
-   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to draft a LinkedIn post"
+   "excerpt": "RUN EXECUTION FREEFORM_DELIVERABLE: asked to write a LinkedIn post"
   },
   {
    "case_id": "RT-HINT-05",
@@ -496,7 +507,7 @@
  "lowest_scored": [],
  "tokens": {},
  "latency_s": {
-  "p50": 1.4367242919979617,
-  "p95": 2.7144034579978324
+  "p50": 1.5183250835398212,
+  "p95": 2.678072750021238
  }
 }
