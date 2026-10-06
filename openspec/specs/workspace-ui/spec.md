@@ -127,9 +127,11 @@ produced it, showing its ordinal, priority, the decision at body weight 600,
 its status and its `next_action` in plain words. Opening a row SHALL open a
 440px sheet with what to do, why, evidence chips and **Do this**. **Do this**
 SHALL write the recommendation's brief into the Execution composer and SHALL
-NOT start a run. An evidence chip SHALL show a short title, keep its raw
-evidence ID in its tooltip, and on activation scroll to and flash-highlight
-its target item.
+NOT start a run. When the marketer sends that brief unedited, the run SHALL
+start from the `RECOMMENDATION` `DO_THIS` trigger, so Execution receives that
+recommendation; an edited brief SHALL be sent as a chat message. An evidence
+chip SHALL show a short title, keep its raw evidence ID in its tooltip, and on
+activation scroll to and flash-highlight its target item.
 
 #### Scenario: Do this prefills the composer without sending
 
@@ -138,6 +140,14 @@ its target item.
 - **THEN** the 440px sheet showed the decision, rationale and evidence, the
   recommendation's request is in the Execution composer, and no run was
   created
+
+#### Scenario: Sending the unedited brief runs that recommendation
+
+- **GIVEN** the composer holds a recommendation's brief from **Do this**
+- **WHEN** the marketer presses **Send** without editing it
+- **THEN** the run request carries the `RECOMMENDATION` `DO_THIS` trigger for
+  that recommendation, and the transcript shows the brief as the marketer's
+  message
 
 #### Scenario: An evidence chip navigates to its source
 
