@@ -29,6 +29,8 @@ AgentFn = Callable[[RunContext, str | None], Awaitable[AgentOutcome]]
 EVENT_FLUSH_SECONDS = 0.5
 # A run still RUNNING after this long lost its worker (a killed function, a deploy).
 RUN_WALL_CLOCK = timedelta(seconds=120)
+# A live worker stops its agent well before that, so a slow run is never read as lost.
+RUN_TIMEOUT_SECONDS = 100.0
 
 
 @dataclass(frozen=True)
@@ -89,7 +91,7 @@ class RunService:
         (route, trigger_context), session, _ = await asyncio.gather(
             self._route(company_id, trigger, agent, chat),
             open_session(self.repositories, company_id, session_id, save=False),
-            self._check_daily_cap(),
+            self.check_daily_cap(),
         )
         previous = None
         if session.last_run_id is not None:
@@ -136,13 +138,16 @@ class RunService:
         writer = asyncio.create_task(self._write_events(run.id, context, len(run.events)))
         clock = time.monotonic()
         try:
-            outcome = await self.agents[run.agent](context, plan.message)
-            persister = PERSISTERS.get(run.agent)
-            saved = (
-                await persister(self.repositories, run, outcome, context.trigger_context)
-                if persister
-                else {}
-            )
+            async with asyncio.timeout(RUN_TIMEOUT_SECONDS):
+                outcome = await self.agents[run.agent](context, plan.message)
+                persister = PERSISTERS.get(run.agent)
+                saved = (
+                    await persister(self.repositories, run, outcome, context.trigger_context)
+                    if persister
+                    else {}
+                )
+        except TimeoutError:
+            run = self._failed(run, context, DomainError("The run took too long and was stopped"))
         except asyncio.CancelledError:
             run = self._failed(run, context, CancelledRunError("The run was cancelled"))
             await asyncio.shield(self._finish(run, context, session, writer))
@@ -195,10 +200,11 @@ class RunService:
                 "finished_at": datetime.now(UTC),
             }
         )
-        await self.repositories.runs.upsert(run)
-        return run
+        if await self.repositories.runs.replace_if_running(run):
+            return run
+        return await self.load(run_id)  # its worker finished it meanwhile
 
-    async def _check_daily_cap(self) -> None:
+    async def check_daily_cap(self) -> None:
         # ponytail: a count, not a reserved slot; two runs at the boundary may both start.
         midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         if await self.repositories.runs.count_started_since(midnight) >= (
@@ -208,11 +214,16 @@ class RunService:
 
     async def _write_events(self, run_id: str, context: RunContext, written: int) -> None:
         """Copy new events to Mongo while the agent works, so the stream is live."""
-        while True:
-            await asyncio.sleep(EVENT_FLUSH_SECONDS)
-            if len(context.events) > written:
-                written = len(context.events)
-                await self.repositories.runs.set_events(run_id, context.events[:written])
+        try:
+            while True:
+                await asyncio.sleep(EVENT_FLUSH_SECONDS)
+                if len(context.events) > written:
+                    written = len(context.events)
+                    await self.repositories.runs.set_events(run_id, context.events[:written])
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # the final write still lands; the stream only lags until then
+            logger.exception("Live events stopped", extra={"ctx": {"run_id": run_id}})
 
     def _failed(self, run: Run, context: RunContext, error: DomainError) -> Run:
         detail: dict[str, object] = {"code": error.code, "message": error.message}
@@ -223,6 +234,8 @@ class RunService:
         self, run: Run, context: RunContext, session: Session, writer: asyncio.Task[None]
     ) -> Run:
         writer.cancel()
+        # Wait for an in-flight live write, so it cannot land after the final one.
+        await asyncio.gather(writer, return_exceptions=True)
         run = run.model_copy(
             update={
                 "events": context.events,
@@ -231,7 +244,9 @@ class RunService:
                 "finished_at": datetime.now(UTC),
             }
         )
-        await self.repositories.runs.upsert(run)
+        if not await self.repositories.runs.replace_if_running(run):
+            # Already read as interrupted; that is what the marketer saw, so it stands.
+            return await self.load(run.id)
         if run.status is RunStatus.SUCCEEDED:
             # Follow-ups build on the last successful answer; a failure, refusal or
             # clarification must not replace it.
