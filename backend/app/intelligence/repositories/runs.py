@@ -20,3 +20,6 @@ class RunsRepository(Repository[Run]):
                 name="session_started",
             )
         ]
+
+    async def set_events(self, run_id: str, events: list[dict[str, object]]) -> None:
+        await self.collection.update_one({"_id": run_id}, {"$set": {"events": events}})

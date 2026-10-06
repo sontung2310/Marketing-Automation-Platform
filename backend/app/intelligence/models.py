@@ -381,6 +381,9 @@ class Run(PrefixedModel):
     tool_calls: list[dict[str, object]] = Field(default_factory=list)
     skills_loaded: list[str] = Field(default_factory=list)
     output: dict[str, object] | None = None
+    # IDs the run persisted (recommendation_ids, deliverable_id, proposed_action_ids):
+    # kept beside the output so a follow-up's context stays the agent's own answer.
+    persisted: dict[str, object] = Field(default_factory=dict)
     usage: dict[str, object] | None = None
     error: dict[str, object] | None = None
     started_at: datetime

@@ -1,7 +1,7 @@
 """Run service persistence and event log, with stub agents (no model calls)."""
 
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pymongo.asynchronous.database import AsyncDatabase
@@ -315,3 +315,58 @@ async def test_a_failed_action_insert_leaves_no_deliverable(
     assert run.status is RunStatus.FAILED
     assert await seeded_database["deliverables"].count_documents({}) == 0
     assert await seeded_database["proposed_actions"].count_documents({}) == 0
+
+
+async def test_events_reach_mongo_while_the_agent_works(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    gate = asyncio.Event()
+
+    async def slow_agent(context: RunContext, message: str | None) -> AgentOutcome:
+        context.emit("agent.step", {"label": "Loading company context"})
+        await gate.wait()
+        return await answering_agent(context, message)
+
+    runs = service(seeded_database, slow_agent)
+    plan = await runs.prepare(COMPANY, trigger=await price_change_trigger(seeded_database))
+    assert [e["type"] for e in await stored_events(seeded_database, plan.run.id)] == ["run.started"]
+
+    execution = asyncio.create_task(runs.execute(plan))
+    await asyncio.sleep(1.2)  # more than two writer flushes
+    assert (await runs.load(plan.run.id)).status is RunStatus.RUNNING
+    assert [e["type"] for e in await stored_events(seeded_database, plan.run.id)] == [
+        "run.started",
+        "agent.step",
+    ]
+
+    gate.set()
+    run = await execution
+    assert run.events[-1]["type"] == "run.completed"
+    assert set(run.persisted) >= {"recommendation_ids"}
+
+
+async def test_a_run_whose_worker_died_reads_as_interrupted(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    runs = service(seeded_database, answering_agent)
+    plan = await runs.prepare(COMPANY, trigger=await price_change_trigger(seeded_database))
+    await seeded_database["runs"].update_one(
+        {"_id": plan.run.id}, {"$set": {"started_at": datetime.now(UTC) - timedelta(minutes=5)}}
+    )
+
+    run = await runs.load(plan.run.id)
+
+    assert run.status is RunStatus.FAILED
+    assert run.error == {"code": "INTERNAL", "message": "The run was interrupted"}
+    assert run.events[-1]["type"] == "run.failed"
+    settled = await runs.load(plan.run.id)
+    settled_events = [(e["seq"], e["type"]) for e in settled.events]
+    assert settled_events == [(1, "run.started"), (2, "run.failed")]
+    with pytest.raises(NotFoundError):
+        await runs.load("run_missing")
+
+
+async def stored_events(database: AsyncDatabase[Document], run_id: str) -> list[dict[str, object]]:
+    run = await RunRepositories.for_database(database).runs.get(run_id)
+    assert run is not None
+    return run.events
