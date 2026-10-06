@@ -131,7 +131,7 @@ export function StrategyPanel() {
 
       {items.length > 0 ? (
         <p className="px-2 py-1 text-small text-text-muted">
-          Moves without a pick stay in the feed below.
+          Moves without a pick stay in the competitor feed.
         </p>
       ) : null}
 

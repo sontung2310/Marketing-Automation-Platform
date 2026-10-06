@@ -74,7 +74,7 @@
 
   Update the roadmap: tick 7.6–7.9 with evidence, and add the deferred item
   for keyword stats and plan steps. Verify with `npm run openspec:check`.
-- [ ] 4.3 Capture evidence: 1440×900 screenshots in light and dark next to
+- [x] 4.3 Capture evidence: 1440×900 screenshots in light and dark next to
   the canvas boards, the full Playwright and axe run in both themes, and
   `npm run check` green. Attach them to the PR.
 - [x] 4.4 Fix the canvas's two dark contrast issues (filled button, red type)
