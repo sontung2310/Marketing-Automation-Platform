@@ -16,6 +16,7 @@ endpoints accept an optional `company_id` query parameter for future tenancy.
 ```
 
 Codes: `VALIDATION_ERROR` (422), `NOT_FOUND` (404), `CONFLICT` (409),
+`RATE_LIMITED` (429: the demo's daily run cap, `MAX_RUNS_PER_DAY`),
 `UPSTREAM_UNAVAILABLE` (503: Mongo, MCP or OpenAI unreachable), `INTERNAL`
 (500). The UI shows `message` verbatim. A failed run's `run.failed` event and
 `error` field may also carry `UNGROUNDED_OUTPUT` (it cited evidence no tool
@@ -154,7 +155,17 @@ Responses:
 - `200 {run_id: null, session_id, route: {...}, response: {status: "NEEDS_CLARIFICATION"|"OUT_OF_SCOPE", message, clarification_options: []}}`.
   The router answered without an agent run.
 - `404` if the trigger `ref_id` doesn't exist. `422` if both or neither of
-  `message`/`trigger` are given.
+  `message`/`trigger` are given. `429 RATE_LIMITED` ("The demo's daily run
+  limit is reached. Try again tomorrow.") once `MAX_RUNS_PER_DAY` runs started
+  that UTC day; router answers and reads do not count. Past the cap a `message`
+  is refused before the router model is called. A reference to something the
+  session lacks ("#7") answers `NEEDS_CLARIFICATION` with "No recommendation #7
+  in this session", whatever else the router decided.
+
+Buttons (`trigger`) route deterministically and return within 500 ms. A
+`message` is classified first (agents-spec §5.2), so its reply waits for the
+router model (p95 ≤ 3 s). The agent then runs in the background; the `202`
+never waits for it.
 
 ### `GET /runs/{run_id}/events` (SSE)
 Event types. `data` is JSON, and every event has `run_id`, `seq` and `ts`.
@@ -169,15 +180,29 @@ Event types. `data` is JSON, and every event has `run_id`, `seq` and `ts`.
 | `run.failed` | `{code, message}` | Error state |
 | `run.completed` | `{status, duration_ms, usage}` | Closes the stream |
 
-A client that reconnects with `Last-Event-ID` gets the missed events replayed
-from `runs.events`.
+Each event's SSE `id` is its `seq`. Events are persisted as they are emitted
+(within 0.5 s), so the stream is live. It ends after `run.completed` or
+`run.failed`, and otherwise closes itself after about 55 s (the API runs on
+serverless functions) with `retry: 1000`; the browser reconnects with
+`Last-Event-ID` and gets the missed events replayed from `runs.events`, with no
+duplicates. A run still `RUNNING` 120 s after it started lost its worker and
+reads as `FAILED` with "The run was interrupted".
 
 ### `GET /runs/{run_id}`
-Full persisted run, for reloads and evals.
+The run as the workspace shows it: `{id, session_id, agent, intent, message,
+trigger, route, status, steps, tool_calls, skills_loaded, output, error,
+started_at, finished_at}`. `output` carries the same payload as the
+`output.final` event, persisted IDs included, so a restored card can still
+approve or discard.
 
 ### `GET /sessions/{session_id}`
-`{id, runs: [run summary + output]}`, oldest first. Used to restore the
+`{id, runs: [run, …]}` in that shape, oldest first. Used to restore the
 workspace after a page refresh (the session ID is kept in `localStorage`).
+
+### `/mcp` (on the API host)
+The Marketing Intelligence MCP is also served by the API process, in stateless
+streamable-HTTP mode, so agent runs work on Vercel (`MCP_URL` points at it). It
+is read-only infrastructure for the agents, not part of the workspace API.
 
 ## Proposed actions
 

@@ -8,6 +8,8 @@ import { store } from "./store";
 /** An endpoint an e2e spec wants to answer with the documented error envelope. */
 export interface FixtureFailure {
   path: string;
+  /** GET unless given, e.g. "post" for a refused POST /runs. */
+  method?: "get" | "post";
   status: number;
   code: string;
   message: string;
@@ -22,6 +24,8 @@ declare global {
     __fixtureFailures?: FixtureFailure[];
     /** Makes the next run stream `run.failed` instead of completing. */
     __fixtureRunFailure?: { code: string; message: string };
+    /** Ends the next run stream after this seq, like the server's scheduled close. */
+    __fixtureRunStreamCut?: number;
   }
 }
 
@@ -38,10 +42,11 @@ export async function startFixtureWorker(): Promise<void> {
   await worker.start({ quiet: true, onUnhandledRequest: "bypass" });
 
   if (window.__fixtureRunFailure) store.failNextRun(window.__fixtureRunFailure);
+  if (window.__fixtureRunStreamCut) store.streamCut = window.__fixtureRunStreamCut;
 
-  for (const { path, status, code, message } of window.__fixtureFailures ?? []) {
+  for (const { path, method = "get", status, code, message } of window.__fixtureFailures ?? []) {
     worker.use(
-      http.get(path, () =>
+      http[method](path, () =>
         HttpResponse.json({ error: { code, message, details: {} } }, { status }),
       ),
     );

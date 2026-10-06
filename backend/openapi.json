@@ -185,6 +185,15 @@
         "title": "ActivityType",
         "type": "string"
       },
+      "AgentHint": {
+        "enum": [
+          "AUTO",
+          "STRATEGY",
+          "EXECUTION"
+        ],
+        "title": "AgentHint",
+        "type": "string"
+      },
       "AgentName": {
         "enum": [
           "STRATEGY",
@@ -192,6 +201,32 @@
         ],
         "title": "AgentName",
         "type": "string"
+      },
+      "AnswerBody": {
+        "properties": {
+          "clarification_options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clarification Options",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "message",
+          "clarification_options"
+        ],
+        "title": "AnswerBody",
+        "type": "object"
       },
       "ApproveRequest": {
         "additionalProperties": false,
@@ -935,6 +970,273 @@
         "title": "RecommendationStatus",
         "type": "string"
       },
+      "RouteView": {
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "method",
+          "reason",
+          "confidence"
+        ],
+        "title": "RouteView",
+        "type": "object"
+      },
+      "RouterAnswerView": {
+        "description": "The router answered without a run (api-contract `POST /runs`, 200).",
+        "properties": {
+          "response": {
+            "$ref": "#/components/schemas/AnswerBody"
+          },
+          "route": {
+            "$ref": "#/components/schemas/RouteView"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "null"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "route",
+          "response"
+        ],
+        "title": "RouterAnswerView",
+        "type": "object"
+      },
+      "RunAccepted": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentName"
+          },
+          "intent": {
+            "title": "Intent",
+            "type": "string"
+          },
+          "route": {
+            "$ref": "#/components/schemas/RouteView"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "session_id",
+          "agent",
+          "intent",
+          "route"
+        ],
+        "title": "RunAccepted",
+        "type": "object"
+      },
+      "RunRequest": {
+        "properties": {
+          "agent_hint": {
+            "$ref": "#/components/schemas/AgentHint",
+            "default": "AUTO"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Trigger"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "RunRequest",
+        "type": "object"
+      },
+      "RunStatus": {
+        "enum": [
+          "RUNNING",
+          "SUCCEEDED",
+          "FAILED",
+          "NEEDS_CLARIFICATION",
+          "REFUSED"
+        ],
+        "title": "RunStatus",
+        "type": "string"
+      },
+      "RunView": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentName"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "intent": {
+            "title": "Intent",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "output": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output"
+          },
+          "route": {
+            "$ref": "#/components/schemas/RouteView"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "skills_loaded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Skills Loaded",
+            "type": "array"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "steps": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "tool_calls": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Tool Calls",
+            "type": "array"
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "agent",
+          "intent",
+          "message",
+          "trigger",
+          "route",
+          "status",
+          "steps",
+          "tool_calls",
+          "skills_loaded",
+          "output",
+          "error",
+          "started_at",
+          "finished_at"
+        ],
+        "title": "RunView",
+        "type": "object"
+      },
       "SamplePost": {
         "additionalProperties": false,
         "properties": {
@@ -985,6 +1287,27 @@
           "price_from"
         ],
         "title": "Service",
+        "type": "object"
+      },
+      "SessionView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunView"
+            },
+            "title": "Runs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "runs"
+        ],
+        "title": "SessionView",
         "type": "object"
       },
       "SimulateBody": {
@@ -1182,6 +1505,28 @@
         "title": "TrendItem",
         "type": "object"
       },
+      "Trigger": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/TriggerAction"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TriggerKind"
+          },
+          "ref_id": {
+            "minLength": 1,
+            "title": "Ref Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "ref_id",
+          "action"
+        ],
+        "title": "Trigger",
+        "type": "object"
+      },
       "TriggerAction": {
         "enum": [
           "CREATE_SIMILAR",
@@ -1192,6 +1537,16 @@
           "DRAFT_OUTREACH"
         ],
         "title": "TriggerAction",
+        "type": "string"
+      },
+      "TriggerKind": {
+        "enum": [
+          "FEED_ACTION",
+          "RECOMMENDATION",
+          "TREND",
+          "INFLUENCER"
+        ],
+        "title": "TriggerKind",
         "type": "string"
       },
       "ValidationError": {
@@ -1973,6 +2328,198 @@
         "summary": "List Recommendations",
         "tags": [
           "feed"
+        ]
+      }
+    },
+    "/api/runs": {
+      "post": {
+        "operationId": "start_run_api_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouterAnswerView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Run",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/runs/{run_id}": {
+      "get": {
+        "operationId": "get_run_api_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Run",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/runs/{run_id}/events": {
+      "get": {
+        "operationId": "run_events_api_runs__run_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "last-event-id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Events",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/sessions/{session_id}": {
+      "get": {
+        "operationId": "get_session_api_sessions__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Session",
+        "tags": [
+          "runs"
         ]
       }
     },

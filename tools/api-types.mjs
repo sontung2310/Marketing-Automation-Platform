@@ -25,6 +25,9 @@ export const SCHEMA_TO_TYPE = {
   RecommendationItem: "Recommendation",
   RecommendationEvidence: "Evidence",
   NextAction: "NextAction",
+  RunAccepted: "RunAccepted",
+  RouteView: "RouteDecision",
+  SessionView: "Session",
 };
 
 /** Field names of every `export interface` in a TypeScript source. */

@@ -48,7 +48,11 @@ export function RecommendationSheet({ recommendation, onClose }: RecommendationS
             <Button
               variant="primary"
               onClick={() => {
-                setDraft(next.brief);
+                setDraft(next.brief, {
+                  kind: "RECOMMENDATION",
+                  ref_id: recommendation.id,
+                  action: "DO_THIS",
+                });
                 onClose();
               }}
             >

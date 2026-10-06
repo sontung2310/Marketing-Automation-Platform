@@ -12,8 +12,8 @@ steps can stream, replay and reference them.
 The system SHALL map each UI trigger `{kind, action}` to an agent and intent
 using the table in agents-spec §5.1, without calling a model. A trigger whose
 `ref_id` does not resolve to a record of the current company SHALL be
-rejected before any run starts. A chat message SHALL run only with an explicit
-agent selection until the Step 6 classifier exists.
+rejected before any run starts. A chat message SHALL be routed by the
+classifier router (chat-router spec).
 
 #### Scenario: A feed button starts a Strategy run
 

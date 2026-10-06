@@ -325,6 +325,15 @@ class FixtureStore {
     this.nextRunFailure = error;
   }
 
+  /** The next run stream ends after this seq, as the server's scheduled close does. */
+  streamCut: number | null = null;
+
+  takeStreamCut(): number | null {
+    const cut = this.streamCut;
+    this.streamCut = null;
+    return cut;
+  }
+
   approve(actionId: string, overrides?: Record<string, unknown>): ProposedAction {
     const action = this.actions.get(actionId);
     if (!action) throw new ConflictError(`Action ${actionId} not found`);

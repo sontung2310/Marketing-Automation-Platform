@@ -8,6 +8,7 @@ from datetime import datetime
 from uuid import uuid4
 
 import uvicorn
+from starlette.types import ASGIApp
 
 from app.core import db
 from app.core.config import get_settings
@@ -39,6 +40,13 @@ async def serve_mcp(
         now=now,
         allowed_hosts=get_settings().mcp_allowed_hosts,
     )
+    async with serve_app(app) as base_url:
+        yield f"{base_url}/mcp"
+
+
+@asynccontextmanager
+async def serve_app(app: ASGIApp) -> AsyncIterator[str]:
+    """Serve an ASGI app on a free local port; yield its base URL."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.bind(("127.0.0.1", 0))
         listener.listen()
@@ -55,7 +63,7 @@ async def serve_mcp(
                 await asyncio.sleep(STARTUP_POLL_S)
             else:
                 raise TimeoutError("The in-process server did not start")
-            yield f"http://127.0.0.1:{port}/mcp"
+            yield f"http://127.0.0.1:{port}"
         finally:
             server.should_exit = True
             await asyncio.wait_for(task, timeout=STARTUP_TIMEOUT_S)

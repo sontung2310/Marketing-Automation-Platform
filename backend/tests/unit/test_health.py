@@ -1,3 +1,5 @@
+import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from app.api.deps import get_health_checker
@@ -38,3 +40,17 @@ def test_health_reports_down_dependencies_without_failing() -> None:
     assert response.json()["mongo"] == "down"
     assert response.json()["mcp"] == "down"
     assert response.json()["openai"] == "missing"
+
+
+@pytest.mark.parametrize(
+    ("status", "up"),
+    [(200, True), (405, True), (406, True), (403, False), (404, False), (421, False), (503, False)],
+)
+async def test_mcp_probe_treats_missing_or_failing_endpoints_as_down(
+    status: int, up: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    transport = httpx.MockTransport(lambda request: httpx.Response(status))
+    client = httpx.AsyncClient
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: client(transport=transport, **kw))
+
+    assert await HealthChecker(Settings(mcp_url="http://mcp.test/mcp")).mcp_ok() is up

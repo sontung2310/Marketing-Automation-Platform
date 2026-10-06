@@ -13,7 +13,7 @@ from evals.files import read_jsonl
 from evals.fixture import EVALUATION_DIR, FixtureBundle
 
 GOLDEN_DIR = EVALUATION_DIR / "golden"
-Suite = Literal["strategy", "execution"]  # the router suite arrives with Step 6
+Suite = Literal["strategy", "execution", "router"]
 # A trigger ref_id "history:N" means recommendation N of the seeded session history (5-C).
 HISTORY_REF = re.compile(r"^history:(\d+)$")
 
@@ -31,7 +31,9 @@ class CaseInput(Strict):
 
 class ExpectedRoute(Strict):
     agent: Literal["STRATEGY", "EXECUTION", "NONE"]
-    intent: str
+    intent: str | None = None  # None: any intent of that agent (router hint cases)
+    deliverable_type: str | None = None  # router suite: the decision's deliverable type
+    references: list[str] | None = None  # router suite: e.g. ["recommendation:2"]
 
 
 class RecommendationBounds(Strict):
@@ -71,6 +73,7 @@ class Expect(Strict):
     implications_min: int | None = None
     implications_max: int | None = None
     deliverable: DeliverableExpect | None = None  # execution only
+    answer: str | None = None  # router only: the exact reply when no run starts
     proposed_actions_any: list[str] = []  # execution: one of these action types is proposed
     max_tool_calls: int = 12
 

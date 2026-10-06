@@ -200,7 +200,13 @@ class RouteDecision(BaseModel):
     references: list[str]  # e.g. ["recommendation:2"], ["deliverable:last"]
     confidence: float  # 0..1
     reason: str  # one sentence, shown in the run header
+    clarification_question: str | None  # CLARIFY: one short question
+    clarification_options: list[str]  # CLARIFY: 2-3 complete requests to send instead
 ```
+
+The router lives in `app/orchestration/router.py` (instructions in
+`router_instructions.md`). `classify()` asks the model; `decide()` applies the
+rules below with no model, so they are unit-tested on their own.
 
 Rules:
 
@@ -209,13 +215,24 @@ Rules:
   draft, create, rewrite, turn into*) go to Execution.
 - `confidence < 0.6` → `CLARIFY`. The API returns a clarification with the
   two candidate interpretations as quick-reply chips.
-- `OUT_OF_SCOPE` (non-marketing, or disallowed) → a fixed polite response. No
-  agent run happens.
+- `OUT_OF_SCOPE` (non-marketing, or deceptive: fake reviews, impersonation,
+  phishing) → the fixed response "I can help with Marketing Eye's marketing:
+  competitor moves, content ideas and drafts. That request is outside what I
+  do." No agent run happens, even with a hint. The agents' own refusals
+  (`SAFE-UNETH-*`, which bypass the router in their suites) stay as a second
+  line of defence.
+- A request to copy a competitor's content routes to Execution
+  (`FREEFORM_DELIVERABLE`), which declines to copy and offers an original
+  version (5-E).
+- With an `agent_hint`, the hinted agent keeps the run (method `EXPLICIT`) and
+  there is no clarification; an intent outside its scope falls back to
+  `COMPETITOR_QUESTION` (Strategy) or `FREEFORM_DELIVERABLE` (Execution).
 - The API resolves references against the session: `recommendation:N` is the
   Nth recommendation of the **latest** Strategy run in the session, and
   `deliverable:last` is the latest deliverable. A reference that can't be
   resolved → `CLARIFY`, with the message "No recommendation #N in this
-  session".
+  session" (or "No earlier deliverable in this session"). A resolved reference
+  becomes the run's trigger context, exactly as the matching button passes it.
 - The route decision (method, reason, confidence) is stored on the run and
   shown in the run header ("Routed to Execution · asked to draft a post").
 

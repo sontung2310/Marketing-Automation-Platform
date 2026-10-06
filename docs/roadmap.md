@@ -147,15 +147,15 @@ actions that can be approved. Its golden dataset is authored and passing.
 
 **Goal:** everything the UI needs is exposed per [api-contract.md](api-contract.md), including classifier routing with its own golden dataset.
 
-At the owner's request, 6.1, 6.3 and 6.6 ship first (OpenSpec change
-`platform-api`) so the first website can run on Vercel. 6.2, 6.4 and 6.5
-follow in a second Step 6 change.
+At the owner's request, 6.1, 6.3 and 6.6 shipped first (OpenSpec change
+`platform-api`) so the first website could run on Vercel. 6.2, 6.4 and 6.5
+follow in the second Step 6 change, `runs-and-router`.
 
 - [x] 6.1 Feed, insight and company endpoints, with `actions[]` computed from specs §6. _(Implemented and evidenced in [#39](https://github.com/sontung2310/Marketing-Automation-Platform/pull/39): `test_activities_api.py`, scenario 6-A.)_
-- [ ] 6.2 `POST /runs`, the run SSE (with replay via `Last-Event-ID`) and the sessions endpoint. The restore must serve each run's persisted IDs (`recommendation_ids`, `deliverable_id`, `proposed_action_ids` and the stored actions), which today only the `output.final` event carries, not `run.output` (Step 5 review), so restored cards can still approve. Split `RunService.start` into prepare (returns the RUNNING run for the `202`) and execute, and persist or publish events as they are emitted so SSE is live (Step 4 review). The frontend side lands here too: the run stream reconnects with bounded backoff and resumes from `Last-Event-ID`, which Step 7 did not build (the activity stream's backoff is in place; the run stream ends the run on error).
+- [x] 6.2 `POST /runs`, the run SSE (with replay via `Last-Event-ID`) and the sessions endpoint. The restore must serve each run's persisted IDs (`recommendation_ids`, `deliverable_id`, `proposed_action_ids` and the stored actions), which today only the `output.final` event carries, not `run.output` (Step 5 review), so restored cards can still approve. Split `RunService.start` into prepare (returns the RUNNING run for the `202`) and execute, and persist or publish events as they are emitted so SSE is live (Step 4 review). The frontend side lands here too: the run stream reconnects with bounded backoff and resumes from `Last-Event-ID`, which Step 7 did not build (the activity stream's backoff is in place; the run stream ends the run on error). _(Implemented and evidenced in [#40](https://github.com/sontung2310/Marketing-Automation-Platform/pull/40): `test_runs_api.py` (6-C, 6-D, restore and approve, cap), `test_run_service.py`, the run-stream Playwright specs and the live Vercel run.)_
 - [x] 6.3 The activity SSE (3 s polling with `Last-Event-ID` resume, sized for serverless), `simulate` and `mark-seen`. _(Implemented and evidenced in [#39](https://github.com/sontung2310/Marketing-Automation-Platform/pull/39): scenario 6-B and the live Vercel trace.)_
-- [ ] 6.4 The classifier router (`RouteDecision`), the clarify and out-of-scope paths, including an unresolvable reference: "#7" in a session with 3 recommendations clarifies with "No recommendation #7 in this session" (`RT-REF-*`, moved from 5-C).
-- [ ] 6.5 **Golden dataset `evaluation/golden/router.jsonl`** (≥ 36 cases covering evaluation-spec §3.1) and baseline.
+- [x] 6.4 The classifier router (`RouteDecision`), the clarify and out-of-scope paths, including an unresolvable reference: "#7" in a session with 3 recommendations clarifies with "No recommendation #7 in this session" (`RT-REF-*`, moved from 5-C). _(Implemented and evidenced in [#40](https://github.com/sontung2310/Marketing-Automation-Platform/pull/40): `test_router.py`, `test_run_references.py`, 6-E against the real router and the live chat checks.)_
+- [x] 6.5 **Golden dataset `evaluation/golden/router.jsonl`** (≥ 36 cases covering evaluation-spec §3.1) and baseline. _(Implemented and evidenced in [#40](https://github.com/sontung2310/Marketing-Automation-Platform/pull/40): `evaluation/golden/router.jsonl` (42 cases) and `baseline_router` (6-F: 0.98 overall, safety and demo-path 1.0, p95 2.7 s).)_
 - [x] 6.6 Export the OpenAPI document and fail `npm run check` when the frontend API types drift from it. _(Implemented in [#39](https://github.com/sontung2310/Marketing-Automation-Platform/pull/39): `npm run api:check`.)_
 
 **Success criteria**

@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.agents.common.intents import Intent
 from app.core.errors import ValidationError
-from app.intelligence.models import AgentName
+from app.intelligence.models import AgentName, DeliverableType
 
 
 class TriggerKind(StrEnum):
@@ -27,6 +27,7 @@ class TriggerAction(StrEnum):
 
 class RouteMethod(StrEnum):
     DETERMINISTIC = "DETERMINISTIC"
+    CLASSIFIER = "CLASSIFIER"
     EXPLICIT = "EXPLICIT"
 
 
@@ -45,6 +46,8 @@ class Route(BaseModel):
     intent: Intent
     method: RouteMethod
     reason: str
+    confidence: float = Field(default=1.0, ge=0, le=1)
+    deliverable_type: DeliverableType | None = None
 
 
 TRIGGER_ROUTES: dict[tuple[TriggerKind, TriggerAction], tuple[AgentName, Intent]] = {

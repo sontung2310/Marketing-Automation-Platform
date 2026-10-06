@@ -9,6 +9,7 @@ import type {
   RunRequest,
   RunStatus,
   RunStep,
+  RunTrigger,
   StrategyOutput,
   ToolCall,
 } from "../../api";
@@ -29,6 +30,8 @@ export interface RunState {
   error: { code: string; message: string } | null;
   started_at: string;
   finished_at: string | null;
+  /** The last event applied, so a replayed stream never applies one twice. */
+  last_seq: number;
 }
 
 export type TranscriptEntry =
@@ -39,7 +42,12 @@ export type TranscriptEntry =
 export interface WorkspaceValue {
   /** The Execution composer's text. "Do this" writes here and sends nothing. */
   draft: string;
-  setDraft: (draft: string) => void;
+  /**
+   * `trigger` pins the item the text came from: sent unedited, the draft runs
+   * that trigger, so Execution gets the recommendation itself. Any edit drops it.
+   */
+  setDraft: (draft: string, trigger?: RunTrigger) => void;
+  sendDraft: () => void;
   /** Execution-side conversation only; Strategy output never enters it. */
   transcript: TranscriptEntry[];
   runs: Record<string, RunState>;
@@ -47,7 +55,12 @@ export interface WorkspaceValue {
   activeStrategyRunId: string | null;
   /** `label` is what the turn header shows; it defaults to the run's intent. */
   /** `retry` re-sends a failed run without echoing its message again. */
-  startRun: (request: RunRequest, label?: string, options?: { retry?: boolean }) => void;
+  /** `echo` is what the transcript shows the marketer sent, for a trigger run. */
+  startRun: (
+    request: RunRequest,
+    label?: string,
+    options?: { retry?: boolean; echo?: string },
+  ) => void;
   /** Scroll to and flash-highlight an evidence target anywhere on the page. */
   highlightedId: string | null;
   highlightedKind: EvidenceKind | null;

@@ -11,7 +11,7 @@ const PREFIX: Record<EvidenceKind, string> = {
 };
 
 const CHIP =
-  "inline-flex h-3 items-center gap-1 rounded-sm border border-border bg-surface-card px-1 text-small text-text";
+  "inline-flex min-h-3 items-center gap-1 rounded-sm border border-border bg-surface-card px-1 py-0.5 text-left text-small text-text";
 
 interface EvidenceChipProps {
   evidence: Evidence;

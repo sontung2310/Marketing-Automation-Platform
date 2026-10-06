@@ -191,6 +191,7 @@ export const handlers = [
     if (!ticket) return envelope("NOT_FOUND", `Run ${runId} not found`, 404);
 
     const lastEventId = Number(request.headers.get("Last-Event-ID") ?? 0);
+    const cut = store.takeStreamCut();
     return sse(async (send) => {
       let elapsed = 0;
       for (const scripted of ticket.script) {
@@ -198,6 +199,7 @@ export const handlers = [
         elapsed = scripted.delay_ms;
         if (scripted.event.seq <= lastEventId) continue;
         send(scripted.event.seq, scripted.event.type, scripted.event);
+        if (scripted.event.seq === cut) return; // a scheduled close; the browser resumes
       }
       ticket.run.status = "SUCCEEDED";
       ticket.run.finished_at = new Date().toISOString();
@@ -263,6 +265,18 @@ const ROUTER_ANSWERS: Record<
         "Draft a LinkedIn post",
         "Plan a LinkedIn response",
         "Show LinkedIn trends",
+      ],
+    },
+  },
+  // Long options, as the real router writes them (complete requests), must wrap.
+  "Audit our service pages": {
+    reason: "Could mean a framework or a page-by-page audit",
+    response: {
+      status: "NEEDS_CLARIFICATION",
+      message: "Would you like an audit framework, or a page-by-page audit of specific pages?",
+      clarification_options: [
+        "Audit these service pages and recommend clearer package scope, outcomes, inclusions and qualification guidance",
+        "Create an audit framework for improving Marketing Eye's service-page packages without changing prices",
       ],
     },
   },

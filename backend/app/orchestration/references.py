@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from app.core.db import Database
 from app.core.errors import NotFoundError
-from app.intelligence.models import Session
+from app.intelligence.models import AgentName, Run, RunStatus, Session
 from app.intelligence.repositories import (
     CompetitorActivitiesRepository,
     DeliverablesRepository,
@@ -69,14 +69,87 @@ async def resolve_trigger(
 
 
 async def open_session(
-    repositories: RunRepositories, company_id: str, session_id: str | None
+    repositories: RunRepositories, company_id: str, session_id: str | None, *, save: bool = True
 ) -> Session:
-    """Continue the company's session, or start a new one when none is given."""
+    """Continue the company's session, or start a new one when none is given.
+
+    With save=False a new session is only built; the caller saves it once the run
+    is certain to start, so a rejected request leaves no empty session behind.
+    """
     if session_id is None:
         session = Session(id=Session.new_id(), company_id=company_id, created_at=datetime.now(UTC))
-        await repositories.sessions.upsert(session)
+        if save:
+            await repositories.sessions.upsert(session)
         return session
     existing = await repositories.sessions.get(session_id)
     if existing is None or existing.company_id != company_id:
         raise NotFoundError(f"{session_id} was not found", {"session_id": session_id})
     return existing
+
+
+MAX_ORDINAL_DIGITS = 3
+
+
+@dataclass(frozen=True)
+class Unresolved:
+    """A session reference with nothing behind it; the marketer is asked instead."""
+
+    message: str
+
+
+async def _recommendation(
+    repositories: RunRepositories, runs: list[Run], value: str
+) -> dict[str, object] | Unresolved:
+    missing = Unresolved(f"No recommendation #{value} in this session")
+    # The latest successful Strategy run owns the open set, even an empty one; a
+    # refusal or clarification replaces nothing (persist_strategy).
+    latest = next(
+        (
+            r
+            for r in reversed(runs)
+            if r.agent is AgentName.STRATEGY and r.status is RunStatus.SUCCEEDED
+        ),
+        None,
+    )
+    # The value comes from model output: plain digits, and an ordinal Mongo can encode.
+    if latest is None or not value.isdecimal() or len(value) > MAX_ORDINAL_DIGITS:
+        return missing
+    record = await repositories.recommendations.get_by_ordinal(latest.id, int(value))
+    return record.model_dump(mode="json") if record else missing
+
+
+async def _deliverable(
+    repositories: RunRepositories, runs: list[Run], value: str
+) -> dict[str, object] | Unresolved:
+    missing = Unresolved("No earlier deliverable in this session")
+    ids = (
+        r.persisted.get("deliverable_id") for r in reversed(runs) if r.agent is AgentName.EXECUTION
+    )
+    deliverable_id = next((str(i) for i in ids if i), None)
+    if value != "last" or deliverable_id is None:
+        return missing
+    record = await repositories.deliverables.get(deliverable_id)
+    return record.model_dump(mode="json") if record else missing
+
+
+ReferenceResolver = Callable[
+    [RunRepositories, list[Run], str], Awaitable[dict[str, object] | Unresolved]
+]
+# agents-spec §5.2: "recommendation:N" is the Nth recommendation of the session's latest
+# Strategy run; "deliverable:last" is the session's latest deliverable.
+REFERENCE_RESOLVERS: dict[str, ReferenceResolver] = {
+    "recommendation": _recommendation,
+    "deliverable": _deliverable,
+}
+
+
+async def resolve_reference(
+    repositories: RunRepositories, reference: str, session_id: str | None
+) -> dict[str, object] | Unresolved:
+    """The record a chat reference points at, as the matching UI button would pass it."""
+    kind, _, value = reference.partition(":")
+    resolver = REFERENCE_RESOLVERS.get(kind)
+    runs = await repositories.runs.list_for_session(session_id) if session_id else []
+    if resolver is None:
+        return Unresolved(f"I could not tell what {reference!r} refers to")
+    return await resolver(repositories, runs, value)

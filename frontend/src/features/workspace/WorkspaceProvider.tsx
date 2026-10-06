@@ -3,10 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 
 import {
   ApiError,
+  fetchRun,
   openRunStream,
   type EvidenceKind,
   type RunEvent,
   type RunRequest,
+  type RunTrigger,
 } from "../../api";
 import { queryKeys, useSession, useStartRun } from "../../hooks/queries";
 import {
@@ -17,6 +19,7 @@ import {
   type TranscriptEntry,
   type WorkspaceValue,
 } from "./workspaceContext";
+import { applyEvent } from "./runEvents";
 
 const SESSION_STORAGE_KEY = "session_id";
 /**
@@ -25,6 +28,18 @@ const SESSION_STORAGE_KEY = "session_id";
  * would cancel the pending scroll before it resolved.
  */
 const HIGHLIGHT_MS = 4000;
+const RECONNECT_BASE_MS = 1000;
+const RECONNECT_MAX_MS = 15_000;
+const RECOVER_ATTEMPTS = 5;
+const RUN_EVENT_TYPES = [
+  "run.started",
+  "agent.step",
+  "agent.tool",
+  "agent.text_delta",
+  "output.final",
+  "run.failed",
+  "run.completed",
+] as const;
 
 function readStoredSession(): string | null {
   try {
@@ -34,38 +49,10 @@ function readStoredSession(): string | null {
   }
 }
 
-/**
- * Applies one streamed event to a run. The reducer is exhaustive over the SSE
- * event table in docs/api-contract.md, so a new event type is a compile error.
- */
-function applyEvent(run: RunState, event: RunEvent): RunState {
-  switch (event.type) {
-    case "run.started":
-      return {
-        ...run,
-        agent: event.data.agent,
-        intent: event.data.intent,
-        route: event.data.route,
-      };
-    case "agent.step":
-      return { ...run, steps: [...run.steps, event.data] };
-    case "agent.tool":
-      return { ...run, tool_calls: [...run.tool_calls, event.data] };
-    case "agent.text_delta":
-      return run;
-    case "output.final":
-      return { ...run, output: event.data };
-    case "run.failed":
-      return { ...run, status: "FAILED", error: event.data, finished_at: event.ts };
-    case "run.completed":
-      return { ...run, status: event.data.status, finished_at: event.ts };
-  }
-}
-
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [sessionId, setSessionId] = useState<string | null>(readStoredSession);
-  const [draft, setDraft] = useState("");
+  const [composer, setComposer] = useState<{ text: string; trigger?: RunTrigger }>({ text: "" });
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [runs, setRuns] = useState<Record<string, RunState>>({});
   const [activeStrategyRunId, setActiveStrategyRunId] = useState<string | null>(null);
@@ -73,6 +60,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [highlightedKind, setHighlightedKind] = useState<EvidenceKind | null>(null);
   const highlightTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const streams = useRef(new Map<string, EventSource>());
+  const recoveries = useRef(new Set<ReturnType<typeof setTimeout>>());
   const restoredSessionId = useRef<string | null>(null);
 
   const restored = useSession(sessionId);
@@ -110,58 +98,91 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const listen = useCallback(
     (runId: string) => {
-      const source = openRunStream(runId);
-      streams.current.set(runId, source);
-
-      const onEvent = (raw: MessageEvent<string>) => {
-        const event = JSON.parse(raw.data) as RunEvent;
-        setRuns((current) => {
-          const run = current[runId];
-          return run ? { ...current, [runId]: applyEvent(run, event) } : current;
-        });
-        if (event.type === "run.completed" || event.type === "run.failed") {
-          source.close();
-          streams.current.delete(runId);
-          void queryClient.invalidateQueries({ queryKey: queryKeys.recommendations });
-        }
-      };
-
-      for (const type of [
-        "run.started",
-        "agent.step",
-        "agent.tool",
-        "agent.text_delta",
-        "output.final",
-        "run.failed",
-        "run.completed",
-      ]) {
-        source.addEventListener(type, onEvent as EventListener);
-      }
-      source.onerror = () => {
-        setRuns((current) => {
-          const run = current[runId];
-          if (!run || run.status !== "RUNNING") return current;
-          return {
-            ...current,
-            [runId]: {
-              ...run,
-              status: "FAILED",
-              error: { code: "UPSTREAM_UNAVAILABLE", message: "Live updates stopped." },
-            },
-          };
-        });
-        source.close();
+      const finish = () => {
         streams.current.delete(runId);
+        void queryClient.invalidateQueries({ queryKey: queryKeys.recommendations });
       };
+
+      const open = () => {
+        const source = openRunStream(runId);
+        streams.current.set(runId, source);
+
+        const onEvent = (raw: MessageEvent<string>) => {
+          const event = JSON.parse(raw.data) as RunEvent;
+          setRuns((current) => {
+            const run = current[runId];
+            return run ? { ...current, [runId]: applyEvent(run, event) } : current;
+          });
+          if (event.type === "run.completed" || event.type === "run.failed") {
+            source.close();
+            finish();
+          }
+        };
+
+        for (const type of RUN_EVENT_TYPES) {
+          source.addEventListener(type, onEvent as EventListener);
+        }
+        source.onerror = () => {
+          // A routine close (the server ends streams on a schedule) reconnects
+          // natively with Last-Event-ID; only a stream the browser gave up on is ours.
+          // The closed source stays in the map while recovering, so the
+          // one-stream-per-run effect does not open a second one meanwhile.
+          if (source.readyState !== source.CLOSED) return;
+          recover(0);
+        };
+      };
+
+      // Re-read the run, then reopen its stream (seq makes the replay safe) or
+      // take its final state; give up only after a few failed attempts.
+      const recover = (attempt: number) => {
+        const delay = Math.min(RECONNECT_BASE_MS * 2 ** attempt, RECONNECT_MAX_MS);
+        const timer = setTimeout(() => {
+          recoveries.current.delete(timer);
+          fetchRun(runId)
+            .then((run) => {
+              if (run.status === "RUNNING") {
+                open();
+                return;
+              }
+              setRuns((current) => {
+                const known = current[runId];
+                if (!known) return current;
+                const { status, steps, tool_calls, output, error, finished_at } = run;
+                const settled = { status, steps, tool_calls, output, error, finished_at };
+                return { ...current, [runId]: { ...known, ...settled } };
+              });
+              finish();
+            })
+            .catch(() => {
+              if (attempt + 1 < RECOVER_ATTEMPTS) {
+                recover(attempt + 1);
+                return;
+              }
+              streams.current.delete(runId);
+              setRuns((current) => {
+                const run = current[runId];
+                if (!run || run.status !== "RUNNING") return current;
+                const error = { code: "UPSTREAM_UNAVAILABLE", message: "Live updates stopped." };
+                return { ...current, [runId]: { ...run, status: "FAILED", error } };
+              });
+            });
+        }, delay);
+        recoveries.current.add(timer);
+      };
+
+      open();
     },
     [queryClient],
   );
 
   useEffect(() => {
     const open = streams.current;
+    const pending = recoveries.current;
     return () => {
       for (const source of open.values()) source.close();
       open.clear();
+      for (const timer of pending) clearTimeout(timer);
+      pending.clear();
     };
   }, []);
 
@@ -178,8 +199,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const restoredRuns: Record<string, RunState> = {};
       for (const run of session.runs) {
         if (current[run.id]) continue;
+        const running = run.status === "RUNNING";
         restoredRuns[run.id] = {
           ...run,
+          // A run still going replays its whole stream, so start it empty.
+          ...(running ? { steps: [], tool_calls: [] } : {}),
+          last_seq: running ? 0 : Number.MAX_SAFE_INTEGER,
           trigger_label: runLabel(run),
           request: run.message ? { message: run.message } : { trigger: run.trigger ?? undefined },
         };
@@ -212,11 +237,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [runs, listen]);
 
   const startRun = useCallback(
-    (request: RunRequest, label?: string, { retry = false } = {}) => {
-      if (request.message && !retry) {
+    (request: RunRequest, label?: string, { retry = false, echo = request.message } = {}) => {
+      if (echo && !retry) {
         setTranscript((current) => [
           ...current,
-          { kind: "marketer", id: `msg-${Date.now()}`, text: request.message ?? "" },
+          { kind: "marketer", id: `msg-${Date.now()}`, text: echo },
         ]);
       }
       startRunMutation.mutate(
@@ -272,6 +297,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
               error: null,
               started_at: new Date().toISOString(),
               finished_at: null,
+              last_seq: 0,
             };
             setRuns((current) => ({ ...current, [run.id]: run }));
             if (run.agent === "EXECUTION") {
@@ -286,10 +312,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [sessionId, startRunMutation],
   );
 
+  const setDraft = useCallback(
+    (text: string, trigger?: RunTrigger) => setComposer({ text, trigger }),
+    [],
+  );
+
+  const sendDraft = useCallback(() => {
+    const message = composer.text.trim();
+    if (!message) return;
+    setComposer({ text: "" });
+    if (composer.trigger) startRun({ trigger: composer.trigger }, undefined, { echo: message });
+    else startRun({ message });
+  }, [composer, startRun]);
+
   const value = useMemo<WorkspaceValue>(
     () => ({
-      draft,
+      draft: composer.text,
       setDraft,
+      sendDraft,
       transcript,
       runs,
       activeStrategyRunId,
@@ -299,7 +339,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       highlight,
     }),
     [
-      draft,
+      composer.text,
+      setDraft,
+      sendDraft,
       transcript,
       runs,
       activeStrategyRunId,

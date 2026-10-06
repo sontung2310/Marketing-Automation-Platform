@@ -168,6 +168,69 @@ test.describe("7-C an Execution run streams into the transcript", () => {
   });
 });
 
+test.describe("6.2 a run stream closed mid-run", () => {
+  test("resumes from Last-Event-ID and ends exactly like an uninterrupted run", async ({
+    browser,
+  }) => {
+    const finalTurn = async (cutAfterSeq: number | null): Promise<string> => {
+      const page = await browser.newPage();
+      if (cutAfterSeq !== null) {
+        await page.addInitScript((cut) => {
+          window.__fixtureRunStreamCut = cut;
+        }, cutAfterSeq);
+      }
+      await openWorkspace(page);
+      const blogCard = page
+        .getByRole("region", { name: "Competitor activity" })
+        .getByRole("article")
+        .filter({ hasText: "NEW_BLOG" })
+        .first();
+      await blogCard.getByRole("button", { name: "Create a similar blog" }).click();
+      const turn = page
+        .getByRole("log", { name: "Execution transcript" })
+        .getByRole("article", { name: "EXECUTION CREATE_SIMILAR · BLOG_DRAFT" });
+      await expect(turn.getByText("CEO_POST · LINKEDIN · 218 words")).toBeVisible({
+        timeout: 20_000,
+      });
+      // Compare finished runs: the spinner goes once run.completed has arrived.
+      await expect(turn.locator(".animate-spin")).toHaveCount(0, { timeout: 10_000 });
+      const text = (await turn.innerText()).replace(/\b\d+s\b/g, "");
+      await page.close();
+      return text;
+    };
+
+    const uninterrupted = await finalTurn(null);
+    const resumed = await finalTurn(3);
+    expect(resumed).toBe(uninterrupted);
+  });
+});
+
+test.describe("6.2 the daily run cap", () => {
+  test("shows the RATE_LIMITED message verbatim in the transcript", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__fixtureFailures = [
+        {
+          path: "/api/runs",
+          method: "post",
+          status: 429,
+          code: "RATE_LIMITED",
+          message: "The demo's daily run limit is reached. Try again tomorrow.",
+        },
+      ];
+    });
+    await openWorkspace(page);
+
+    await page.getByLabel("Message the Execution agent").fill("Write a LinkedIn post on AI search");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(
+      page
+        .getByRole("log", { name: "Execution transcript" })
+        .getByText("The demo's daily run limit is reached. Try again tomorrow."),
+    ).toBeVisible();
+  });
+});
+
 test.describe("7-C a failed run", () => {
   test("shows the run.failed message verbatim and retries from the transcript", async ({
     page,
@@ -245,7 +308,7 @@ test.describe("7-C retrying a message run", () => {
 });
 
 test.describe("7-D the evidence loop", () => {
-  test("Do this prefills the composer without sending, and evidence scrolls to its target", async ({
+  test("Do this prefills the composer without sending, sends the recommendation unedited, and evidence scrolls to its target", async ({
     page,
   }) => {
     await page.addInitScript(() => {
@@ -257,6 +320,7 @@ test.describe("7-D the evidence loop", () => {
         const url = typeof input === "string" ? input : input.toString();
         if (url.includes("/api/runs") && (init?.method ?? "GET") === "POST") {
           window.__runPosts = (window.__runPosts ?? 0) + 1;
+          window.__runBodies = [...(window.__runBodies ?? []), String(init?.body)];
         }
         return original(input, init);
       };
@@ -288,6 +352,46 @@ test.describe("7-D the evidence loop", () => {
       "Write the LinkedIn post for recommendation #1",
     );
     expect(await page.evaluate(() => window.__runPosts)).toBe(0);
+
+    // Sent unedited, the draft runs the recommendation itself, not a chat guess.
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect.poll(() => page.evaluate(() => window.__runPosts)).toBe(1);
+    const [body = ""] = await page.evaluate(() => window.__runBodies ?? []);
+    expect(JSON.parse(body).trigger).toMatchObject({ kind: "RECOMMENDATION", action: "DO_THIS" });
+    await expect(
+      page
+        .getByRole("log", { name: "Execution transcript" })
+        .getByText("Write the LinkedIn post for recommendation #1"),
+    ).toBeVisible();
+  });
+});
+
+test.describe("7-D an edited Do this draft", () => {
+  test("goes to the router as chat, not as the recommendation", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__runBodies = [];
+      const original = window.fetch;
+      window.fetch = (input, init) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.includes("/api/runs") && (init?.method ?? "GET") === "POST") {
+          window.__runBodies = [...(window.__runBodies ?? []), String(init?.body)];
+        }
+        return original(input, init);
+      };
+    });
+    await openWorkspace(page);
+
+    await page.getByRole("button", { name: /Hold price, publish the reasoning/ }).click();
+    await page.getByRole("button", { name: "Do this" }).click();
+    const composer = page.getByLabel("Message the Execution agent");
+    await composer.fill("Write the LinkedIn post for recommendation #1, under 100 words");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect.poll(() => page.evaluate(() => window.__runBodies?.length)).toBe(1);
+    const [body = ""] = await page.evaluate(() => window.__runBodies ?? []);
+    const request = JSON.parse(body) as { message?: string; trigger?: unknown };
+    expect(request.trigger).toBeUndefined();
+    expect(request.message).toBe("Write the LinkedIn post for recommendation #1, under 100 words");
   });
 });
 
@@ -317,6 +421,28 @@ test.describe("7-E degraded regions and narrow viewports", () => {
     await expect(feed.getByRole("article").first()).toBeVisible();
     await expect(page.getByRole("region", { name: "Social listening" })).toBeVisible();
     await expect(page.getByLabel("Message the Execution agent")).toBeEditable();
+  });
+
+  test("long clarification options wrap inside a narrow transcript", async ({ page }) => {
+    await openWorkspace(page);
+    await page.setViewportSize({ width: 760, height: 800 });
+    await page
+      .getByRole("tablist", { name: "Workspace region" })
+      .getByRole("tab", { name: "Workspace" })
+      .click();
+
+    await page.getByLabel("Message the Execution agent").fill("Audit our service pages");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    const transcript = page.getByRole("log", { name: "Execution transcript" });
+    const option = transcript.getByRole("button", { name: /^Audit these service pages/ });
+    await expect(option).toBeVisible();
+    const [optionBox, transcriptBox] = await Promise.all([
+      option.boundingBox(),
+      transcript.boundingBox(),
+    ]);
+    expect(optionBox && transcriptBox && optionBox.width <= transcriptBox.width).toBe(true);
+    expect(optionBox?.height ?? 0).toBeGreaterThan(32); // more than one line
   });
 
   test("collapses to one column with the region switcher and never scrolls sideways", async ({
