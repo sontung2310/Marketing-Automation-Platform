@@ -115,3 +115,35 @@ async def test_chat_references_resolve_against_the_session(
     assert await resolve_reference(repositories, "recommendation:1", None) == Unresolved(
         "No recommendation #1 in this session"
     )
+
+
+async def test_recommendation_numbers_follow_the_latest_successful_strategy_run(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    repositories = RunRepositories.for_database(seeded_database)
+    answers = [
+        AgentOutcome(
+            RunStatus.SUCCEEDED,
+            strategy_output(*[recommendation(n, "act_seed_001") for n in (1, 2, 3)]),
+        ),
+        AgentOutcome(RunStatus.NEEDS_CLARIFICATION, strategy_output()),  # replaces nothing
+        AgentOutcome(RunStatus.SUCCEEDED, strategy_output()),  # a direct answer, no set
+    ]
+
+    async def strategy(context: RunContext, message: str | None) -> AgentOutcome:
+        return answers.pop(0)
+
+    service = RunService(repositories, {AgentName.STRATEGY: strategy})
+    first = await service.start(COMPANY, message="Plan our week", agent=AgentName.STRATEGY)
+    session_id = first.session_id
+
+    await service.start(COMPANY, message="Hm?", agent=AgentName.STRATEGY, session_id=session_id)
+    second = await resolve_reference(repositories, "recommendation:2", session_id)
+    assert isinstance(second, dict) and second["run_id"] == first.id
+
+    await service.start(
+        COMPANY, message="What did Brightlane do?", agent=AgentName.STRATEGY, session_id=session_id
+    )
+    assert await resolve_reference(repositories, "recommendation:2", session_id) == Unresolved(
+        "No recommendation #2 in this session"
+    )

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from app.core.db import Database
 from app.core.errors import NotFoundError
-from app.intelligence.models import AgentName, Run, Session
+from app.intelligence.models import AgentName, Run, RunStatus, Session
 from app.intelligence.repositories import (
     CompetitorActivitiesRepository,
     DeliverablesRepository,
@@ -87,6 +87,9 @@ async def open_session(
     return existing
 
 
+MAX_ORDINAL_DIGITS = 3
+
+
 @dataclass(frozen=True)
 class Unresolved:
     """A session reference with nothing behind it; the marketer is asked instead."""
@@ -98,15 +101,18 @@ async def _recommendation(
     repositories: RunRepositories, runs: list[Run], value: str
 ) -> dict[str, object] | Unresolved:
     missing = Unresolved(f"No recommendation #{value} in this session")
+    # The latest successful Strategy run owns the open set, even an empty one; a
+    # refusal or clarification replaces nothing (persist_strategy).
     latest = next(
         (
             r
             for r in reversed(runs)
-            if r.agent is AgentName.STRATEGY and r.persisted.get("recommendation_ids")
+            if r.agent is AgentName.STRATEGY and r.status is RunStatus.SUCCEEDED
         ),
         None,
     )
-    if latest is None or not value.isdigit():
+    # The value comes from model output: plain digits, and an ordinal Mongo can encode.
+    if latest is None or not value.isdecimal() or len(value) > MAX_ORDINAL_DIGITS:
         return missing
     record = await repositories.recommendations.get_by_ordinal(latest.id, int(value))
     return record.model_dump(mode="json") if record else missing
