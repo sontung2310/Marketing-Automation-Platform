@@ -14,12 +14,13 @@ from app.agents.strategy import run as strategy_run
 from app.agents.strategy.output import StrategyOutput
 from app.core.errors import UpstreamUnavailableError
 from app.intelligence.models import RunStatus
-from tests.strategy_samples import recommendation, strategy_output
+from tests.strategy_samples import SECOND_SIGNAL, strategy_output
+from tests.strategy_samples import niche_recommendation as recommendation
 
 
 class FakeMCP:
     def __init__(self, context: RunContext, url: str) -> None:
-        context.retrieved_ids |= {"act_1", "cmp_marketing_eye"}
+        context.retrieved_ids |= {"act_1", SECOND_SIGNAL, "cmp_marketing_eye"}
         context.skill_budget.loaded.append("pricing")
 
     async def __aenter__(self) -> "FakeMCP":

@@ -34,7 +34,7 @@ export function ActivityFeed() {
 
   const activities = useActivities(query);
   const markSeen = useMarkSeen();
-  const { startRun, highlightedId, highlightedKind, highlight } = useWorkspace();
+  const { startRun, highlightedId, highlightedKind, highlight, strategyRunning } = useWorkspace();
   const { inserted, announcement, paused } = useActivityStream();
 
   const items: Activity[] = useMemo(() => {
@@ -117,6 +117,7 @@ export function ActivityFeed() {
           key={activity.id}
           activity={activity}
           highlighted={highlightedId === activity.id}
+          strategyRunning={strategyRunning}
           onAction={(action) => onAction(activity, action)}
         />
       ))}

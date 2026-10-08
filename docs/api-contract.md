@@ -118,20 +118,26 @@ sorted by `momentum_pct` desc. Each item has `actions: [{action: "USE_TREND", la
 
 ### `GET /influencers`
 Query: `topic`, `channels`, `limit`. Response: `200 {items: [influencer]}`, sorted
-by `relevance_score` desc. Each item has `actions: [{action: "DRAFT_OUTREACH", label: "Draft outreach", agent: "EXECUTION"}]`.
+by `relevance_score` desc, then `followers` desc. Each item carries `avatar_url`
+(a URL or `null`) and `actions: [{action: "DRAFT_OUTREACH", label: "Draft outreach", agent: "EXECUTION"}]`.
+In production the items are the DCT top 10 (data-contract §4.2).
 
 ### `GET /recommendations`
 Query: `status` (default `OPEN`), `limit` (default 20, max 50). Returns the
 persisted Strategy recommendations, newest run first, for the Strategy panel.
-Each item includes `run_id`, `ordinal`, `next_action`, `created_at` (the run's
-start) and `run_label`, plus
+Each item includes `run_id`, `ordinal`, `title`, `insight`, `audience`,
+`next_action`, `created_at` (the run's start) and `run_label`, plus
 `actions: [{action: "DO_THIS", label: "Do this", agent: "EXECUTION"}]`.
+`OPEN` is one company-wide set: a Strategy run that persists recommendations
+supersedes every other open one, and a successful Execution run started from a
+recommendation marks it `DONE`, so it leaves the default listing.
 
 `run_label` names the run that produced the recommendation, for the Strategy
 panel's grouping header — the intent and the triggering item's type, for
 example `Plan a response · PRICE_CHANGE`. It is derived server-side from the
 run's `trigger` (the button's label, then the activity type, or the trigger
-kind for trends and influencers) and falls back to the `intent` for chat runs;
+kind for trends and influencers; **Generate strategy** has no suffix) and
+falls back to the `intent` for chat runs;
 the UI groups by `run_id` when it is absent.
 
 ## Agent runs
@@ -145,9 +151,14 @@ Request (exactly one of `message` / `trigger`):
   "session_id": "ses_…|null",
   "message": "Write a blog about AI search for B2B founders",
   "agent_hint": "AUTO | STRATEGY | EXECUTION",
-  "trigger": { "kind": "FEED_ACTION|RECOMMENDATION|TREND|INFLUENCER", "ref_id": "act_…", "action": "CREATE_SIMILAR" }
+  "trigger": { "kind": "FEED_ACTION|RECOMMENDATION|TREND|INFLUENCER|COMPANY", "ref_id": "act_…", "action": "CREATE_SIMILAR" }
 }
 ```
+
+`{kind: "COMPANY", ref_id: "<company id>", action: "GENERATE_STRATEGY"}` is the
+Strategy panel's **Generate strategy**: an unfocused `STRATEGY_SYNTHESIS` run.
+A `ref_id` other than the current company's ID is a `404`. `RESPONSE_PLAN` and
+`USE_TREND` start the same intent focused on their record (agents-spec §5.1).
 
 Responses:
 

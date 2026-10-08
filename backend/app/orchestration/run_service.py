@@ -13,12 +13,17 @@ from datetime import UTC, datetime, timedelta
 
 from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.common.errors import CancelledRunError, run_error
-from app.agents.common.mcp import collect_ids
+from app.agents.common.mcp import collect_activity_competitors, collect_ids
 from app.core.config import get_settings
 from app.core.errors import DomainError, NotFoundError, RateLimitedError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus, Session
 from app.orchestration.persistence import PERSISTERS
-from app.orchestration.references import RunRepositories, open_session, resolve_trigger
+from app.orchestration.references import (
+    RunRepositories,
+    has_recommendations,
+    open_session,
+    resolve_trigger,
+)
 from app.orchestration.routing import Route, Trigger, route_chat, route_trigger
 
 logger = logging.getLogger(__name__)
@@ -52,9 +57,17 @@ class RunPlan:
 
 
 class RunService:
-    def __init__(self, repositories: RunRepositories, agents: Mapping[AgentName, AgentFn]) -> None:
+    def __init__(
+        self,
+        repositories: RunRepositories,
+        agents: Mapping[AgentName, AgentFn],
+        *,
+        daily_cap: bool = True,
+    ) -> None:
         self.repositories = repositories
         self.agents = agents
+        # The demo's cost guard; the eval harness turns it off for its throwaway database.
+        self.daily_cap = daily_cap
 
     async def start(
         self,
@@ -108,6 +121,7 @@ class RunService:
             # The trigger record was resolved for this company, so the agent may cite it, and
             # the evidence it carries (a recommendation's), which was grounded when produced.
             context.retrieved_ids |= collect_ids(trigger_context)
+            context.activity_competitors |= collect_activity_competitors(trigger_context)
         if context.previous_output is not None:
             # Follow-ups ("drop #3") may re-cite what the last answer already grounded.
             context.retrieved_ids |= collect_ids(context.previous_output)
@@ -206,6 +220,8 @@ class RunService:
         return await self.load(run_id)  # its worker finished it meanwhile
 
     async def check_daily_cap(self) -> None:
+        if not self.daily_cap:
+            return
         # ponytail: a count, not a reserved slot; two runs at the boundary may both start.
         midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         if await self.repositories.runs.count_started_since(midnight) >= (
@@ -248,9 +264,10 @@ class RunService:
         if not await self.repositories.runs.replace_if_running(run):
             # Already read as interrupted; that is what the marketer saw, so it stands.
             return await self.load(run.id)
-        if run.status is RunStatus.SUCCEEDED:
-            # Follow-ups build on the last successful answer; a failure, refusal or
-            # clarification must not replace it.
+        keeps_set = run.agent is AgentName.STRATEGY and not has_recommendations(run)
+        if run.status is RunStatus.SUCCEEDED and not keeps_set:
+            # Follow-ups build on the last successful answer; a failure, refusal,
+            # clarification or a Strategy answer without recommendations must not replace it.
             await self.repositories.sessions.upsert(
                 session.model_copy(update={"last_run_id": run.id})
             )

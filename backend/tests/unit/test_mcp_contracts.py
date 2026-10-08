@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from app.agents.common.mcp import collect_activity_competitors
 from app.core.errors import UpstreamUnavailableError
 from app.intelligence.models import (
     ActivitySummary,
@@ -105,6 +106,7 @@ def test_compact_projections_keep_the_documented_fields() -> None:
     assert compact_competitor_result.channels == [Channel.LINKEDIN]
     assert set(compact_activity_result.model_dump()) == {
         "id",
+        "competitor_id",
         "competitor_name",
         "activity_type",
         "channel",
@@ -120,6 +122,10 @@ def test_compact_projections_keep_the_documented_fields() -> None:
         compact_activity_result.model_dump()
     )
     assert "note" not in compact_summary_result.model_dump()
+    # The niche rule reads each activity's competitor from the real MCP payloads.
+    for payload in (compact_activity_result, compact_summary_result):
+        found = collect_activity_competitors(payload.model_dump(mode="json"))
+        assert found == {compact_activity_result.id: compact_activity_result.competitor_id}
     totals = compact_summary_result.model_dump()["totals_by_competitor"]
     assert sum(totals.values()) == sum(count.count for count in summary.counts)
 

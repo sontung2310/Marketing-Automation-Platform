@@ -49,6 +49,7 @@ class RunRepositories:
 
 Resolver = Callable[[RunRepositories, str, str], Awaitable[BaseModel | None]]
 
+
 RESOLVERS: dict[TriggerKind, Resolver] = {
     TriggerKind.FEED_ACTION: lambda r, ref, cmp: r.activities.get_for_company(ref, cmp),
     TriggerKind.TREND: lambda r, ref, cmp: r.trends.get_for_company(ref, cmp),
@@ -59,8 +60,16 @@ RESOLVERS: dict[TriggerKind, Resolver] = {
 
 async def resolve_trigger(
     repositories: RunRepositories, trigger: Trigger, company_id: str
-) -> dict[str, object]:
-    """The referenced record as JSON-ready data, or NotFoundError for this company."""
+) -> dict[str, object] | None:
+    """The referenced record as JSON-ready data, or NotFoundError for this company.
+
+    A COMPANY trigger (Generate strategy) only authorises the run: the agent reads the
+    company itself, so there is no trigger record and the synthesis has no focus.
+    """
+    if trigger.kind is TriggerKind.COMPANY:
+        if trigger.ref_id != company_id:
+            raise NotFoundError(f"{trigger.ref_id} was not found", {"ref_id": trigger.ref_id})
+        return None
     record = await RESOLVERS[trigger.kind](repositories, trigger.ref_id, company_id)
     if record is None:
         raise NotFoundError(f"{trigger.ref_id} was not found", {"ref_id": trigger.ref_id})
@@ -90,6 +99,15 @@ async def open_session(
 MAX_ORDINAL_DIGITS = 3
 
 
+def has_recommendations(run: Run) -> bool:
+    """A successful Strategy run that persisted at least one recommendation."""
+    return (
+        run.agent is AgentName.STRATEGY
+        and run.status is RunStatus.SUCCEEDED
+        and bool(run.persisted.get("recommendation_ids"))
+    )
+
+
 @dataclass(frozen=True)
 class Unresolved:
     """A session reference with nothing behind it; the marketer is asked instead."""
@@ -101,16 +119,9 @@ async def _recommendation(
     repositories: RunRepositories, runs: list[Run], value: str
 ) -> dict[str, object] | Unresolved:
     missing = Unresolved(f"No recommendation #{value} in this session")
-    # The latest successful Strategy run owns the open set, even an empty one; a
-    # refusal or clarification replaces nothing (persist_strategy).
-    latest = next(
-        (
-            r
-            for r in reversed(runs)
-            if r.agent is AgentName.STRATEGY and r.status is RunStatus.SUCCEEDED
-        ),
-        None,
-    )
+    # The latest Strategy run that persisted recommendations owns the set: an answer
+    # without them (Why it matters, a factual question) replaces nothing (persist_strategy).
+    latest = next((r for r in reversed(runs) if has_recommendations(r)), None)
     # The value comes from model output: plain digits, and an ordinal Mongo can encode.
     if latest is None or not value.isdecimal() or len(value) > MAX_ORDINAL_DIGITS:
         return missing

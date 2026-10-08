@@ -13,6 +13,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ValidationError
 
+from app.agents.common.mcp import collect_activity_competitors
 from app.agents.execution.guards import (
     FIRST_PERSON,
     MAX_JACCARD,
@@ -24,6 +25,7 @@ from app.agents.execution.guards import (
 )
 from app.agents.execution.output import ExecutionOutput
 from app.agents.strategy.output import StrategyOutput
+from app.agents.strategy.validation import niche_problems
 from app.orchestration.routing import TriggerAction
 from app.skills.tools import MAX_LOADS_PER_RUN
 from evals.cases import GoldenCase
@@ -168,6 +170,21 @@ def each_cites(e: Evaluated) -> bool:
         any(evidence.id.startswith(prefixes) for evidence in r.evidence)
         for r in strategy(e).recommendations
     )
+
+
+def niche_signals(e: Evaluated) -> bool:
+    """The niche rule, as post-validation applies it (strategy-agent spec), on the final set."""
+    cited = [e.fixture.record(ev.id) for rec in strategy(e).recommendations for ev in rec.evidence]
+    competitors = collect_activity_competitors(cited)
+    return not any(
+        niche_problems(rec, f"recommendation {rec.ordinal}", competitors)
+        for rec in strategy(e).recommendations
+        if rec.kind != "MONITOR"
+    )
+
+
+def has_strategy_recommendations(e: Evaluated) -> bool:
+    return isinstance(e.output, StrategyOutput) and bool(e.output.recommendations)
 
 
 def implications(e: Evaluated) -> bool:
@@ -348,6 +365,7 @@ CHECKS: dict[str, Check] = {
     "data_gaps": when(lambda e: e.case.expect.data_gaps_any, needs_output(data_gaps)),
     "channels": when(lambda e: e.case.expect.channels_only, needs_output(channels)),
     "each_cites": when(lambda e: e.case.expect.each_cites_prefix, needs_output(each_cites)),
+    "niche_signals": when(has_strategy_recommendations, niche_signals),
     "implications": when(
         lambda e: (
             e.case.expect.implications_min is not None or e.case.expect.implications_max is not None

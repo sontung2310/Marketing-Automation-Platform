@@ -7,7 +7,7 @@ from typing import TypeVar
 
 from pymongo.asynchronous.database import AsyncDatabase
 
-from app.intelligence.models import ModelBase
+from app.intelligence.models import ModelBase, SourceSystem
 from app.intelligence.repositories.activities import CompetitorActivitiesRepository
 from app.intelligence.repositories.base import Document, Repository, UpsertResult
 from app.intelligence.repositories.companies import CompaniesRepository
@@ -25,6 +25,7 @@ class WriteCounts:
     inserted: int = 0
     updated: int = 0
     skipped: int = 0
+    deleted: int = 0
 
     def add(self, result: UpsertResult) -> WriteCounts:
         return WriteCounts(
@@ -76,10 +77,14 @@ async def seed_database(database: AsyncDatabase[Document], bundle: SeedBundle) -
     trend_repository = TrendsRepository(database)
     collection_counts["trends"] = await _upsert_by_source(trend_repository, bundle.trends)
 
+    # Influencers come only from DCT; remove any left from older mock seeds.
     influencer_repository = InfluencersRepository(database)
-    collection_counts["influencers"] = await _upsert_by_source(
-        influencer_repository, bundle.influencers
-    )
+    deleted = 0
+    for company in bundle.companies:
+        deleted += await influencer_repository.delete_by_source_except(
+            company.id, SourceSystem.MOCK_SEED, set()
+        )
+    collection_counts["influencers"] = WriteCounts(deleted=deleted)
     collection_counts["simulation_templates"] = WriteCounts(
         skipped=len(bundle.simulation_templates)
     )

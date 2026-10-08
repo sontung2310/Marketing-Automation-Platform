@@ -79,4 +79,8 @@ def test_run_label_names_the_button_and_the_item_type() -> None:
     )
     trend_run = _run({"kind": "TREND", "ref_id": "trd_1", "action": "USE_TREND"})
     assert run_label(trend_run, {}) == "Get topic ideas · TREND"
+    company_run = _run(
+        {"kind": "COMPANY", "ref_id": "cmp_marketing_eye", "action": "GENERATE_STRATEGY"}
+    )
+    assert run_label(company_run, {}) == "Generate strategy"
     assert run_label(_run({}), {}) == "RESPONSE_PLAN"

@@ -18,7 +18,6 @@ from app.intelligence.models import (
     Company,
     Competitor,
     CompetitorActivity,
-    Influencer,
     SimulationTemplate,
     Trend,
     ensure_aware,
@@ -40,7 +39,6 @@ class SeedBundle(BaseModel):
     competitors: list[Competitor]
     competitor_activities: list[CompetitorActivity]
     trends: list[Trend]
-    influencers: list[Influencer]
     simulation_templates: list[SimulationTemplate]
 
 
@@ -51,8 +49,6 @@ class SeedCoverage:
     activity_channels: tuple[str, ...]
     trend_channels: tuple[str, ...]
     trend_directions: tuple[str, ...]
-    influencer_channels: tuple[str, ...]
-    au_influencer_ratio: float
 
 
 def load_seed_bundle(
@@ -67,7 +63,6 @@ def load_seed_bundle(
             directory / "competitor_activities.json", list[CompetitorActivity]
         ),
         trends=_load(directory / "trends.json", list[Trend]),
-        influencers=_load(directory / "influencers.json", list[Influencer]),
         simulation_templates=_load(
             directory / "simulation_templates.json", list[SimulationTemplate]
         ),
@@ -189,30 +184,6 @@ def validate_seed_bundle(bundle: SeedBundle, *, now: datetime | None = None) -> 
     if overlaps < 4:
         raise SeedValidationError("at least four trends must overlap activity topics")
 
-    if len(bundle.influencers) < 20:
-        raise SeedValidationError("seed requires at least 20 influencers")
-    required_influencer_channels = {Channel.LINKEDIN, Channel.X, Channel.YOUTUBE}
-    influencer_channels = {item.channel for item in bundle.influencers}
-    if not required_influencer_channels.issubset(influencer_channels):
-        raise SeedValidationError("influencer channels must cover LinkedIn, X and YouTube")
-    au_ratio = sum(item.audience_region == "AU" for item in bundle.influencers) / len(
-        bundle.influencers
-    )
-    if au_ratio < 0.6:
-        raise SeedValidationError("at least 60% of influencers must have AU audiences")
-    scores = [item.relevance_score for item in bundle.influencers]
-    if min(scores) > 0.3 or max(scores) < 0.95:
-        raise SeedValidationError("influencer relevance scores must span 0.3 to 0.95")
-    if any(
-        not _uses_example_hostname(url)
-        for influencer in bundle.influencers
-        for url in [
-            influencer.profile_url,
-            *(evidence.url for evidence in influencer.evidence),
-        ]
-    ):
-        raise SeedValidationError("influencer URLs must use .example")
-
     template_counts = Counter(item.activity_type.value for item in bundle.simulation_templates)
     missing_templates = [item.value for item in ActivityType if template_counts[item.value] < 2]
     if missing_templates:
@@ -225,15 +196,12 @@ def validate_seed_bundle(bundle: SeedBundle, *, now: datetime | None = None) -> 
             "competitors": len(bundle.competitors),
             "competitor_activities": len(bundle.competitor_activities),
             "trends": len(bundle.trends),
-            "influencers": len(bundle.influencers),
             "simulation_templates": len(bundle.simulation_templates),
         },
         activity_types=dict(sorted(activity_counts.items())),
         activity_channels=tuple(sorted(item.value for item in activity_channels)),
         trend_channels=tuple(sorted(item.value for item in trend_channels)),
         trend_directions=tuple(sorted(trend_directions)),
-        influencer_channels=tuple(sorted(item.value for item in influencer_channels)),
-        au_influencer_ratio=au_ratio,
     )
 
 
@@ -291,7 +259,6 @@ def _all_records(bundle: SeedBundle) -> list[BaseModel]:
         *bundle.competitors,
         *bundle.competitor_activities,
         *bundle.trends,
-        *bundle.influencers,
         *bundle.simulation_templates,
     ]
 

@@ -39,7 +39,21 @@ async def test_feed_trigger_resolves_to_the_company_activity(
         kind=TriggerKind.FEED_ACTION, ref_id=activity.id, action=TriggerAction.RESPONSE_PLAN
     )
     record = await resolve_trigger(repositories, trigger, COMPANY)
-    assert record["id"] == activity.id  # same key shape as MCP results
+    assert record is not None and record["id"] == activity.id  # same key shape as MCP results
+
+
+async def test_generate_strategy_resolves_the_own_company_without_a_record(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    repositories = RunRepositories.for_database(seeded_database)
+    own = Trigger(kind=TriggerKind.COMPANY, ref_id=COMPANY, action=TriggerAction.GENERATE_STRATEGY)
+    assert await resolve_trigger(repositories, own, COMPANY) is None  # no focus record
+
+    foreign = Trigger(
+        kind=TriggerKind.COMPANY, ref_id="cmp_someone_else", action=TriggerAction.GENERATE_STRATEGY
+    )
+    with pytest.raises(NotFoundError):
+        await resolve_trigger(repositories, foreign, COMPANY)
 
 
 @pytest.mark.parametrize("company", [COMPANY, "cmp_someone_else"])
@@ -127,7 +141,7 @@ async def test_recommendation_numbers_follow_the_latest_successful_strategy_run(
             strategy_output(*[recommendation(n, "act_seed_001") for n in (1, 2, 3)]),
         ),
         AgentOutcome(RunStatus.NEEDS_CLARIFICATION, strategy_output()),  # replaces nothing
-        AgentOutcome(RunStatus.SUCCEEDED, strategy_output()),  # a direct answer, no set
+        AgentOutcome(RunStatus.SUCCEEDED, strategy_output()),  # a direct answer keeps the set
     ]
 
     async def strategy(context: RunContext, message: str | None) -> AgentOutcome:
@@ -144,6 +158,11 @@ async def test_recommendation_numbers_follow_the_latest_successful_strategy_run(
     await service.start(
         COMPANY, message="What did Brightlane do?", agent=AgentName.STRATEGY, session_id=session_id
     )
-    assert await resolve_reference(repositories, "recommendation:2", session_id) == Unresolved(
-        "No recommendation #2 in this session"
+    # An answer without recommendations keeps the set, so "#2" still means the first run's.
+    kept = await resolve_reference(repositories, "recommendation:2", session_id)
+    assert isinstance(kept, dict) and kept["run_id"] == first.id
+    session = await repositories.sessions.get(session_id)
+    assert session is not None and session.last_run_id == first.id
+    assert await resolve_reference(repositories, "recommendation:4", session_id) == Unresolved(
+        "No recommendation #4 in this session"
     )

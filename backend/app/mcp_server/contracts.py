@@ -84,6 +84,7 @@ class CompactCompetitorActivity(ModelBase):
     """The documented low-token activity list representation."""
 
     id: str
+    competitor_id: str  # the niche rule needs it (agents-spec §6.2)
     competitor_name: str
     activity_type: ActivityType
     channel: Channel

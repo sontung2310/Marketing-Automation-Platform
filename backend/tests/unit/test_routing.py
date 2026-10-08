@@ -18,10 +18,11 @@ from app.orchestration.routing import (
 SPEC_TABLE = {
     ("FEED_ACTION", "CREATE_SIMILAR"): ("EXECUTION", "CREATE_SIMILAR"),
     ("FEED_ACTION", "WHY_IT_MATTERS"): ("STRATEGY", "WHY_IT_MATTERS"),
-    ("FEED_ACTION", "RESPONSE_PLAN"): ("STRATEGY", "RESPONSE_PLAN"),
+    ("FEED_ACTION", "RESPONSE_PLAN"): ("STRATEGY", "STRATEGY_SYNTHESIS"),
     ("RECOMMENDATION", "DO_THIS"): ("EXECUTION", "FROM_RECOMMENDATION"),
-    ("TREND", "USE_TREND"): ("STRATEGY", "TOPIC_RECOMMENDATION"),
+    ("TREND", "USE_TREND"): ("STRATEGY", "STRATEGY_SYNTHESIS"),
     ("INFLUENCER", "DRAFT_OUTREACH"): ("EXECUTION", "INFLUENCER_OUTREACH"),
+    ("COMPANY", "GENERATE_STRATEGY"): ("STRATEGY", "STRATEGY_SYNTHESIS"),
 }
 
 
@@ -42,7 +43,7 @@ def test_trigger_routes_deterministically() -> None:
     )
     assert (route.agent, route.intent, route.method) == (
         AgentName.STRATEGY,
-        Intent.RESPONSE_PLAN,
+        Intent.STRATEGY_SYNTHESIS,
         RouteMethod.DETERMINISTIC,
     )
 

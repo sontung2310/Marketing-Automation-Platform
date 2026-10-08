@@ -106,8 +106,15 @@ export const ITEM_ACTIONS = [
   "USE_TREND",
   "DRAFT_OUTREACH",
   "DO_THIS",
+  "GENERATE_STRATEGY",
 ] as const;
 export type ItemActionName = (typeof ITEM_ACTIONS)[number];
 
-export const TRIGGER_KINDS = ["FEED_ACTION", "RECOMMENDATION", "TREND", "INFLUENCER"] as const;
+export const TRIGGER_KINDS = [
+  "FEED_ACTION",
+  "RECOMMENDATION",
+  "TREND",
+  "INFLUENCER",
+  "COMPANY",
+] as const;
 export type TriggerKind = (typeof TRIGGER_KINDS)[number];

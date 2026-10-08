@@ -3,7 +3,7 @@
 from pymongo import ASCENDING, DESCENDING, IndexModel
 from pymongo.asynchronous.database import AsyncDatabase
 
-from app.intelligence.models import Channel, Influencer
+from app.intelligence.models import Channel, Influencer, SourceSystem
 from app.intelligence.repositories.base import Document, TenantRepository
 
 
@@ -46,5 +46,22 @@ class InfluencersRepository(TenantRepository[Influencer]):
             filters["audience_region"] = region
         if min_followers is not None:
             filters["followers"] = {"$gte": min_followers}
-        documents = self.collection.find(filters).sort("relevance_score", DESCENDING).limit(limit)
+        documents = (
+            self.collection.find(filters)
+            .sort([("relevance_score", DESCENDING), ("followers", DESCENDING)])
+            .limit(limit)
+        )
         return [self.model_type.model_validate(document) async for document in documents]
+
+    async def delete_by_source_except(
+        self, company_id: str, system: SourceSystem, keep_ref_ids: set[str]
+    ) -> int:
+        """Delete the company's records from `system` whose source is not in `keep_ref_ids`."""
+        result = await self.collection.delete_many(
+            {
+                "company_id": company_id,
+                "source.system": system.value,
+                "source.ref_id": {"$nin": sorted(keep_ref_ids)},
+            }
+        )
+        return result.deleted_count

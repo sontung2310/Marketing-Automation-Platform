@@ -56,6 +56,7 @@ PRIMARY_RECOMMENDATION_ID = "rec_price_response"
 OTHER_RECOMMENDATION_ID = "rec_other_company"
 _COMPACT_ACTIVITY_KEYS = {
     "id",
+    "competitor_id",
     "competitor_name",
     "activity_type",
     "channel",

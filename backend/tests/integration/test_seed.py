@@ -6,7 +6,7 @@ from pymongo.asynchronous.database import AsyncDatabase
 
 from app.core import db
 from app.core.config import get_settings
-from app.intelligence.models import Competitor
+from app.intelligence.models import Competitor, Provenance, SourceSystem
 from app.intelligence.repositories.base import Document
 from app.intelligence.repositories.competitors import CompetitorsRepository
 from app.pipelines.seed.loader import load_seed_bundle
@@ -70,3 +70,43 @@ async def test_duplicate_provenance_with_different_id_updates_existing_record(
     assert stored is not None
     assert stored["_id"] == original.id
     assert stored["name"] == "Updated competitor"
+
+
+async def test_seed_removes_mock_influencers_and_keeps_dct(
+    seed_test_database: AsyncDatabase[Document],
+) -> None:
+    collection = seed_test_database["influencers"]
+    base: Document = {
+        "company_id": "cmp_marketing_eye",
+        "name": "Creator",
+        "handle": "@creator",
+        "channel": "X",
+        "profile_url": "https://x.example/creator",
+        "followers": 10,
+        "engagement_rate": 0.0,
+        "topics": [],
+        "audience_region": "UNKNOWN",
+        "relevance_score": 0.5,
+        "evidence": [],
+    }
+    await collection.insert_many(
+        [
+            {
+                **base,
+                "_id": "inf_mock",
+                "is_mock": True,
+                "source": Provenance(system=SourceSystem.MOCK_SEED, ref_id="m").model_dump(),
+            },
+            {
+                **base,
+                "_id": "inf_dct",
+                "is_mock": False,
+                "source": Provenance(system=SourceSystem.DCT, ref_id="d").model_dump(),
+            },
+        ]
+    )
+
+    summary = await seed_database(seed_test_database, load_seed_bundle())
+
+    assert summary.collections["influencers"].deleted == 1
+    assert [doc["_id"] async for doc in collection.find({})] == ["inf_dct"]

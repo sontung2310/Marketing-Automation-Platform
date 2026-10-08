@@ -1,8 +1,10 @@
 # Strategy judge rubric
 
 > Status: approved by the owner on 2026-09-30 (roadmap 4.4); revised on 2026-10-01 with
-> the owner's standards from the first calibration. Calibrated against 50 owner-scored
-> runs before the first baseline; results are appended at the end of this file.
+> the owner's standards from the first calibration; revised on 2026-10-08 for Step 7b
+> (niche over generic, one card per price response), approved by the owner on
+> 2026-10-08. Calibrated against 50 owner-scored runs before the first baseline; results
+> are appended at the end of this file.
 
 The judge scores what code cannot: whether the advice is right for Marketing Eye.
 Deterministic checks already cover the schema, cited IDs, counts, channels, phrases and
@@ -20,15 +22,16 @@ unchanged, and a technically correct but unremarkable answer is a 3, not a 4. Th
 standards come from the owner's calibration scores and override a lenient reading of
 the anchors below.
 
-1. **Quality over quantity.** One or two strong recommendations beat several where some
-   are filler. Each weak, repetitive or loosely evidenced recommendation lowers
+1. **Quality over quantity.** One to three strong recommendations beat several where some
+   are filler; five is the hard maximum. Each weak, repetitive or loosely evidenced recommendation lowers
    actionability and marketing soundness; an answer padded to reach a count scores at
    most 3 on both.
 2. **Pricing moves start with the market.** For a competitor's price change or
    promotion, the sound first step is to re-evaluate the market (how Marketing Eye's
-   price and value compare, what the move signals) and then offer the user options
-   (hold, adjust, respond with content). Jumping straight to "don't match, post about
-   value" scores at most 3 on marketing soundness and actionability.
+   price and value compare, what the move signals) and then weigh the options (hold,
+   adjust, respond with content) with the trade-off of each, inside one recommendation.
+   Jumping straight to "don't match, post about value" scores at most 3 on marketing
+   soundness and actionability.
 3. **Options, not orders.** Where the right move depends on the owner's priorities,
    present choices with their trade-offs rather than one directive.
 4. **Answer only what was asked.** A factual question (what did a competitor do, how do
@@ -47,6 +50,13 @@ the anchors below.
    on relevance and at most 2 on every other dimension.
 8. **Justify choices.** Say why a channel, format or priority was chosen (for example,
    why LinkedIn leads next week). An unexplained choice costs a point on actionability.
+9. **Niche over generic.** Each recommendation should read like a senior strategist's
+   call: it combines at least two signals (several competitors' moves, or a move and a
+   trend or influencer) into one insight, names a specific audience, and says what white
+   space no cited competitor occupies and why Marketing Eye can own it. Advice any agency
+   could give ("post more on LinkedIn", "create thought leadership") scores at most 3 on
+   marketing soundness and actionability, however well grounded. Signals cited only to
+   reach two, without a real link between them, score at most 2 on grounding.
 
 ## Relevance: does it answer the request?
 

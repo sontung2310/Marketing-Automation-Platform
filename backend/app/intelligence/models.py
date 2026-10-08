@@ -341,6 +341,7 @@ class Influencer(TenantModel):
     handle: str = Field(min_length=1)
     channel: Channel
     profile_url: str = Field(min_length=1)
+    avatar_url: str | None = None
     followers: int = Field(ge=0)
     engagement_rate: float = Field(ge=0, le=1)
     topics: list[str] = Field(default_factory=list)
@@ -428,6 +429,9 @@ class Recommendation(PrefixedModel):
         "MONITOR",
     ]
     title: str = Field(min_length=1, max_length=90)
+    # Empty on records persisted before the niche rule (Step 7b).
+    insight: str = Field(default="", max_length=240)
+    audience: str = Field(default="", max_length=80)
     rationale: str = Field(min_length=1)
     priority: Priority
     channel: Channel | None = None

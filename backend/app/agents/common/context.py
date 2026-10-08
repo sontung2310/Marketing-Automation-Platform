@@ -27,6 +27,8 @@ class RunContext:
     mcp_calls: int = 0
     tool_calls: list[dict[str, object]] = field(default_factory=list)
     retrieved_ids: set[str] = field(default_factory=set)
+    # Activity ID → competitor ID, for the "not all from one competitor" rule.
+    activity_competitors: dict[str, str] = field(default_factory=dict)
     # Raw MCP payloads, so figures the agent quotes (e.g. summary counts) can be audited.
     tool_results: list[object] = field(default_factory=list)
     # Set when an MCP call raises; the SDK would hand it to the model as text (run.py fails).

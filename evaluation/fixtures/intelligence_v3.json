@@ -2241,6 +2241,7 @@
    "handle": "@aishapatel",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/aisha-patel",
+   "avatar_url": null,
    "followers": 48200,
    "engagement_rate": 0.036,
    "topics": [
@@ -2268,6 +2269,7 @@
    "handle": "@marcuslee",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/marcus-lee",
+   "avatar_url": null,
    "followers": 39100,
    "engagement_rate": 0.041,
    "topics": [
@@ -2295,6 +2297,7 @@
    "handle": "@sophienguyen",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/sophie-nguyen",
+   "avatar_url": null,
    "followers": 27400,
    "engagement_rate": 0.052,
    "topics": [
@@ -2322,6 +2325,7 @@
    "handle": "@tomreyes",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/tom-reyes",
+   "avatar_url": null,
    "followers": 22500,
    "engagement_rate": 0.033,
    "topics": [
@@ -2349,6 +2353,7 @@
    "handle": "@gracewilson",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/grace-wilson",
+   "avatar_url": null,
    "followers": 18300,
    "engagement_rate": 0.047,
    "topics": [
@@ -2376,6 +2381,7 @@
    "handle": "@owenclark",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/owen-clark",
+   "avatar_url": null,
    "followers": 15700,
    "engagement_rate": 0.029,
    "topics": [
@@ -2403,6 +2409,7 @@
    "handle": "@priyashah",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/priya-shah",
+   "avatar_url": null,
    "followers": 12100,
    "engagement_rate": 0.061,
    "topics": [
@@ -2430,6 +2437,7 @@
    "handle": "@elliotjames",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/elliot-james",
+   "avatar_url": null,
    "followers": 9800,
    "engagement_rate": 0.044,
    "topics": [
@@ -2457,6 +2465,7 @@
    "handle": "@nadiabrooks",
    "channel": "X",
    "profile_url": "https://influencers.example/nadia-brooks",
+   "avatar_url": null,
    "followers": 44800,
    "engagement_rate": 0.027,
    "topics": [
@@ -2484,6 +2493,7 @@
    "handle": "@calebmartin",
    "channel": "X",
    "profile_url": "https://influencers.example/caleb-martin",
+   "avatar_url": null,
    "followers": 33200,
    "engagement_rate": 0.031,
    "topics": [
@@ -2511,6 +2521,7 @@
    "handle": "@minapark",
    "channel": "X",
    "profile_url": "https://influencers.example/mina-park",
+   "avatar_url": null,
    "followers": 26500,
    "engagement_rate": 0.039,
    "topics": [
@@ -2538,6 +2549,7 @@
    "handle": "@rileystone",
    "channel": "X",
    "profile_url": "https://influencers.example/riley-stone",
+   "avatar_url": null,
    "followers": 21700,
    "engagement_rate": 0.024,
    "topics": [
@@ -2565,6 +2577,7 @@
    "handle": "@danielokafor",
    "channel": "X",
    "profile_url": "https://influencers.example/daniel-okafor",
+   "avatar_url": null,
    "followers": 18900,
    "engagement_rate": 0.035,
    "topics": [
@@ -2592,6 +2605,7 @@
    "handle": "@lenafoster",
    "channel": "YOUTUBE",
    "profile_url": "https://influencers.example/lena-foster",
+   "avatar_url": null,
    "followers": 56300,
    "engagement_rate": 0.048,
    "topics": [
@@ -2619,6 +2633,7 @@
    "handle": "@noahbennett",
    "channel": "YOUTUBE",
    "profile_url": "https://influencers.example/noah-bennett",
+   "avatar_url": null,
    "followers": 41700,
    "engagement_rate": 0.043,
    "topics": [
@@ -2646,6 +2661,7 @@
    "handle": "@hannahreed",
    "channel": "YOUTUBE",
    "profile_url": "https://influencers.example/hannah-reed",
+   "avatar_url": null,
    "followers": 29800,
    "engagement_rate": 0.036,
    "topics": [
@@ -2673,6 +2689,7 @@
    "handle": "@mateosilva",
    "channel": "YOUTUBE",
    "profile_url": "https://influencers.example/mateo-silva",
+   "avatar_url": null,
    "followers": 25400,
    "engagement_rate": 0.041,
    "topics": [
@@ -2700,6 +2717,7 @@
    "handle": "@clararossi",
    "channel": "YOUTUBE",
    "profile_url": "https://influencers.example/clara-rossi",
+   "avatar_url": null,
    "followers": 22100,
    "engagement_rate": 0.029,
    "topics": [
@@ -2727,6 +2745,7 @@
    "handle": "@samirakhan",
    "channel": "X",
    "profile_url": "https://influencers.example/samira-khan",
+   "avatar_url": null,
    "followers": 7600,
    "engagement_rate": 0.052,
    "topics": [
@@ -2754,6 +2773,7 @@
    "handle": "@theogrant",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/theo-grant",
+   "avatar_url": null,
    "followers": 5400,
    "engagement_rate": 0.033,
    "topics": [
@@ -2781,6 +2801,7 @@
    "handle": "@jordanhale",
    "channel": "LINKEDIN",
    "profile_url": "https://influencers.example/jordan-hale",
+   "avatar_url": null,
    "followers": 12900,
    "engagement_rate": 0.041,
    "topics": [

@@ -14,6 +14,7 @@ class TriggerKind(StrEnum):
     RECOMMENDATION = "RECOMMENDATION"
     TREND = "TREND"
     INFLUENCER = "INFLUENCER"
+    COMPANY = "COMPANY"
 
 
 class TriggerAction(StrEnum):
@@ -23,6 +24,7 @@ class TriggerAction(StrEnum):
     DO_THIS = "DO_THIS"
     USE_TREND = "USE_TREND"
     DRAFT_OUTREACH = "DRAFT_OUTREACH"
+    GENERATE_STRATEGY = "GENERATE_STRATEGY"
 
 
 class RouteMethod(StrEnum):
@@ -59,9 +61,10 @@ TRIGGER_ROUTES: dict[tuple[TriggerKind, TriggerAction], tuple[AgentName, Intent]
         AgentName.STRATEGY,
         Intent.WHY_IT_MATTERS,
     ),
+    # Plan a response and Get topic ideas focus the synthesis on their record.
     (TriggerKind.FEED_ACTION, TriggerAction.RESPONSE_PLAN): (
         AgentName.STRATEGY,
-        Intent.RESPONSE_PLAN,
+        Intent.STRATEGY_SYNTHESIS,
     ),
     (TriggerKind.RECOMMENDATION, TriggerAction.DO_THIS): (
         AgentName.EXECUTION,
@@ -69,7 +72,11 @@ TRIGGER_ROUTES: dict[tuple[TriggerKind, TriggerAction], tuple[AgentName, Intent]
     ),
     (TriggerKind.TREND, TriggerAction.USE_TREND): (
         AgentName.STRATEGY,
-        Intent.TOPIC_RECOMMENDATION,
+        Intent.STRATEGY_SYNTHESIS,
+    ),
+    (TriggerKind.COMPANY, TriggerAction.GENERATE_STRATEGY): (
+        AgentName.STRATEGY,
+        Intent.STRATEGY_SYNTHESIS,
     ),
     (TriggerKind.INFLUENCER, TriggerAction.DRAFT_OUTREACH): (
         AgentName.EXECUTION,

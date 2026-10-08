@@ -64,7 +64,17 @@ export function RecommendationSheet({ recommendation, onClose }: RecommendationS
     >
       <h3 className="text-h3 text-text">{recommendation.title}</h3>
 
+      {recommendation.insight ? (
+        <p className="text-body text-text">{recommendation.insight}</p>
+      ) : null}
+
       <dl className="grid grid-cols-3 gap-1 text-small">
+        {recommendation.audience ? (
+          <>
+            <dt className="font-medium tracking-label text-text-muted uppercase">Audience</dt>
+            <dd className="col-span-2 text-body text-text">{recommendation.audience}</dd>
+          </>
+        ) : null}
         <dt className="font-medium tracking-label text-text-muted uppercase">Make</dt>
         <dd className="col-span-2 text-body text-text">
           {next ? next.deliverable_type : "Nothing yet"}

@@ -50,15 +50,26 @@ class RecommendationsRepository(Repository[Recommendation]):
             return None
         return self.model_type.model_validate(documents[0])
 
-    async def supersede_open(self, session_id: str, *, keep_run_id: str) -> None:
-        """Mark the session's other OPEN recommendations SUPERSEDED."""
+    async def supersede_open(self, company_id: str, *, keep_run_id: str) -> None:
+        """Mark every other OPEN recommendation of the company SUPERSEDED: one set, newest wins."""
+        sessions = self.collection.database[SessionsRepository.collection_name]
+        # ponytail: one $in over all the company's sessions; add company_id to
+        # recommendations if session counts grow large.
+        session_ids = await sessions.distinct("_id", {"company_id": company_id})
         await self.collection.update_many(
             {
-                "session_id": session_id,
+                "session_id": {"$in": session_ids},
                 "run_id": {"$ne": keep_run_id},
                 "status": RecommendationStatus.OPEN.value,
             },
             {"$set": {"status": RecommendationStatus.SUPERSEDED.value}},
+        )
+
+    async def mark_done(self, recommendation_id: str) -> None:
+        """An OPEN recommendation acted on becomes DONE; a superseded one stays superseded."""
+        await self.collection.update_one(
+            {"_id": recommendation_id, "status": RecommendationStatus.OPEN.value},
+            {"$set": {"status": RecommendationStatus.DONE.value}},
         )
 
     async def delete_for_run(self, run_id: str) -> None:

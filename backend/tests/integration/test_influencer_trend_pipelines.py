@@ -52,7 +52,11 @@ async def test_dct_and_pace_pipelines_are_idempotent_and_source_safe(
             "_id": ObjectId(),
             "company_id": "marketingeye.com.au",
             "platform": "x",
-            "profile": {"display_name": f"Creator {index}", "followers": 1000 + index},
+            "profile": {
+                "display_name": f"Creator {index}",
+                "followers": 1000 + index,
+                "avatar_url": f"https://x.example/creator{index}.jpg",
+            },
             "account": {
                 "handle": f"creator{index}",
                 "profile_url": f"https://x.example/creator{index}",
@@ -123,9 +127,9 @@ async def test_dct_and_pace_pipelines_are_idempotent_and_source_safe(
         window_end_date=date(2026, 9, 22),
     )
 
-    assert first_influencers.influencers.inserted == 25
+    assert first_influencers.influencers.inserted == 10
     assert second_influencers.influencers.inserted == 0
-    assert await dct_database["influencers"].count_documents({}) == 25
+    assert await dct_database["influencers"].count_documents({}) == 10
     assert first_trends.used_seed_fallback is False
     assert first_trends.trends.inserted == 1
     assert second_trends.trends.inserted == 0
@@ -139,3 +143,57 @@ async def test_dct_and_pace_pipelines_are_idempotent_and_source_safe(
         for name in ("influencer_candidates", "ai_posts")
     }
     assert source_counts_after == source_counts_before
+
+
+def _candidate(score: int, followers: int | None, name: str) -> Document:
+    profile: Document = {"display_name": name, "avatar_url": f"https://x.example/{name}.jpg"}
+    if followers is not None:
+        profile["followers"] = followers
+    return {
+        "_id": ObjectId(),
+        "company_id": "marketingeye.com.au",
+        "platform": "x",
+        "profile": profile,
+        "account": {"handle": name, "profile_url": f"https://x.example/{name}"},
+        "evaluation": {"status": "eligible", "latest_final_score": score},
+        "platform_data": {"recent_posts": []},
+    }
+
+
+async def test_dct_ranks_by_score_then_followers_and_prunes_dropouts(
+    pipeline_databases: tuple[
+        AsyncDatabase[Document], AsyncDatabase[Document], AsyncDatabase[Document]
+    ],
+) -> None:
+    source_database, dct_database, _ = pipeline_databases
+    candidates = source_database["influencer_candidates"]
+    await candidates.insert_many(
+        [
+            _candidate(62, 100, "small"),
+            _candidate(62, None, "unknown"),
+            _candidate(62, 900, "large"),
+            _candidate(70, 50, "top"),
+        ]
+        + [_candidate(40, 10 + index, f"filler{index}") for index in range(8)]
+    )
+    await ensure_indexes(dct_database)
+
+    read = await DctSource(source_database).read()
+    order = [candidate.handle for candidate in read.candidates]
+    assert order[:4] == ["top", "large", "small", "unknown"]
+    assert len(order) == 10
+    assert read.candidates[0].avatar_url == "https://x.example/top.jpg"
+
+    first = await run_influencer_pipeline(DctSource(source_database), dct_database)
+    # "unknown" has no follower count, so it is skipped rather than stored.
+    assert first.influencers.inserted == 9
+    stored = await dct_database["influencers"].find_one({"handle": "@top"})
+    assert stored is not None and stored["avatar_url"] == "https://x.example/top.jpg"
+
+    await candidates.insert_one(_candidate(80, 5000, "newcomer"))
+    second = await run_influencer_pipeline(DctSource(source_database), dct_database)
+
+    handles = {doc["handle"] async for doc in dct_database["influencers"].find({})}
+    assert second.influencers.deleted == 1
+    assert "@newcomer" in handles
+    assert len(handles) == 9

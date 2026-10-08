@@ -1,4 +1,5 @@
 import { ApiError } from "../../api";
+import { Avatar } from "../../components/ds/Avatar";
 import { Badge } from "../../components/ds/Badge";
 import { Button } from "../../components/ds/Button";
 import { EmptyState } from "../../components/ds/EmptyState";
@@ -7,10 +8,10 @@ import { Panel, PanelCount } from "../../components/ds/Panel";
 import { SkeletonList } from "../../components/ds/Skeleton";
 import { useInfluencers } from "../../hooks/queries";
 import { cn } from "../../lib/cn";
-import { compactNumber, initials } from "../../lib/format";
+import { compactNumber } from "../../lib/format";
 import { evidenceTargetId, useWorkspace } from "../workspace/workspaceContext";
 
-/** Exactly two visible columns, monograms instead of avatars (ui-spec §3). */
+/** Exactly two visible columns; avatars fall back to monograms (ui-spec §3). */
 export function InfluencerTable() {
   const influencers = useInfluencers();
   const { startRun, highlightedId } = useWorkspace();
@@ -70,12 +71,7 @@ export function InfluencerTable() {
               >
                 <td className="border-b border-border px-2 py-1">
                   <span className="flex min-w-0 items-center gap-1">
-                    <span
-                      aria-hidden="true"
-                      className="grid h-3.5 w-3.5 flex-none place-items-center rounded-full border border-border text-small font-medium text-text-muted"
-                    >
-                      {initials(influencer.name)}
-                    </span>
+                    <Avatar name={influencer.name} src={influencer.avatar_url} />
                     <span className="flex min-w-0 flex-col">
                       <a
                         href={influencer.profile_url}

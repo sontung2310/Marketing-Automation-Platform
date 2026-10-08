@@ -18,6 +18,7 @@ const ALL_SOURCES = readdirSync(SRC_DIR, { recursive: true, encoding: "utf8" })
 describe("design-system primitives", () => {
   it("ships every primitive the workspace composes from", () => {
     expect([...SOURCES].sort()).toEqual([
+      "Avatar.tsx",
       "Badge.tsx",
       "Button.tsx",
       "EmptyState.tsx",

@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 import type {
   AgentName,
   EvidenceKind,
+  ItemAction,
   Run,
   ExecutionOutput,
   RouteDecision,
@@ -51,8 +52,10 @@ export interface WorkspaceValue {
   /** Execution-side conversation only; Strategy output never enters it. */
   transcript: TranscriptEntry[];
   runs: Record<string, RunState>;
-  /** The Strategy run currently in flight, shown in the Strategy panel. */
+  /** The latest Strategy run started on this page, shown in the Strategy panel. */
   activeStrategyRunId: string | null;
+  /** One Strategy run at a time: every Strategy-starting control disables on this. */
+  strategyRunning: boolean;
   /** `label` is what the turn header shows; it defaults to the run's intent. */
   /** `retry` re-sends a failed run without echoing its message again. */
   /** `echo` is what the transcript shows the marketer sent, for a trigger run. */
@@ -65,6 +68,11 @@ export interface WorkspaceValue {
   highlightedId: string | null;
   highlightedKind: EvidenceKind | null;
   highlight: (id: string, kind: EvidenceKind) => void;
+}
+
+/** An item action is blocked while a Strategy run is in flight if it starts one too. */
+export function blockedByStrategyRun(action: ItemAction, strategyRunning: boolean): boolean {
+  return strategyRunning && action.agent === "STRATEGY";
 }
 
 export const WorkspaceContext = createContext<WorkspaceValue | null>(null);

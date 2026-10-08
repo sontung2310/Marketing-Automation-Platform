@@ -67,7 +67,7 @@ async def test_completed_run_is_persisted_with_ordered_events(
     assert stored is not None
     assert (stored.agent, stored.intent, stored.status) == (
         AgentName.STRATEGY,
-        "RESPONSE_PLAN",
+        "STRATEGY_SYNTHESIS",
         RunStatus.SUCCEEDED,
     )
     assert stored.route["method"] == "DETERMINISTIC"
@@ -80,6 +80,7 @@ async def test_completed_run_is_persisted_with_ordered_events(
     assert stored.output is not None and stored.output["answer"] == "Respond on value, not price."
     recommendations = await seeded_database["recommendations"].find({"run_id": run.id}).to_list()
     assert {r["ordinal"] for r in recommendations} == {1, 2}
+    assert all(r["insight"] and r["audience"] for r in recommendations)
     final = next(e for e in stored.events if e["type"] == "output.final")
     data = final["data"]
     assert isinstance(data, dict)
@@ -203,7 +204,7 @@ async def test_only_a_successful_answer_replaces_the_last_one(
     assert session is not None and session.last_run_id == first.id
 
 
-async def test_an_empty_answer_supersedes_and_a_failed_supersede_leaves_no_set(
+async def test_an_empty_answer_keeps_the_set_and_a_failed_supersede_leaves_no_set(
     seeded_database: AsyncDatabase[Document],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -214,10 +215,11 @@ async def test_an_empty_answer_supersedes_and_a_failed_supersede_leaves_no_set(
         COMPANY, message="What should we post?", agent=AgentName.STRATEGY
     )
     await service(seeded_database, empty_agent).start(
-        COMPANY, message="Drop #1 and #2", agent=AgentName.STRATEGY, session_id=first.session_id
+        COMPANY, message="What did Brightlane do?", agent=AgentName.STRATEGY
     )
     recs = seeded_database["recommendations"]
-    assert await recs.count_documents({"run_id": first.id, "status": "OPEN"}) == 0
+    # A factual answer recommends nothing, so the company's set is unchanged.
+    assert await recs.count_documents({"run_id": first.id, "status": "OPEN"}) == 2
 
     async def broken(*args: object, **kwargs: object) -> None:
         raise ConnectionError("Mongo blip")
@@ -229,6 +231,62 @@ async def test_an_empty_answer_supersedes_and_a_failed_supersede_leaves_no_set(
     )
     assert failed.status is RunStatus.FAILED
     assert await recs.count_documents({"run_id": failed.id}) == 0
+
+
+async def test_a_new_set_supersedes_another_sessions_set(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    runs = service(seeded_database, answering_agent)
+    session_a = await runs.start(COMPANY, message="Plan our month", agent=AgentName.STRATEGY)
+    session_b = await runs.start(COMPANY, message="What should we do?", agent=AgentName.STRATEGY)
+    assert session_a.session_id != session_b.session_id
+    statuses = {
+        doc["run_id"]: doc["status"]
+        async for doc in seeded_database["recommendations"].find({}, {"run_id": 1, "status": 1})
+    }
+    assert statuses == {session_a.id: "SUPERSEDED", session_b.id: "OPEN"}
+
+
+async def recommendation_trigger(runs: RunService, ordinal: int) -> Trigger:
+    strategy = await runs.start(COMPANY, message="What should we post?", agent=AgentName.STRATEGY)
+    final = next(e for e in strategy.events if e["type"] == "output.final")
+    rec_id = final["data"]["recommendation_ids"][ordinal - 1]
+    return Trigger(kind=TriggerKind.RECOMMENDATION, ref_id=rec_id, action=TriggerAction.DO_THIS)
+
+
+async def test_a_successful_do_this_marks_the_recommendation_done(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    runs = service(seeded_database, answering_agent)
+    trigger = await recommendation_trigger(runs, 1)
+    await runs.start(COMPANY, trigger=trigger)
+    recs = seeded_database["recommendations"]
+    assert (await recs.find_one({"_id": trigger.ref_id}) or {})["status"] == "DONE"
+    others = await recs.find({"_id": {"$ne": trigger.ref_id}}, {"status": 1}).to_list()
+    assert {doc["status"] for doc in others} == {"OPEN"}
+
+    # "#2" in chat resolves to the same trigger context as the button.
+    second = await recommendation_trigger(runs, 2)
+    record = await RunRepositories.for_database(seeded_database).recommendations.get(second.ref_id)
+    assert record is not None
+    chat = run_service.ChatRoute(
+        route=run_service.route_trigger(second).model_copy(update={"method": "CLASSIFIER"}),
+        trigger_context=record.model_dump(mode="json"),
+    )
+    await runs.execute(await runs.prepare(COMPANY, message="Write #2", chat=chat))
+    assert (await recs.find_one({"_id": second.ref_id}) or {})["status"] == "DONE"
+
+
+async def test_a_failed_do_this_keeps_the_recommendation_open(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    trigger = await recommendation_trigger(service(seeded_database, answering_agent), 1)
+    failed = await service(seeded_database, answering_agent, failing_agent).start(
+        COMPANY, trigger=trigger
+    )
+    assert failed.status is RunStatus.FAILED
+    stored = await seeded_database["recommendations"].find_one({"_id": trigger.ref_id})
+    assert stored is not None and stored["status"] == "OPEN"
 
 
 async def test_do_this_can_cite_the_recommendation_evidence(

@@ -5,6 +5,7 @@ from enum import StrEnum
 
 class Intent(StrEnum):
     # Strategy
+    STRATEGY_SYNTHESIS = "STRATEGY_SYNTHESIS"  # the company-wide set, optionally focused
     TOPIC_RECOMMENDATION = "TOPIC_RECOMMENDATION"
     RESPONSE_PLAN = "RESPONSE_PLAN"
     WHY_IT_MATTERS = "WHY_IT_MATTERS"

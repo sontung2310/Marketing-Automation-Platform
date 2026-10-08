@@ -217,6 +217,35 @@ The owner redesigned the workspace on the Marketing Workspace design canvas afte
 | 7-I | **Given** a recommendation citing a trend and an activity, **then** its card shows the zero-padded ordinal, verbatim priority, title, a `Trend` and a `Competitor` line and **Open plan**; **Open plan** → **Do this** fills the composer from a 520px sheet without creating a run. | Vitest + Playwright |
 | 7-J | **Given** five seeded keywords, **when** the marketer tabs to a row's remove control and activates it, **then** the control is visible while focused and the saved list drops that term; the platform filter shows a count per option. | Vitest |
 
+### Step 7b: Strategy synthesis and real influencers
+
+The owner wants a handful of niche, expert-level Strategy plays that combine several competitors and trends, instead of a set of recommendations per competitor move. The owner also wants the Influencers table to show the real DCT top 10 with avatars instead of mock seed rows. This Step is brought forward ahead of Step 8. OpenSpec change: `strategy-synthesis-real-influencers`.
+
+- [x] 7.10 Real influencers: the DCT top 10 by score then followers, with `avatar_url`, records outside the top 10 pruned, and the seed influencers removed. _(Evidence: `test_influencer_trend_pipelines.py` (ranking, tie by followers, pruning), `test_seed.py` (mock influencers deleted, DCT kept), `test_activities_api.py` (order and `avatar_url`), and the live pipeline on a scratch database: 10 DCT, 0 mock, 10 avatars (7b-A).)_
+- [x] 7.11 Influencer avatars in the table, with a monogram fallback. _(Evidence: `InfluencerTable.test.tsx` (image, null and failed image), the 7-A Playwright load test with axe, and the live table screenshot showing 9 photos plus 1 monogram fallback (7b-B).)_
+- [x] 7.12 Strategy synthesis: the `STRATEGY_SYNTHESIS` intent and **Generate strategy** trigger, focused runs from **Plan a response** and **Get topic ideas**, at most 5 recommendations (1–3 aimed for), the niche rule with `insight` and `audience`, the distilled expert method, and the vendored `marketing-psychology` skill. _(Evidence: `test_routing.py`, `test_run_references.py`, `test_strategy_validation.py` (niche rule and cap), `test_run_mcp.py`, `test_skills_loader.py` (13 skills), and the live `test_strategy_live.py` (7b-C, 7b-D).)_
+- [x] 7.13 One company-wide set: a new set supersedes every `OPEN` recommendation, a successful **Do this** run marks its recommendation `DONE`, and the panel gets the **Generate strategy** button and the insight and audience fields. _(Evidence: `test_run_service.py` (company-wide supersede, factual answer keeps the set, DONE via button and `#N`, failed run stays OPEN), `StrategyPanel.test.tsx`, the 7b and 7-D Playwright specs, and the live HTTP run on a scratch database (7b-C to 7b-E).)_
+- [x] 7.14 Strategy golden dataset rewritten and owner-approved, rubric niche standard, eval run meeting evaluation-spec §6, and the docs updated. _(Evidence: 54 owner-approved cases (`test_golden_strategy.py`), the `niche_signals` check, the rubric standard 9 and run `strategy_20261008T113931Z`: every §6 threshold except the judge mean, 3.87, which is an accepted known gap (below). The Router suite re-run holds every threshold (0.98, p95 1.6 s). Contract docs updated.)_
+
+| # | Scenario | Verify |
+|---|---|---|
+| 7b-A | **Given** the seeded database plus DCT, **when** the influencer pipeline runs twice, **then** `influencers` holds exactly the 10 DCT records ranked by score then followers, with avatars, and no `MOCK_SEED` influencer remains. | Integration test + live pipeline log |
+| 7b-B | **Given** the running app, **when** the Influencers table loads, **then** it lists 10 real handles with avatars, and a missing or failing image shows the monogram. | Vitest + Playwright |
+| 7b-C | **Given** the seeded database, **when** the marketer clicks **Generate strategy**, **then** 1–5 recommendations return, each non-`MONITOR` one citing ≥ 2 external signals not all from one competitor, with an `insight` and an `audience`, and the panel shows only that set. | Live run |
+| 7b-D | **Given** a `PRICE_CHANGE` activity, **when** **Plan a response** runs, **then** the answer addresses it, any recommendation about it weighs options in one card, and the earlier set is `SUPERSEDED` company-wide. | Live run + integration test |
+| 7b-E | **Given** a recommendation in the panel, **when** its brief is sent unedited and Execution succeeds, **then** it is `DONE` and leaves the panel. | Integration test + Playwright |
+| 7b-F | The Strategy thresholds in evaluation-spec §6 are met at the baseline repeat count on the rewritten golden dataset. | Eval report |
+
+**Known gap (owner decision 2026-10-08):** 7b-F holds except the judge mean
+(3.87 against 4.0; marketing soundness 3.56), so no new Strategy baseline is
+committed. The Step 4 baseline stays as the pre-7b reference. The gaps and
+next fixes are in the `strategy-synthesis-real-influencers` change's design, D9:
+- price responses that argue only for holding;
+- padded second signals;
+- focused runs that drift from the focus;
+- follow-ups that don't complete their picks;
+- asserted rather than shown white space.
+
 ## Step 8 — End-to-end demo and hardening
 
 **Goal:** the client demo runs reliably.

@@ -10,7 +10,11 @@ import { Tabs } from "../../components/ds/Tabs";
 import { useTrends } from "../../hooks/queries";
 import { cn } from "../../lib/cn";
 import { signedPercent } from "../../lib/format";
-import { evidenceTargetId, useWorkspace } from "../workspace/workspaceContext";
+import {
+  blockedByStrategyRun,
+  evidenceTargetId,
+  useWorkspace,
+} from "../workspace/workspaceContext";
 
 type TrendTab = Channel | "ALL";
 
@@ -41,7 +45,7 @@ export function TrendList() {
       })),
     [all],
   );
-  const { startRun, highlightedId } = useWorkspace();
+  const { startRun, highlightedId, strategyRunning } = useWorkspace();
 
   return (
     <>
@@ -82,6 +86,7 @@ export function TrendList() {
                   variant="quiet"
                   size="sm"
                   className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                  disabled={blockedByStrategyRun(action, strategyRunning)}
                   onClick={() =>
                     startRun({
                       trigger: { kind: "TREND", ref_id: trend.id, action: action.action },

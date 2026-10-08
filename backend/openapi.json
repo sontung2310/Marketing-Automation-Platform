@@ -586,6 +586,17 @@
             "title": "Audience Region",
             "type": "string"
           },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
           "channel": {
             "$ref": "#/components/schemas/Channel"
           },
@@ -642,6 +653,7 @@
           "handle",
           "channel",
           "profile_url",
+          "avatar_url",
           "followers",
           "engagement_rate",
           "topics",
@@ -860,6 +872,10 @@
             "title": "Actions",
             "type": "array"
           },
+          "audience": {
+            "title": "Audience",
+            "type": "string"
+          },
           "channel": {
             "anyOf": [
               {
@@ -884,6 +900,10 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "insight": {
+            "title": "Insight",
             "type": "string"
           },
           "kind": {
@@ -946,6 +966,8 @@
           "ordinal",
           "kind",
           "title",
+          "insight",
+          "audience",
           "rationale",
           "priority",
           "channel",
@@ -1534,7 +1556,8 @@
           "RESPONSE_PLAN",
           "DO_THIS",
           "USE_TREND",
-          "DRAFT_OUTREACH"
+          "DRAFT_OUTREACH",
+          "GENERATE_STRATEGY"
         ],
         "title": "TriggerAction",
         "type": "string"
@@ -1544,7 +1567,8 @@
           "FEED_ACTION",
           "RECOMMENDATION",
           "TREND",
-          "INFLUENCER"
+          "INFLUENCER",
+          "COMPANY"
         ],
         "title": "TriggerKind",
         "type": "string"
