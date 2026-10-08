@@ -18,7 +18,12 @@ from app.core.config import get_settings
 from app.core.errors import DomainError, NotFoundError, RateLimitedError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus, Session
 from app.orchestration.persistence import PERSISTERS
-from app.orchestration.references import RunRepositories, open_session, resolve_trigger
+from app.orchestration.references import (
+    RunRepositories,
+    has_recommendations,
+    open_session,
+    resolve_trigger,
+)
 from app.orchestration.routing import Route, Trigger, route_chat, route_trigger
 
 logger = logging.getLogger(__name__)
@@ -259,9 +264,10 @@ class RunService:
         if not await self.repositories.runs.replace_if_running(run):
             # Already read as interrupted; that is what the marketer saw, so it stands.
             return await self.load(run.id)
-        if run.status is RunStatus.SUCCEEDED:
-            # Follow-ups build on the last successful answer; a failure, refusal or
-            # clarification must not replace it.
+        keeps_set = run.agent is AgentName.STRATEGY and not has_recommendations(run)
+        if run.status is RunStatus.SUCCEEDED and not keeps_set:
+            # Follow-ups build on the last successful answer; a failure, refusal,
+            # clarification or a Strategy answer without recommendations must not replace it.
             await self.repositories.sessions.upsert(
                 session.model_copy(update={"last_run_id": run.id})
             )

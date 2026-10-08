@@ -325,10 +325,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     else startRun({ message });
   }, [composer, startRun]);
 
-  // ponytail: the ~0.5 s between the click and the 202 is not covered; track the
-  // pending request too if double starts show up in practice.
+  // A start request still awaiting its 202 counts too, so a double click cannot start
+  // two runs. It may be an Execution start; disabling Strategy for that moment is harmless.
   const strategyRunning =
-    activeStrategyRunId !== null && runs[activeStrategyRunId]?.status === "RUNNING";
+    startRunMutation.isPending ||
+    (activeStrategyRunId !== null && runs[activeStrategyRunId]?.status === "RUNNING");
 
   const value = useMemo<WorkspaceValue>(
     () => ({

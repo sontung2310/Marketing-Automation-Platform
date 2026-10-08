@@ -63,10 +63,14 @@ export function StrategyPanel() {
   const activeRun = latestRun?.status === "RUNNING" ? latestRun : undefined;
   const failedRun = latestRun?.error ? latestRun : undefined;
   const latestStep = activeRun?.steps.at(-1)?.label ?? "Planning";
-  const analysis =
-    latestRun?.status === "SUCCEEDED" && latestRun.agent === "STRATEGY"
-      ? (latestRun.output as StrategyOutput | null)
-      : null;
+  // The latest successful Strategy run, so a newer run in flight or failing keeps it.
+  const analysis = useMemo(() => {
+    const done = Object.values(runs).filter(
+      (run) => run.agent === "STRATEGY" && run.status === "SUCCEEDED" && run.output,
+    );
+    const latest = done.sort((a, b) => b.started_at.localeCompare(a.started_at))[0];
+    return (latest?.output as StrategyOutput | undefined) ?? null;
+  }, [runs]);
   const companyId = company.data?.id;
 
   return (

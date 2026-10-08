@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, delay, http } from "msw";
 import { describe, expect, it } from "vitest";
 
 import { App } from "../../App";
@@ -74,4 +74,38 @@ describe("one Strategy run at a time", () => {
     expect(execution.length).toBeGreaterThan(0);
     for (const button of execution) expect(button).toBeEnabled();
   }, 10_000);
+});
+
+describe("Generate strategy", () => {
+  it("starts one run however fast it is clicked twice", async () => {
+    let posts = 0;
+    // A slow 202, so the second click lands while the first request is still pending.
+    server.use(
+      http.post("/api/runs", async () => {
+        posts += 1;
+        await delay(300);
+        return HttpResponse.json(
+          {
+            run_id: `run_slow_${posts}`,
+            session_id: "ses_slow",
+            agent: "STRATEGY",
+            intent: "STRATEGY_SYNTHESIS",
+            route: { method: "DETERMINISTIC", reason: "Generate strategy", confidence: 1 },
+          },
+          { status: 202 },
+        );
+      }),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    const panel = await screen.findByRole("region", { name: "Strategy recommendations" });
+    const generate = within(panel).getByRole("button", { name: "Generate strategy" });
+    await waitFor(() => expect(generate).toBeEnabled());
+
+    await user.dblClick(generate);
+
+    expect(generate).toBeDisabled();
+    await new Promise((resolve) => setTimeout(resolve, 400)); // past the slow 202
+    expect(posts).toBe(1);
+  });
 });

@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 
 from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
+from app.agents.common.intents import Intent
 from app.agents.strategy.output import StrategyOutput, StrategyRecommendation
 
 MAX_TITLE_CHARS = 90
@@ -18,6 +19,8 @@ def unknown_ids(output: StrategyOutput, retrieved: set[str]) -> list[str]:
 
 EVIDENCE_PREFIX = {"activity": "act_", "trend": "trd_", "influencer": "inf_", "company": "cmp_"}
 MAX_RECOMMENDATIONS = 5
+# Intents that explain without recommending, so they never replace the set.
+EXPLAIN_ONLY = frozenset({Intent.WHY_IT_MATTERS})
 # The niche rule (strategy-agent spec): signals from the market, not the company record.
 EXTERNAL_KINDS = frozenset({"activity", "trend", "influencer"})
 MIN_SIGNALS = 2
@@ -57,12 +60,15 @@ def niche_problems(
 def contract_problems(
     output: StrategyOutput,
     loaded_skills: set[str],
-    activity_competitors: Mapping[str, str] | None = None,
+    activity_competitors: Mapping[str, str],
+    intent: Intent,
 ) -> list[str]:
     """Rules the agent must fix itself: code cannot invent evidence, text or a next action."""
     problems: list[str] = []
     if output.status == "INSUFFICIENT_DATA" and output.recommendations:
         problems.append("an INSUFFICIENT_DATA answer must have no recommendations")
+    if intent in EXPLAIN_ONLY and output.recommendations:
+        problems.append(f"a {intent} answer explains in implications and has no recommendations")
     if len(output.recommendations) > MAX_RECOMMENDATIONS:
         problems.append(
             f"return at most {MAX_RECOMMENDATIONS} recommendations (aim for 1-3); keep the "
@@ -82,7 +88,7 @@ def contract_problems(
         if rec.kind != "MONITOR" and (rec.next_action is None or not rec.next_action.brief.strip()):
             problems.append(f"{label} ({rec.kind}) needs a next_action with a brief")
         if rec.kind != "MONITOR":
-            problems += niche_problems(rec, label, activity_competitors or {})
+            problems += niche_problems(rec, label, activity_competitors)
         if unloaded := sorted(set(rec.skills_used) - loaded_skills):
             problems.append(f"{label} lists skills you did not load: {', '.join(unloaded)}")
     return problems
@@ -106,11 +112,12 @@ def ensure_valid(
     output: StrategyOutput,
     retrieved: set[str],
     loaded_skills: set[str],
-    activity_competitors: Mapping[str, str] | None = None,
+    activity_competitors: Mapping[str, str],
+    intent: Intent,
 ) -> None:
     if unknown := unknown_ids(output, retrieved):
         raise UngroundedOutputError("Cited evidence was not retrieved", {"ids": unknown})
-    if problems := contract_problems(output, loaded_skills, activity_competitors):
+    if problems := contract_problems(output, loaded_skills, activity_competitors, intent):
         raise InvalidOutputError("; ".join(problems))
 
 

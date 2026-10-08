@@ -68,18 +68,22 @@
 
 ## 4. One set and the panel (Roadmap 7.13)
 
-- [x] 4.1 Make `supersede_open` company-wide, with its index on
-  `{company_id, status}` (D5). Verify with `test_run_service.py`: session
-  B's run supersedes session A's set, and a factual answer keeps it.
+- [x] 4.1 Make `supersede_open` company-wide over the company's sessions,
+  using the existing `{session_id, status}` index; recommendations carry no
+  `company_id` (D5). Verify with `test_run_service.py`: session B's run
+  supersedes session A's set, and a factual answer keeps it.
 - [x] 4.2 Mark the trigger recommendation `DONE` after a successful
   Execution run with a deliverable, guarded on `OPEN` (D5). Verify with
   `test_run_service.py` (both the button and `#N`) and confirm that a failed
   run keeps it `OPEN` (7b-E).
 - [x] 4.3 Add **Generate strategy** with its disabled and working state to
   the `StrategyPanel` header, and show the insight and audience on cards and
-  in `RecommendationSheet` (D7). Verify with Vitest for the card and the
-  button state, and with Playwright for generate → the new set only, and Do
-  this → send → the card leaves (7b-C, 7b-E).
+  in `RecommendationSheet` (D7). Verify with Vitest for the card, the button
+  state and one run per double click, and with Playwright for **Generate
+  strategy** (disabled, then Latest analysis) and Do this → send → the card
+  leaves (7b-E). "The new set only" is a server-side supersede, which the
+  fixture server does not model: `test_a_new_set_supersedes_another_sessions_set`
+  and the live HTTP run (7b-C) cover it.
 - [x] 4.4 Add the **Latest analysis** block (answer, implications, data
   gaps of the latest Strategy run) and disable every Strategy-starting
   control while a Strategy run is in flight (D7). Verify with Vitest that

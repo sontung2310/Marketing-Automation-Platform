@@ -31,7 +31,7 @@ def output_check(context: RunContext) -> OutputCheck[StrategyOutput]:
     def message(output: StrategyOutput) -> str | None:
         unknown = unknown_ids(output, context.retrieved_ids)
         problems = contract_problems(
-            output, context.skill_budget.skills, context.activity_competitors
+            output, context.skill_budget.skills, context.activity_competitors, context.intent
         )
         return repair_message(unknown, problems) if unknown or problems else None
 
@@ -42,6 +42,7 @@ def output_check(context: RunContext) -> OutputCheck[StrategyOutput]:
             context.retrieved_ids,
             context.skill_budget.skills,
             context.activity_competitors,
+            context.intent,
         ),
         check_label="Checking evidence",
         repair_label="Repairing citations",

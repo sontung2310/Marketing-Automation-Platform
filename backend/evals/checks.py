@@ -13,6 +13,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ValidationError
 
+from app.agents.common.mcp import collect_activity_competitors
 from app.agents.execution.guards import (
     FIRST_PERSON,
     MAX_JACCARD,
@@ -173,12 +174,8 @@ def each_cites(e: Evaluated) -> bool:
 
 def niche_signals(e: Evaluated) -> bool:
     """The niche rule, as post-validation applies it (strategy-agent spec), on the final set."""
-    competitors: dict[str, str] = {}
-    for rec in strategy(e).recommendations:
-        for evidence in rec.evidence:
-            record = e.fixture.record(evidence.id) or {}
-            if isinstance(record.get("competitor_id"), str):
-                competitors[evidence.id] = str(record["competitor_id"])
+    cited = [e.fixture.record(ev.id) for rec in strategy(e).recommendations for ev in rec.evidence]
+    competitors = collect_activity_competitors(cited)
     return not any(
         niche_problems(rec, f"recommendation {rec.ordinal}", competitors)
         for rec in strategy(e).recommendations

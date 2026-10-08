@@ -141,7 +141,7 @@ async def test_recommendation_numbers_follow_the_latest_successful_strategy_run(
             strategy_output(*[recommendation(n, "act_seed_001") for n in (1, 2, 3)]),
         ),
         AgentOutcome(RunStatus.NEEDS_CLARIFICATION, strategy_output()),  # replaces nothing
-        AgentOutcome(RunStatus.SUCCEEDED, strategy_output()),  # a direct answer, no set
+        AgentOutcome(RunStatus.SUCCEEDED, strategy_output()),  # a direct answer keeps the set
     ]
 
     async def strategy(context: RunContext, message: str | None) -> AgentOutcome:
@@ -158,6 +158,11 @@ async def test_recommendation_numbers_follow_the_latest_successful_strategy_run(
     await service.start(
         COMPANY, message="What did Brightlane do?", agent=AgentName.STRATEGY, session_id=session_id
     )
-    assert await resolve_reference(repositories, "recommendation:2", session_id) == Unresolved(
-        "No recommendation #2 in this session"
+    # An answer without recommendations keeps the set, so "#2" still means the first run's.
+    kept = await resolve_reference(repositories, "recommendation:2", session_id)
+    assert isinstance(kept, dict) and kept["run_id"] == first.id
+    session = await repositories.sessions.get(session_id)
+    assert session is not None and session.last_run_id == first.id
+    assert await resolve_reference(repositories, "recommendation:4", session_id) == Unresolved(
+        "No recommendation #4 in this session"
     )

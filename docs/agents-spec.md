@@ -79,7 +79,7 @@ its prefixed `id`, which the agents cite as evidence.
 |---|---|---|
 | `get_company_context` | — | The `companies` document: summary, ICP, positioning, services, brand voice, pillars, channels |
 | `list_competitors` | — | `{results: [{id, name, website, is_fictional, channels}]}` |
-| `search_competitor_activity` | `query?: str`, `competitor_ids?: [str]`, `activity_types?: [str]`, `channels?: [str]`, `since_days?: int = 30`, `limit?: int = 10 (max 25)` | `{results: [activities]}`, newest first. `query` uses the Mongo text index. Records include `id`, `competitor_name`, `activity_type`, `channel`, `title`, `summary`, `url`, `price` (`PRICE_CHANGE` and `PROMOTION` only), `detected_at`, `is_mock`, `is_simulated`. |
+| `search_competitor_activity` | `query?: str`, `competitor_ids?: [str]`, `activity_types?: [str]`, `channels?: [str]`, `since_days?: int = 30`, `limit?: int = 10 (max 25)` | `{results: [activities]}`, newest first. `query` uses the Mongo text index. Records include `id`, `competitor_id`, `competitor_name`, `activity_type`, `channel`, `title`, `summary`, `url`, `price` (`PRICE_CHANGE` and `PROMOTION` only), `detected_at`, `is_mock`, `is_simulated`. |
 | `get_competitor_activity` | `activity_id: str` | Full record, including `content_excerpt`, `price`, `author` and `engagement` |
 | `summarize_competitor_activity` | `since_days?: int = 30` | Counts by competitor × type, `totals_by_competitor` (most active first), plus the 3 most recent items per competitor (cheap overview) |
 | `search_trends` | `query?: str`, `channels?: [Channel]`, `direction?: TrendDirection`, `limit?: int = 10 (max 25)` | `{results: [trends]}`, sorted by `momentum_pct` desc |
@@ -317,7 +317,8 @@ class StrategyOutput(BaseModel):
 - Contract problems the agent must fix itself (an empty title or rationale, an
   ID whose prefix does not match its kind, an unloaded skill in `skills_used`,
   a missing `next_action`, recommendations on an `INSUFFICIENT_DATA`
-  answer, more than 5 recommendations, or a breach of the niche rule below)
+  answer, any recommendation on a `WHY_IT_MATTERS` answer, more than 5
+  recommendations, or a breach of the niche rule below)
   share that one repair; if they remain, the run fails with `INVALID_OUTPUT`.
 - **Niche rule** (every recommendation except `MONITOR`): it cites at least 2
   distinct external signals (activities, trends or influencers; the company
@@ -330,7 +331,8 @@ class StrategyOutput(BaseModel):
 - The output is persisted to `recommendations` with its `rec_` IDs. When at
   least one is persisted, every other `OPEN` recommendation of the company
   becomes `SUPERSEDED`: there is one set, and the newest wins. An answer
-  without recommendations keeps the set. A successful Execution run started
+  without recommendations keeps the set and does not become the session's last
+  answer, so `#N` and follow-ups still mean the current set. A successful Execution run started
   from a recommendation (**Do this**, or `#N`) marks it `DONE`.
 
 ### 6.3 Behavioural rules
