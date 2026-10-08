@@ -39,7 +39,21 @@ async def test_feed_trigger_resolves_to_the_company_activity(
         kind=TriggerKind.FEED_ACTION, ref_id=activity.id, action=TriggerAction.RESPONSE_PLAN
     )
     record = await resolve_trigger(repositories, trigger, COMPANY)
-    assert record["id"] == activity.id  # same key shape as MCP results
+    assert record is not None and record["id"] == activity.id  # same key shape as MCP results
+
+
+async def test_generate_strategy_resolves_the_own_company_without_a_record(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    repositories = RunRepositories.for_database(seeded_database)
+    own = Trigger(kind=TriggerKind.COMPANY, ref_id=COMPANY, action=TriggerAction.GENERATE_STRATEGY)
+    assert await resolve_trigger(repositories, own, COMPANY) is None  # no focus record
+
+    foreign = Trigger(
+        kind=TriggerKind.COMPANY, ref_id="cmp_someone_else", action=TriggerAction.GENERATE_STRATEGY
+    )
+    with pytest.raises(NotFoundError):
+        await resolve_trigger(repositories, foreign, COMPANY)
 
 
 @pytest.mark.parametrize("company", [COMPANY, "cmp_someone_else"])

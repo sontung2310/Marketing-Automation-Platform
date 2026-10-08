@@ -41,7 +41,7 @@
   `update_skills.py` and add it to the Strategy allowlist only. Verify that
   `npm run skills:check` passes and `test_skills_integrity.py` counts 13
   skills.
-- [ ] 3.2 Add `Intent.STRATEGY_SYNTHESIS`, `TriggerKind.COMPANY` and
+- [x] 3.2 Add `Intent.STRATEGY_SYNTHESIS`, `TriggerKind.COMPANY` and
   `TriggerAction.GENERATE_STRATEGY`. Remap `RESPONSE_PLAN` and `USE_TREND`
   in `TRIGGER_ROUTES`, and add the `COMPANY` resolver to `references.py`
   (D1). Verify with `test_routing.py` and `test_run_references.py` (a

@@ -10,6 +10,7 @@ from app.core.db import Database
 from app.core.errors import NotFoundError
 from app.intelligence.models import AgentName, Run, RunStatus, Session
 from app.intelligence.repositories import (
+    CompaniesRepository,
     CompetitorActivitiesRepository,
     DeliverablesRepository,
     InfluencersRepository,
@@ -24,6 +25,7 @@ from app.orchestration.routing import Trigger, TriggerKind
 
 @dataclass(frozen=True)
 class RunRepositories:
+    companies: CompaniesRepository
     activities: CompetitorActivitiesRepository
     trends: TrendsRepository
     influencers: InfluencersRepository
@@ -36,6 +38,7 @@ class RunRepositories:
     @classmethod
     def for_database(cls, database: Database) -> "RunRepositories":
         return cls(
+            companies=CompaniesRepository(database),
             activities=CompetitorActivitiesRepository(database),
             trends=TrendsRepository(database),
             influencers=InfluencersRepository(database),
@@ -49,21 +52,33 @@ class RunRepositories:
 
 Resolver = Callable[[RunRepositories, str, str], Awaitable[BaseModel | None]]
 
+
+async def _own_company(r: RunRepositories, ref: str, company_id: str) -> BaseModel | None:
+    return await r.companies.get(ref) if ref == company_id else None
+
+
 RESOLVERS: dict[TriggerKind, Resolver] = {
     TriggerKind.FEED_ACTION: lambda r, ref, cmp: r.activities.get_for_company(ref, cmp),
     TriggerKind.TREND: lambda r, ref, cmp: r.trends.get_for_company(ref, cmp),
     TriggerKind.INFLUENCER: lambda r, ref, cmp: r.influencers.get_for_company(ref, cmp),
     TriggerKind.RECOMMENDATION: lambda r, ref, cmp: r.recommendations.get_for_company(ref, cmp),
+    TriggerKind.COMPANY: _own_company,
 }
+
+# Kinds that only authorise the run: the agent reads the company itself, so there is
+# no trigger record (an unfocused Strategy synthesis).
+NO_TRIGGER_RECORD = frozenset({TriggerKind.COMPANY})
 
 
 async def resolve_trigger(
     repositories: RunRepositories, trigger: Trigger, company_id: str
-) -> dict[str, object]:
+) -> dict[str, object] | None:
     """The referenced record as JSON-ready data, or NotFoundError for this company."""
     record = await RESOLVERS[trigger.kind](repositories, trigger.ref_id, company_id)
     if record is None:
         raise NotFoundError(f"{trigger.ref_id} was not found", {"ref_id": trigger.ref_id})
+    if trigger.kind in NO_TRIGGER_RECORD:
+        return None
     # `id` (not `_id`), the same shape the MCP tools return, so the model cites it as-is.
     return record.model_dump(mode="json")
 

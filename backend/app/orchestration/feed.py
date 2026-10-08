@@ -384,6 +384,7 @@ TRIGGER_LABELS: dict[str, str] = {
     TriggerAction.USE_TREND: USE_TREND.label,
     TriggerAction.DRAFT_OUTREACH: DRAFT_OUTREACH.label,
     TriggerAction.DO_THIS: DO_THIS.label,
+    TriggerAction.GENERATE_STRATEGY: "Generate strategy",
 }
 
 
@@ -393,7 +394,8 @@ def run_label(run: Run, activity_types: dict[str, ActivityType]) -> str:
     ref_id = str(run.trigger.get("ref_id", ""))
     if action not in TRIGGER_LABELS:
         return run.intent
-    item_type = activity_types.get(ref_id) or str(run.trigger.get("kind", ""))
+    kind = str(run.trigger.get("kind", ""))
+    item_type = activity_types.get(ref_id) or ("" if kind == TriggerKind.COMPANY else kind)
     return f"{TRIGGER_LABELS[action]} · {item_type}" if item_type else TRIGGER_LABELS[action]
 
 

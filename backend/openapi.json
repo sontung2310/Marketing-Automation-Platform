@@ -1546,7 +1546,8 @@
           "RESPONSE_PLAN",
           "DO_THIS",
           "USE_TREND",
-          "DRAFT_OUTREACH"
+          "DRAFT_OUTREACH",
+          "GENERATE_STRATEGY"
         ],
         "title": "TriggerAction",
         "type": "string"
@@ -1556,7 +1557,8 @@
           "FEED_ACTION",
           "RECOMMENDATION",
           "TREND",
-          "INFLUENCER"
+          "INFLUENCER",
+          "COMPANY"
         ],
         "title": "TriggerKind",
         "type": "string"

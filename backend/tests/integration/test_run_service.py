@@ -67,7 +67,7 @@ async def test_completed_run_is_persisted_with_ordered_events(
     assert stored is not None
     assert (stored.agent, stored.intent, stored.status) == (
         AgentName.STRATEGY,
-        "RESPONSE_PLAN",
+        "STRATEGY_SYNTHESIS",
         RunStatus.SUCCEEDED,
     )
     assert stored.route["method"] == "DETERMINISTIC"

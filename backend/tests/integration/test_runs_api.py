@@ -99,7 +99,7 @@ async def test_6c_feed_action_returns_202_fast_and_streams_in_order(
     assert response.status_code == 202, response.text
     assert elapsed < 0.5
     accepted = response.json()
-    assert (accepted["agent"], accepted["intent"]) == ("STRATEGY", "RESPONSE_PLAN")
+    assert (accepted["agent"], accepted["intent"]) == ("STRATEGY", "STRATEGY_SYNTHESIS")
     assert accepted["route"]["method"] == "DETERMINISTIC"
 
     events = await read_events(api, accepted["run_id"])

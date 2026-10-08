@@ -196,6 +196,7 @@ export const TRIGGER_AGENT: Record<ItemActionName, Run["agent"]> = {
   WHY_IT_MATTERS: "STRATEGY",
   RESPONSE_PLAN: "STRATEGY",
   USE_TREND: "STRATEGY",
+  GENERATE_STRATEGY: "STRATEGY",
 };
 
 /** Only these competitors may carry simulated activity (docs/specs.md §3). */
