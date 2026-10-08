@@ -1861,7 +1861,9 @@ export const influencers: Influencer[] = [
     handle: "@aishapatel",
     channel: "LINKEDIN",
     profile_url: "https://influencers.example/aisha-patel",
-    avatar_url: null,
+    // A loadable image and a failing one, so the axe scan covers both states.
+    avatar_url:
+      "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221%22 height=%221%22/%3E",
     followers: 48200,
     engagement_rate: 0.036,
     topics: ["b2b growth", "content strategy"],
@@ -1888,7 +1890,7 @@ export const influencers: Influencer[] = [
     handle: "@marcuslee",
     channel: "LINKEDIN",
     profile_url: "https://influencers.example/marcus-lee",
-    avatar_url: null,
+    avatar_url: "data:image/png;base64,AAAA",
     followers: 39100,
     engagement_rate: 0.041,
     topics: ["brand clarity", "positioning"],

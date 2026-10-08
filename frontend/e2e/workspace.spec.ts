@@ -79,6 +79,12 @@ test.describe("7-A the workspace loads at the design target", () => {
       await expect(header.getByText(pill)).toBeVisible();
     }
 
+    // 7b-B: a loadable avatar renders; one that fails falls back to the monogram.
+    const rows = page.getByRole("region", { name: "Influencers" }).getByRole("row");
+    await expect(rows.nth(1).locator("img")).toHaveAttribute("alt", "");
+    await expect(rows.nth(2).locator("img")).toHaveCount(0);
+    await expect(rows.nth(2).locator('[aria-hidden="true"]').first()).toHaveText("ML");
+
     expect(consoleErrors).toEqual([]);
   });
 

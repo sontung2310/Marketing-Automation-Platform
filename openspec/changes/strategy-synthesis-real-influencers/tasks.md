@@ -29,7 +29,7 @@
 
 ## 2. Influencer avatars in the table (Roadmap 7.11)
 
-- [ ] 2.1 Add a DS `Avatar` (lazy image, empty `alt`, token size and radius,
+- [x] 2.1 Add a DS `Avatar` (lazy image, empty `alt`, token size and radius,
   monogram fallback on a null URL or `onError`) and use it in
   `InfluencerTable` (D7). Verify with a Vitest test of the three cases from
   the workspace-ui scenario, plus the axe scan in the existing Playwright
