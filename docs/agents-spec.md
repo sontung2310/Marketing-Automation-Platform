@@ -123,6 +123,7 @@ folder is kept for mining golden cases.
 | `competitor-profiling` | Interpreting competitor moves | ✓ | |
 | `competitors` | Comparison/"vs" angles in response plans | ✓ | ✓ |
 | `marketing-ideas` | Idea library for response options | ✓ | |
+| `marketing-psychology` | Mental models and persuasion levers behind each play (Step 7b) | ✓ | |
 | `influencer-marketing` | Partner vetting and outreach briefs | ✓ | ✓ |
 | `pricing` | Responding to `PRICE_CHANGE` / `PROMOTION` | ✓ | |
 | `copywriting` | Landing/blog copy craft | | ✓ |
@@ -166,9 +167,10 @@ These never call an LLM. The UI sends `trigger = {kind, ref_id, action}`.
 |---|---|---|
 | `FEED_ACTION` + `CREATE_SIMILAR` | Execution | `CREATE_SIMILAR` (the deliverable type comes from the activity, see specs §6) |
 | `FEED_ACTION` + `WHY_IT_MATTERS` | Strategy | `WHY_IT_MATTERS` |
-| `FEED_ACTION` + `RESPONSE_PLAN` | Strategy | `RESPONSE_PLAN` |
+| `FEED_ACTION` + `RESPONSE_PLAN` | Strategy | `STRATEGY_SYNTHESIS`, focused on the activity |
 | `RECOMMENDATION` + `DO_THIS` | Execution | `FROM_RECOMMENDATION` |
-| `TREND` + `USE_TREND` | Strategy | `TOPIC_RECOMMENDATION` (seeded with the trend) |
+| `TREND` + `USE_TREND` | Strategy | `STRATEGY_SYNTHESIS`, focused on the trend |
+| `COMPANY` + `GENERATE_STRATEGY` (`ref_id` = the company's ID) | Strategy | `STRATEGY_SYNTHESIS`, no focus (no trigger record is passed) |
 | `INFLUENCER` + `DRAFT_OUTREACH` | Execution | `INFLUENCER_OUTREACH` |
 
 ### 5.2 Chat routing (classifier)
@@ -256,10 +258,11 @@ Intent-specific expectations:
 
 | Intent | Must retrieve | Output shape |
 |---|---|---|
-| `TOPIC_RECOMMENDATION` | trends + competitor activity (recent) | 1–5 recommendations of kind `CONTENT_TOPIC`: only as many as the evidence strongly supports |
-| `RESPONSE_PLAN` | the triggering activity (`get_competitor_activity`) + related activity by the same competitor | 1–4 recommendations. At least one must be kind `COMPETITIVE_RESPONSE`, and at least one may be "no action / monitor", with justification. For `PRICE_CHANGE` and `PROMOTION`: first an implication comparing the move with Marketing Eye's own prices and value, then 2–4 recommendations as options with their trade-offs (for example hold and monitor, adjust the offer, respond with value content). |
-| `WHY_IT_MATTERS` | the triggering activity + related trends | 2–3 `implications` + 1–2 recommendations (one is usually enough) |
-| `INFLUENCER_RECOMMENDATION` | influencers (`search_influencers` is required) (+ trends for topic fit) | 1–5 recommendations of kind `INFLUENCER_PARTNERSHIP`, each citing an `inf_` ID |
+| `STRATEGY_SYNTHESIS` | company context, competitor activity from the last 30 days (`summarize_competitor_activity` first), trends, `search_influencers` without `region`/`topic` filters, and the focus record when the trigger has one | The company-wide set: 1–3 recommendations aimed for, 5 at most. The focus is analysed in `implications` and addressed in the `answer`, and earns a card only if it belongs among the best plays. Activity older than 30 days is not read (the window is not widened). |
+| `TOPIC_RECOMMENDATION` | trends + competitor activity (recent) | 1–3 recommendations of kind `CONTENT_TOPIC` (5 at most): only as many as the evidence strongly supports |
+| `RESPONSE_PLAN` (chat only) | the named activity (`get_competitor_activity`) + other competitors' recent activity + related trends | 1–3 recommendations (5 at most). For `PRICE_CHANGE` and `PROMOTION`, see the pricing rule in §6.3. |
+| `WHY_IT_MATTERS` | the triggering activity + related trends | 2–3 `implications` and an `answer`; **no recommendations**, so it never replaces the set |
+| `INFLUENCER_RECOMMENDATION` | influencers (`search_influencers` is required) (+ trends for topic fit) | 1–3 recommendations of kind `INFLUENCER_PARTNERSHIP` (5 at most), each citing an `inf_` ID |
 | `TREND_ANALYSIS` | trends | `implications` + up to 3 recommendations, only when the user asks what to do |
 | `COMPETITOR_QUESTION` | competitor activity (summary or filtered) | a direct `answer` quoting recorded figures and dates; recommendations only when the user asks what to do |
 
@@ -284,7 +287,9 @@ class Recommendation(BaseModel):
         "CONTENT_TOPIC", "COMPETITIVE_RESPONSE", "INFLUENCER_PARTNERSHIP", "CHANNEL_PLAY", "MONITOR"
     ]
     title: str  # ≤ 90 chars, sentence case
-    rationale: str  # 2–4 sentences linking evidence → company context → method
+    insight: str  # ≤ 240 chars: converging signals → white space → why Marketing Eye can own it
+    audience: str  # ≤ 80 chars: the specific segment; MONITOR leaves both empty
+    rationale: str  # 2–4 sentences: the lever, the channel or format choice, the trade-off
     priority: Priority
     channel: Channel | None
     evidence: list[Evidence]  # ≥ 1 (MONITOR may cite only the trigger)
@@ -311,11 +316,22 @@ class StrategyOutput(BaseModel):
   fails, the run is marked FAILED with the code `UNGROUNDED_OUTPUT`.
 - Contract problems the agent must fix itself (an empty title or rationale, an
   ID whose prefix does not match its kind, an unloaded skill in `skills_used`,
-  a missing `next_action`, or recommendations on an `INSUFFICIENT_DATA`
-  answer) share that one repair; if they remain, the run fails with
-  `INVALID_OUTPUT`.
+  a missing `next_action`, recommendations on an `INSUFFICIENT_DATA`
+  answer, more than 5 recommendations, or a breach of the niche rule below)
+  share that one repair; if they remain, the run fails with `INVALID_OUTPUT`.
+- **Niche rule** (every recommendation except `MONITOR`): it cites at least 2
+  distinct external signals (activities, trends or influencers; the company
+  record does not count); if all of them are activities, they belong to at
+  least 2 competitors; `insight` and `audience` are non-empty. Activity
+  competitors come from the MCP results and the trigger record; an activity
+  whose competitor is unknown counts as its own. The eval check
+  `niche_signals` applies the same function.
 - Ordinals must be unique and contiguous from 1.
-- The output is persisted to `recommendations` with its `rec_` IDs.
+- The output is persisted to `recommendations` with its `rec_` IDs. When at
+  least one is persisted, every other `OPEN` recommendation of the company
+  becomes `SUPERSEDED`: there is one set, and the newest wins. An answer
+  without recommendations keeps the set. A successful Execution run started
+  from a recommendation (**Do this**, or `#N`) marks it `DONE`.
 
 ### 6.3 Behavioural rules
 
@@ -323,8 +339,20 @@ class StrategyOutput(BaseModel):
   results. If the data is missing, return `INSUFFICIENT_DATA` or add a
   `data_gaps` entry.
 - **Quality over quantity.** Return only the recommendations the evidence
-  strongly supports; never pad to reach a count. Each `rationale` says why its
-  channel or format was chosen.
+  strongly supports, aiming for 1–3 and never more than 5; never pad to reach
+  a count. Each `rationale` says why its channel or format was chosen.
+- **The expert method** (owner decision, 2026-10-07; distilled from
+  `marketing-ideas` and `marketing-psychology`): find convergence across
+  signals, map the white space no competitor occupies, check Marketing Eye's
+  right to win, name the audience and its job, name the psychological lever,
+  think one move ahead, and choose by opportunity cost. The `insight` reads
+  "Because <signal A> and <signal B>, <white space> is open; Marketing Eye
+  can own it because <advantage>."
+- **Pricing moves.** For a competitor's `PRICE_CHANGE` or `PROMOTION`, first
+  an implication comparing the move with Marketing Eye's own prices and value;
+  any response is one recommendation whose `rationale` names at least two
+  options (hold and monitor, adjust the offer, respond with value content)
+  with the trade-off of each.
 - **Answer what was asked.** A factual question gets a direct answer quoting
   the recorded figures and dates, without recommendations unless the user asks
   what to do. An `INSUFFICIENT_DATA` answer carries no recommendations

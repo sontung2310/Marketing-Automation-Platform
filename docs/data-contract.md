@@ -180,13 +180,14 @@ Indexes:
   "company_id": "cmp_marketing_eye",
   "name": "string", "handle": "@string", "channel": "LINKEDIN",
   "profile_url": "string",
+  "avatar_url": "string | null",           // DCT profile.avatar_url; null when absent
   "followers": 48200,
   "engagement_rate": 0.036,
   "topics": ["b2b marketing", "ai"],
   "audience_region": "AU",
-  "relevance_score": 0.82,                 // 0..1, from DCT ranking or seed
+  "relevance_score": 0.82,                 // 0..1, from the DCT score (eval fixtures: mock)
   "evidence": [{ "title": "string", "url": "string" }],
-  "source": { "system": "DCT|MOCK_SEED", "ref_id": "string" },
+  "source": { "system": "DCT", "ref_id": "string" },  // MOCK_SEED only in eval fixtures
   "is_mock": false
 }
 ```
@@ -203,7 +204,7 @@ Indexes:
 |---|---|---|
 | `sessions` | One chat thread in the workspace | `_id ses_`, `company_id`, `created_at`, `last_run_id` |
 | `runs` | One agent run | `_id run_`, `session_id`, `agent` (`STRATEGY`/`EXECUTION`), `intent`, `message` (the chat message, if any), `trigger`, `route` (method, reason, confidence, deliverable_type), `status` (`RUNNING`/`SUCCEEDED`/`FAILED`/`NEEDS_CLARIFICATION`/`REFUSED`), `events[]` (the SSE log, written while the run works), `tool_calls[]`, `skills_loaded[]`, `output` (structured), `persisted` (the IDs the run saved: `recommendation_ids`, `deliverable_id`, `proposed_action_ids`), `usage`, `error`, `started_at`, `finished_at` |
-| `recommendations` | Persisted Strategy recommendations. Used by the Strategy panel and the "#2" references. | `_id rec_`, `run_id`, `session_id`, `ordinal` (1-based within the run), recommendation fields from agents-spec §6.2, `status` (`OPEN`/`IN_PROGRESS`/`DONE`/`SUPERSEDED`; a later successful Strategy run in the same session supersedes the older `OPEN` set). `run_label` is not stored: the API derives it from the run's `intent` and `trigger` when serving `GET /recommendations`. |
+| `recommendations` | Persisted Strategy recommendations. Used by the Strategy panel and the "#2" references. | `_id rec_`, `run_id`, `session_id`, `ordinal` (1-based within the run), recommendation fields from agents-spec §6.2 including `insight` and `audience` (both empty on records saved before Step 7b), `status` (`OPEN`/`IN_PROGRESS`/`DONE`/`SUPERSEDED`; a Strategy run that persists recommendations supersedes every other `OPEN` recommendation of the company, through its sessions, and a successful Execution run started from a recommendation marks it `DONE`). `run_label` is not stored: the API derives it from the run's `intent` and `trigger` when serving `GET /recommendations`. |
 | `deliverables` | Execution outputs | `_id del_`, `run_id`, deliverable fields from agents-spec §7.2, including `image_suggestions[]` (`placement`, `content`, `style`; empty when the type takes none) |
 | `proposed_actions` | Actions awaiting approval, plus their outcome | `_id pac_`, `deliverable_id`, `action_type`, `summary`, `payload` (built in code, agents-spec §8), `status` (`PROPOSED`/`APPROVED`/`EXECUTED`/`DISCARDED`/`FAILED`), `receipt` (mock: `mock: true`), `error` (why a `FAILED` action failed), `created_at`, `updated_at` |
 
@@ -346,13 +347,19 @@ The DCT pipeline runs even though DCT has no topic labels. It reads only
 numeric `evaluation.latest_final_score`. The observed Marketing Eye subset has
 252 eligible X candidates, all with that score, `updated_at` from
 2026-08-26T05:26:01.542Z through 2026-08-28T05:41:01.640Z, and scores from 30
-through 70. Order candidates by final score descending, then source `_id`
-ascending, and ingest at most the named `DCT_CANDIDATE_LIMIT = 25`. Candidates
-that fail the filter are skipped and logged with their source `_id`.
+through 70. Order candidates by final score descending, then
+`profile.followers` descending (a missing count sorts last), then source `_id`
+ascending, and ingest at most the named `DCT_CANDIDATE_LIMIT = 10` (owner
+decision, 2026-10-07). After upserting, delete owned `DCT` influencers whose
+source is not in the selected set; an empty read deletes nothing, so an
+outage keeps the last good set. Candidates that fail the filter are skipped
+and logged with their source `_id`. Influencers come only from DCT: the seed
+contains none (§5).
 
-The 25 selected records are useful in an unfiltered influencer list, but have
-`topics: []`; topic-filtered queries exclude empty-topic DCT records and use
-the explicitly topical seed. A sampled candidate has five embedded recent
+The 10 selected records are useful in an unfiltered influencer list, but have
+`topics: []` and `audience_region: UNKNOWN`, so topic- and region-filtered
+queries return no DCT record (eval fixtures keep the topical mock set). The
+Strategy synthesis therefore searches influencers without those filters. A sampled candidate has five embedded recent
 posts and a five-figure follower count. Its public account and profile
 identifiers, timestamps and exact engagement metrics are intentionally not
 reproduced here.
@@ -370,10 +377,11 @@ Tests must assert that every documented key has an entry in its own registry.
 | `account.handle` | Non-empty public handle | `handle` | Copy as the handle, adding `@` only if the source value lacks it. |
 | `account.profile_url` | Non-empty public X profile URL | `profile_url` | Copy as-is. |
 | `profile.followers` | Five-figure numeric follower count | `followers` | Copy as a number. |
+| `profile.avatar_url` | HTTPS image URL on 248 of the 252 candidates | `avatar_url` | Copy as-is; an absent or empty value becomes `null`. The UI falls back to a monogram. |
 | `platform_data.recent_posts[]` | 5 recent posts; source views are in the hundreds and source text and HTTPS URLs are present | `engagement_rate`, `evidence[]` | There is no direct engagement-rate field. When candidate-level `profile.followers` is numeric and greater than 0, calculate the mean of `(likes + replies + reposts) / profile.followers` across posts with all three numeric metrics. If there are no qualifying posts, or followers is missing, non-numeric or 0, set `engagement_rate` to `0.0`. Use each post's non-empty `text` and `url` to form at most three evidence entries; when none qualify, keep `evidence` empty. |
 | `evaluation.latest_final_score` | `50` (observed range 30–70) | `relevance_score` | `clamp(latest_final_score / 100, 0, 1)`; sample becomes `0.50`. |
 | `evaluation.score_breakdown.topic_relevance` | `6` (observed range 0–20) | ranking audit only | This is a numeric component, not a topic label. Retain it in pipeline diagnostics; do not present it as `topics`. |
-| — | No source field contains topic labels | `topics` | Use an empty list for a DCT-derived record. Topic-filtered influencer results fall back to the explicitly topical seed until a separately specified topic-classification source exists. |
+| — | No source field contains topic labels | `topics` | Use an empty list for a DCT-derived record. Topic-filtered influencer queries return no DCT record until a separately specified topic-classification source exists. |
 | — | `audience_region` is missing on all 296 source candidates | `audience_region` | Set the literal `UNKNOWN`; do not infer geography from profile text, handle or URL. |
 
 There is no DCT evidence ledger to join. `platform_data.recent_posts` is the
@@ -485,7 +493,7 @@ the load time, preserving relative spacing.
 | `competitors` | Lyfe Marketing (real; from CompetitorScope if present, otherwise seeded without mock activities) + **Brightlane Marketing** and **Kestrel Growth Co.** (both `is_fictional: true`, each with a named fictional CEO) |
 | `competitor_activities` | ≥ 45 records over the last 30 days. **Every** `ActivityType` has at least 3. Channels cover WEBSITE, LINKEDIN, X and INSTAGRAM. At least 6 records fall in the last 48 h, so the feed looks alive. Mock social, executive, campaign and promotion activity belongs only to the fictional competitors. |
 | `trends` | ≥ 16 records across LINKEDIN, X, REDDIT and NEWS, mixing RISING, STEADY and FALLING. At least 4 overlap topically with competitor activity, so cross-evidence reasoning is possible. |
-| `influencers` | ≥ 20 across LINKEDIN, X and YOUTUBE, with 60% AU audiences and relevance scores spread across 0.3–0.95 |
+| `influencers` | None (owner decision, 2026-10-07): influencers come only from DCT (§4.2). Running the seed deletes any `MOCK_SEED` influencer. The former mock set lives in `evaluation/fixtures/mock_influencers.json` for eval fixtures only. |
 | Simulation templates | ≥ 2 templates per `ActivityType`, used by `POST /activities/simulate`; every template targets a fictional competitor and uses a `.example` URL (records are `is_simulated: true`, `source.system = SIMULATED`) |
 
 Content rules for the seed:
