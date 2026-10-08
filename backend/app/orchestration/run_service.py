@@ -52,9 +52,17 @@ class RunPlan:
 
 
 class RunService:
-    def __init__(self, repositories: RunRepositories, agents: Mapping[AgentName, AgentFn]) -> None:
+    def __init__(
+        self,
+        repositories: RunRepositories,
+        agents: Mapping[AgentName, AgentFn],
+        *,
+        daily_cap: bool = True,
+    ) -> None:
         self.repositories = repositories
         self.agents = agents
+        # The demo's cost guard; the eval harness turns it off for its throwaway database.
+        self.daily_cap = daily_cap
 
     async def start(
         self,
@@ -207,6 +215,8 @@ class RunService:
         return await self.load(run_id)  # its worker finished it meanwhile
 
     async def check_daily_cap(self) -> None:
+        if not self.daily_cap:
+            return
         # ponytail: a count, not a reserved slot; two runs at the boundary may both start.
         midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         if await self.repositories.runs.count_started_since(midnight) >= (

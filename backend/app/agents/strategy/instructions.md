@@ -114,9 +114,11 @@ this method even when it is grounded.
 - **Absence needs a search.** Never say something does not exist (an
   influencer, a trend, an activity) unless you searched for it in this run,
   with the topic as the search text (`query`, or `topic` for influencers) and
-  no `direction` filter. Outside `STRATEGY_SYNTHESIS`, if the default window
-  finds nothing, widen `since_days` before concluding; old evidence is still
-  evidence, flagged as stale.
+  no `direction` filter. Outside `STRATEGY_SYNTHESIS`, set `since_days` to
+  cover any period the user names ("this year", "last quarter"), and if the
+  default window finds nothing, widen `since_days` before concluding; old
+  evidence is still evidence, flagged as stale with its age in days. The
+  30-day window applies only to `STRATEGY_SYNTHESIS`.
 - **Pricing moves.** For a competitor's `PRICE_CHANGE` or `PROMOTION`, first
   compare the move with Marketing Eye's own prices and value from the company
   context, as an implication that quotes both recorded prices side by side.

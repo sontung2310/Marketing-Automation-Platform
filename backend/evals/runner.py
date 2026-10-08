@@ -52,6 +52,8 @@ async def seed_history(
         started_at=now,
         finished_at=now,
     )
+    # The session first, as a real run saves it: persisting finds the company through it.
+    await repositories.sessions.upsert(session)
     await repositories.runs.upsert(run)
     saved = await spec.persist(repositories, run, AgentOutcome(RunStatus.SUCCEEDED, output), None)
     await repositories.sessions.upsert(session.model_copy(update={"last_run_id": run.id}))
@@ -103,7 +105,8 @@ async def run_suite(
                     retrieved[context.run_id] = sorted(context.retrieved_ids)
                     results[context.run_id] = context.tool_results
 
-            service = RunService(repositories, {agent_name: capturing})
+            # Suites run more cases than the demo's daily cap allows in one database.
+            service = RunService(repositories, {agent_name: capturing}, daily_cap=False)
             gate = asyncio.Semaphore(concurrency)
 
             async def one(case: GoldenCase, repeat: int) -> RunRecord:
