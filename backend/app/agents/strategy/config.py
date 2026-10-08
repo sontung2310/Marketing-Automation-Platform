@@ -7,6 +7,7 @@ SKILL_ALLOWLIST = frozenset(
         "competitor-profiling",
         "competitors",
         "marketing-ideas",
+        "marketing-psychology",
         "influencer-marketing",
         "pricing",
         "social",

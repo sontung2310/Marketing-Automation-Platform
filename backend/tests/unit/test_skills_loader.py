@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from app.agents.strategy.config import SKILL_ALLOWLIST as STRATEGY_SKILLS
 from app.skills.integrity import read_lock
 from app.skills.loader import (
     InvalidReferenceError,
@@ -23,6 +24,8 @@ def write_skill(root: Path, skill_md: str) -> Path:
 def test_every_vendored_skill_parses_with_folder_name_and_description() -> None:
     catalogue = load_catalogue()
     assert sorted(catalogue) == sorted(read_lock().skills)
+    assert len(catalogue) == 13  # agents-spec §4.1
+    assert "marketing-psychology" in STRATEGY_SKILLS
     for name, skill in catalogue.items():
         assert skill.meta.name == name
         assert skill.meta.description.strip()

@@ -37,7 +37,7 @@
 
 ## 3. Strategy synthesis (Roadmap 7.12)
 
-- [ ] 3.1 Vendor `marketing-psychology` at the pinned commit with
+- [x] 3.1 Vendor `marketing-psychology` at the pinned commit with
   `update_skills.py` and add it to the Strategy allowlist only. Verify that
   `npm run skills:check` passes and `test_skills_integrity.py` counts 13
   skills.
