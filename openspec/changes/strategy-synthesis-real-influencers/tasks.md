@@ -80,6 +80,12 @@
   in `RecommendationSheet` (D7). Verify with Vitest for the card and the
   button state, and with Playwright for generate → the new set only, and Do
   this → send → the card leaves (7b-C, 7b-E).
+- [ ] 4.4 Add the **Latest analysis** block (answer, implications, data
+  gaps of the latest Strategy run) and disable every Strategy-starting
+  control while a Strategy run is in flight (D7). Verify with Vitest that
+  **Why it matters** shows its analysis while the cards stay, and that feed
+  and trend Strategy actions are disabled during a run while Execution
+  actions stay enabled.
 
 ## 5. Evaluation, docs and evidence (Roadmap 7.14)
 

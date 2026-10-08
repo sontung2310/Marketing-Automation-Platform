@@ -4,10 +4,17 @@
 
 Strategy recommendations SHALL never enter the Execution transcript. The
 Strategy panel header SHALL carry a **Generate strategy** button that starts
-a run with the `COMPANY` `GENERATE_STRATEGY` trigger; while a Strategy run is
-in flight the button SHALL be disabled and the header SHALL show a labelled
-working status. The panel SHALL show only the company's `OPEN`
-recommendations and SHALL refresh when a run completes. Each
+a run with the `COMPANY` `GENERATE_STRATEGY` trigger. While any Strategy run
+is in flight, the header SHALL show a labelled working status and every
+control that starts a Strategy run (**Generate strategy**, and each item
+action whose agent is Strategy, such as **Plan a response**, **Why it
+matters** and **Get topic ideas**) SHALL be disabled, so only one Strategy
+run is in flight at a time (owner decision, 2026-10-08). The panel SHALL show
+only the company's `OPEN` recommendations and SHALL refresh when a run
+completes. Above the cards, a **Latest analysis** block SHALL show the
+latest successful Strategy run started on the page: its answer, its
+implications and its data gaps, so an analysis without recommendations (such
+as **Why it matters**) is still visible (owner decision, 2026-10-08). Each
 recommendation SHALL render as a card showing its zero-padded ordinal, its
 priority verbatim, its title, its `insight`, its `audience`, up to three
 signal lines drawn from its evidence (each labelled `Trend`, `Competitor`,
@@ -39,6 +46,21 @@ activation scroll to and flash-highlight its target item.
 - **THEN** its card shows the zero-padded ordinal, the verbatim priority, the
   title, the insight, the audience, a `Trend` line and a `Competitor` line
   with their notes, and an **Open plan** button
+
+#### Scenario: Why it matters shows its analysis without cards
+
+- **GIVEN** the panel shows recommendations from an earlier run
+- **WHEN** the marketer clicks **Why it matters** on a feed card and the run
+  completes with implications and no recommendations
+- **THEN** the **Latest analysis** block shows the run's answer and
+  implications, and the earlier recommendation cards are unchanged
+
+#### Scenario: Strategy actions are disabled while a Strategy run is in flight
+
+- **GIVEN** a Strategy run in flight
+- **WHEN** the workspace renders
+- **THEN** **Generate strategy** and every Strategy item action in the feed
+  and the Trends list are disabled, while Execution actions stay enabled
 
 #### Scenario: Generate strategy replaces the panel's set
 

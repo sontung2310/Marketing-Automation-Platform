@@ -170,6 +170,14 @@ superseded recommendation stays superseded.
   existing company query). It is disabled, with the existing `Working`
   status pattern, while any Strategy run is in flight. The recommendations
   query is invalidated on `run.completed`, as today.
+- One Strategy run at a time: the workspace context exposes
+  `strategyRunning`. **Generate strategy** and every item action whose
+  `agent` is `STRATEGY` (feed, trends) read it to disable themselves, so the
+  rule comes from the action's agent field, not a list of action names.
+- **Latest analysis** reads the latest Strategy run's `output` that the run
+  stream already delivers (`answer`, `implications`, `data_gaps`); no API
+  change. It lives for the page session; after a reload the cards remain and
+  the block is empty until the next run.
 - The card shows the `insight` (two-line clamp) and the `audience` (muted
   small line); the sheet shows both at the top. The evidence-kind registry
   already covers `Influencer` and `Company`.
