@@ -341,6 +341,7 @@ class Influencer(TenantModel):
     handle: str = Field(min_length=1)
     channel: Channel
     profile_url: str = Field(min_length=1)
+    avatar_url: str | None = None
     followers: int = Field(ge=0)
     engagement_rate: float = Field(ge=0, le=1)
     topics: list[str] = Field(default_factory=list)

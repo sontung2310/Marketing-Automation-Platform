@@ -44,6 +44,16 @@ def test_build_owned_influencer_maps_and_bounds_fields() -> None:
     assert influencer.audience_region == "UNKNOWN"
     assert len(influencer.evidence) == 2
     assert influencer.source.system is SourceSystem.DCT
+    assert influencer.avatar_url is None
+
+
+def test_build_owned_influencer_copies_the_avatar() -> None:
+    influencer = build_owned_influencer(
+        candidate(avatar_url="https://x.example/a.jpg"), company_id="cmp_marketing_eye"
+    )
+
+    assert influencer is not None
+    assert influencer.avatar_url == "https://x.example/a.jpg"
 
 
 def test_unknown_platform_is_skipped() -> None:

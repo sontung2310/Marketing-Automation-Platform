@@ -132,6 +132,29 @@ async def test_company_and_tracked_keywords(client: httpx.AsyncClient) -> None:
     assert (await client.get("/api/company")).json()["tracked_keywords"] == ["AI search", "SEO"]
 
 
+INFLUENCERS = [("small", 0.62, 100), ("top", 0.7, 50), ("large", 0.62, 900)]
+
+
+def _dct_influencer(name: str, score: float, followers: int) -> dict[str, Any]:
+    return {
+        "_id": f"inf_{name}",
+        "company_id": get_settings().default_company_id,
+        "name": name,
+        "handle": f"@{name}",
+        "channel": "X",
+        "profile_url": f"https://x.example/{name}",
+        "avatar_url": f"https://x.example/{name}.jpg",
+        "followers": followers,
+        "engagement_rate": 0.0,
+        "topics": [],
+        "audience_region": "UNKNOWN",
+        "relevance_score": score,
+        "evidence": [],
+        "source": {"system": "DCT", "ref_id": name},
+        "is_mock": False,
+    }
+
+
 async def test_seeded_insights_load(client: httpx.AsyncClient) -> None:
     trends = (await client.get("/api/trends")).json()["items"]
     assert trends and [t["momentum_pct"] for t in trends] == sorted(
@@ -139,10 +162,15 @@ async def test_seeded_insights_load(client: httpx.AsyncClient) -> None:
     )
     assert trends[0]["actions"][0]["label"] == "Get topic ideas"
 
+    # The seed has no influencers; they come only from DCT.
+    assert (await client.get("/api/influencers")).json() == {"items": []}
+    await db.get_database()["influencers"].insert_many(
+        [_dct_influencer(name, score, followers) for name, score, followers in INFLUENCERS]
+    )
     influencers = (await client.get("/api/influencers")).json()["items"]
-    assert influencers and influencers[0]["actions"][0]["action"] == "DRAFT_OUTREACH"
-    scores = [i["relevance_score"] for i in influencers]
-    assert scores == sorted(scores, reverse=True)
+    assert [i["handle"] for i in influencers] == ["@top", "@large", "@small"]
+    assert influencers[0]["actions"][0]["action"] == "DRAFT_OUTREACH"
+    assert influencers[0]["avatar_url"] == "https://x.example/top.jpg"
 
     assert (await client.get("/api/recommendations")).json() == {"items": []}
 

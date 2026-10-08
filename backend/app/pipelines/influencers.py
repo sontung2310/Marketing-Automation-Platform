@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Protocol
 
 from pymongo.asynchronous.database import AsyncDatabase
@@ -33,13 +33,15 @@ class PipelineCounts:
     inserted: int = 0
     updated: int = 0
     skipped: int = 0
+    deleted: int = 0
 
     @property
     def total(self) -> int:
         return self.inserted + self.updated + self.skipped
 
     def add(self, result: UpsertResult) -> PipelineCounts:
-        return PipelineCounts(
+        return replace(
+            self,
             inserted=self.inserted + int(result.inserted),
             updated=self.updated + int(result.updated),
             skipped=self.skipped + int(result.skipped),
@@ -105,6 +107,7 @@ def build_owned_influencer(candidate: DctCandidate, *, company_id: str) -> Influ
         handle=handle,
         channel=channel,
         profile_url=candidate.profile_url.strip(),
+        avatar_url=candidate.avatar_url,
         followers=int(followers),
         engagement_rate=_engagement_rate(candidate),
         topics=[],
@@ -131,23 +134,21 @@ async def run_influencer_pipeline(
         try:
             influencer = build_owned_influencer(candidate, company_id=company_id)
             if influencer is None:
-                counts = PipelineCounts(
-                    inserted=counts.inserted,
-                    updated=counts.updated,
-                    skipped=counts.skipped + 1,
-                )
+                counts = replace(counts, skipped=counts.skipped + 1)
                 continue
             counts = counts.add(await repository.upsert_by_source(influencer))
         except (TypeError, ValueError) as error:
-            counts = PipelineCounts(
-                inserted=counts.inserted,
-                updated=counts.updated,
-                skipped=counts.skipped + 1,
-            )
+            counts = replace(counts, skipped=counts.skipped + 1)
             logger.warning(
                 "Skipping DCT candidate %s: %s",
                 candidate.source_id,
                 error,
                 extra={"ctx": {"source_id": candidate.source_id}},
             )
+    # Only the current top candidates stay; an empty read keeps the last good set.
+    if source_result.candidates:
+        deleted = await repository.delete_by_source_except(
+            company_id, SourceSystem.DCT, {c.source_id for c in source_result.candidates}
+        )
+        counts = replace(counts, deleted=deleted)
     return InfluencerPipelineSummary(influencers=counts)

@@ -2,26 +2,29 @@
 
 ## 1. Real influencers in the data (Roadmap 7.10)
 
-- [ ] 1.1 In `pipelines/sources/dct.py`, set `DCT_CANDIDATE_LIMIT = 10`, sort
+- [x] 1.1 In `pipelines/sources/dct.py`, set `DCT_CANDIDATE_LIMIT = 10`, sort
   by score, then followers desc, then `_id`, and read `profile.avatar_url`
   (D6). Add `avatar_url: str | None` to `Influencer`. Verify with a unit
   test on the ranking (a tie at one score orders by followers; a missing
   follower count sorts last).
-- [ ] 1.2 In `pipelines/influencers.py`, delete owned `DCT` influencers that
+- [x] 1.2 In `pipelines/influencers.py`, delete owned `DCT` influencers that
   are not in the selected set and report a `deleted` count. Verify with an
   integration test: two runs converge to exactly 10 records, and a record
   that drops out is deleted (7b-A).
-- [ ] 1.3 Remove `influencers.json` from the seed bundle. The seed writer
+- [x] 1.3 Remove `influencers.json` from the seed bundle. The seed writer
   deletes `MOCK_SEED` influencers, and the validator drops the influencer
   minimums. Verify with a seed test where `MOCK_SEED` influencers are gone
   and `DCT` influencers are untouched, and `seed_db.py --validate` passes.
-- [ ] 1.4 Sort the repository's influencer queries by `relevance_score`
+- [x] 1.4 Sort the repository's influencer queries by `relevance_score`
   desc, then `followers` desc, and return `avatar_url` from
   `GET /api/influencers`. Re-export `openapi.json` and the frontend types.
   Verify that `test_activities_api.py` asserts the order and the field, and
   that `npm run api:check` passes.
-- [ ] 1.5 Run `seed_db.py` and `run_pipelines.py --only influencers`
-  against the dev database. Verify with the pipeline log plus a Mongo count:
+- [x] 1.5 Run `seed_db.py` and `run_pipelines.py --only influencers`
+  against a scratch database (`MONGODB_DATABASE=marketing_automation_7b`).
+  The shared `marketing_automation` database waits until after merge,
+  because `main`'s models forbid the new `avatar_url` field (design
+  Migration Plan). Verify with the pipeline log plus a Mongo count:
   10 `DCT` and 0 `MOCK_SEED` influencers, with avatars (7b-A evidence).
 
 ## 2. Influencer avatars in the table (Roadmap 7.11)

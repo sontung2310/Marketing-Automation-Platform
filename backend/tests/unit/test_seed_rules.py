@@ -19,7 +19,6 @@ def test_seed_bundle_meets_documented_minimums() -> None:
         "competitors": 3,
         "competitor_activities": 45,
         "trends": 16,
-        "influencers": 20,
         "simulation_templates": 18,
     }
     assert set(coverage.activity_types) == {
@@ -33,7 +32,6 @@ def test_seed_bundle_meets_documented_minimums() -> None:
         "CAMPAIGN_LAUNCH",
         "PAGE_UPDATE",
     }
-    assert coverage.au_influencer_ratio >= 0.6
 
 
 def test_seed_company_has_a_fictional_spokesperson() -> None:
@@ -280,35 +278,4 @@ def test_seed_validation_rejects_non_example_trend_sample_post_url() -> None:
     invalid_bundle = bundle.model_copy(update={"trends": [invalid_trend, *bundle.trends[1:]]})
 
     with pytest.raises(SeedValidationError, match="trend sample post URLs"):
-        validate_seed_bundle(invalid_bundle)
-
-
-def test_seed_validation_rejects_non_example_influencer_profile_url() -> None:
-    bundle = load_seed_bundle()
-    invalid_influencer = bundle.influencers[0].model_copy(
-        update={"profile_url": "https://influencers.example.com/aisha-patel"}
-    )
-    invalid_bundle = bundle.model_copy(
-        update={"influencers": [invalid_influencer, *bundle.influencers[1:]]}
-    )
-
-    with pytest.raises(SeedValidationError, match="influencer URLs"):
-        validate_seed_bundle(invalid_bundle)
-
-
-def test_seed_validation_rejects_non_example_influencer_evidence_url() -> None:
-    bundle = load_seed_bundle()
-    invalid_evidence = (
-        bundle.influencers[0]
-        .evidence[0]
-        .model_copy(update={"url": "https://influencers.example.com/aisha-patel/notes"})
-    )
-    invalid_influencer = bundle.influencers[0].model_copy(
-        update={"evidence": [invalid_evidence, *bundle.influencers[0].evidence[1:]]}
-    )
-    invalid_bundle = bundle.model_copy(
-        update={"influencers": [invalid_influencer, *bundle.influencers[1:]]}
-    )
-
-    with pytest.raises(SeedValidationError, match="influencer URLs"):
         validate_seed_bundle(invalid_bundle)

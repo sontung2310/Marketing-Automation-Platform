@@ -586,6 +586,17 @@
             "title": "Audience Region",
             "type": "string"
           },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
           "channel": {
             "$ref": "#/components/schemas/Channel"
           },
@@ -642,6 +653,7 @@
           "handle",
           "channel",
           "profile_url",
+          "avatar_url",
           "followers",
           "engagement_rate",
           "topics",

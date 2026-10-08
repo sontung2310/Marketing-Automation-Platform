@@ -200,6 +200,7 @@ class InfluencerItem(BaseModel):
     handle: str
     channel: Channel
     profile_url: str
+    avatar_url: str | None
     followers: int
     engagement_rate: float
     topics: list[str]

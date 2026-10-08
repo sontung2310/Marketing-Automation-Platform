@@ -217,8 +217,12 @@ superseded recommendation stays superseded.
 
 ## Migration Plan
 
-1. Deploy the code; run `seed_db.py` (deletes `MOCK_SEED` influencers) and
-   `run_pipelines.py --only influencers` (writes the top 10 with avatars).
+1. Merge and deploy the code first, then run `seed_db.py` (deletes
+   `MOCK_SEED` influencers) and `run_pipelines.py --only influencers`
+   (writes the top 10 with avatars) against the shared database. Running
+   them before the merge would break production: `main`'s models use
+   `extra="forbid"` and would reject `avatar_url`. Pre-merge evidence uses
+   the scratch database `marketing_automation_7b`.
 2. Existing `OPEN` recommendations stay until the first synthesis run
    supersedes them; existing records lack `insight`/`audience`, so the
    model defaults them to empty strings on read.

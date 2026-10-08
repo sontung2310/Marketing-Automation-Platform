@@ -180,6 +180,7 @@ export interface Influencer {
   handle: string;
   channel: Channel;
   profile_url: string;
+  avatar_url: string | null;
   followers: number;
   engagement_rate: number;
   topics: string[];
