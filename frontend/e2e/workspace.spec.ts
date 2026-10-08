@@ -476,6 +476,54 @@ test.describe("7-D the evidence loop", () => {
         .getByRole("log", { name: "Execution transcript" })
         .getByText("Write the LinkedIn post for recommendation #1"),
     ).toBeVisible();
+
+    // 7b-E: once the Execution run succeeds, the recommendation is DONE and leaves the panel.
+    await expect(
+      page
+        .getByRole("region", { name: "Strategy recommendations" })
+        .getByRole("article", { name: "Hold price, publish the reasoning" }),
+    ).toHaveCount(0, { timeout: 15_000 });
+  });
+});
+
+test.describe("7b Strategy runs one at a time and show their analysis", () => {
+  test("Why it matters disables Strategy actions, then shows its analysis above the cards", async ({
+    page,
+  }) => {
+    await openWorkspace(page);
+    const panel = page.getByRole("region", { name: "Strategy recommendations" });
+    const feed = page.getByRole("region", { name: "Competitor activity" });
+    const cards = panel.getByRole("article");
+    await expect(cards.first()).toBeVisible();
+    const cardCount = await cards.count();
+    expect(cardCount).toBeGreaterThan(0);
+
+    await feed.getByRole("button", { name: "Why it matters" }).first().click();
+
+    await expect(panel.getByRole("button", { name: "Generate strategy" })).toBeDisabled();
+    for (const button of await feed.getByRole("button", { name: "Plan a response" }).all()) {
+      await expect(button).toBeDisabled();
+    }
+
+    const analysis = panel.getByRole("region", { name: "Latest analysis" });
+    await expect(analysis.getByText(/Brightlane repriced upward/)).toBeVisible({ timeout: 10_000 });
+    await expect(analysis.getByRole("listitem")).toHaveCount(2);
+    await expect(cards).toHaveCount(cardCount);
+    await expect(panel.getByRole("button", { name: "Generate strategy" })).toBeEnabled();
+  });
+
+  test("Generate strategy runs from the panel header", async ({ page }) => {
+    await openWorkspace(page);
+    const panel = page.getByRole("region", { name: "Strategy recommendations" });
+    const generate = panel.getByRole("button", { name: "Generate strategy" });
+
+    await generate.click();
+    await expect(generate).toBeDisabled();
+    await expect(panel.getByRole("region", { name: "Latest analysis" })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(generate).toBeEnabled();
+    await expectAccessible(page);
   });
 });
 

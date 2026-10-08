@@ -68,19 +68,19 @@
 
 ## 4. One set and the panel (Roadmap 7.13)
 
-- [ ] 4.1 Make `supersede_open` company-wide, with its index on
+- [x] 4.1 Make `supersede_open` company-wide, with its index on
   `{company_id, status}` (D5). Verify with `test_run_service.py`: session
   B's run supersedes session A's set, and a factual answer keeps it.
-- [ ] 4.2 Mark the trigger recommendation `DONE` after a successful
+- [x] 4.2 Mark the trigger recommendation `DONE` after a successful
   Execution run with a deliverable, guarded on `OPEN` (D5). Verify with
   `test_run_service.py` (both the button and `#N`) and confirm that a failed
   run keeps it `OPEN` (7b-E).
-- [ ] 4.3 Add **Generate strategy** with its disabled and working state to
+- [x] 4.3 Add **Generate strategy** with its disabled and working state to
   the `StrategyPanel` header, and show the insight and audience on cards and
   in `RecommendationSheet` (D7). Verify with Vitest for the card and the
   button state, and with Playwright for generate → the new set only, and Do
   this → send → the card leaves (7b-C, 7b-E).
-- [ ] 4.4 Add the **Latest analysis** block (answer, implications, data
+- [x] 4.4 Add the **Latest analysis** block (answer, implications, data
   gaps of the latest Strategy run) and disable every Strategy-starting
   control while a Strategy run is in flight (D7). Verify with Vitest that
   **Why it matters** shows its analysis while the cards stay, and that feed

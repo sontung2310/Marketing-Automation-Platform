@@ -4,16 +4,23 @@ import { Button } from "../../components/ds/Button";
 import { Icon } from "../../components/ds/Icon";
 import { cn } from "../../lib/cn";
 import { displayUrl, money, relativeTime, signedPercent } from "../../lib/format";
-import { evidenceTargetId } from "../workspace/workspaceContext";
+import { blockedByStrategyRun, evidenceTargetId } from "../workspace/workspaceContext";
 import { ActivityTypeBadge } from "./ActivityTypeBadge";
 
 interface ActivityCardProps {
   activity: Activity;
   onAction: (action: ItemAction) => void;
   highlighted?: boolean;
+  /** Strategy actions disable while a Strategy run is in flight (ui-spec §4). */
+  strategyRunning?: boolean;
 }
 
-export function ActivityCard({ activity, onAction, highlighted }: ActivityCardProps) {
+export function ActivityCard({
+  activity,
+  onAction,
+  highlighted,
+  strategyRunning = false,
+}: ActivityCardProps) {
   const primary = activity.actions.find((action) => action.primary) ?? activity.actions[0];
   const secondary = activity.actions.filter((action) => action !== primary);
   const delta =
@@ -78,12 +85,23 @@ export function ActivityCard({ activity, onAction, highlighted }: ActivityCardPr
 
       <div className="flex items-center justify-end gap-1.5 pt-0.5">
         {secondary.map((action) => (
-          <Button key={action.action} variant="quiet" size="sm" onClick={() => onAction(action)}>
+          <Button
+            key={action.action}
+            variant="quiet"
+            size="sm"
+            disabled={blockedByStrategyRun(action, strategyRunning)}
+            onClick={() => onAction(action)}
+          >
             {action.label}
           </Button>
         ))}
         {primary ? (
-          <Button variant="primary" size="sm" onClick={() => onAction(primary)}>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={blockedByStrategyRun(primary, strategyRunning)}
+            onClick={() => onAction(primary)}
+          >
             {primary.label}
           </Button>
         ) : null}

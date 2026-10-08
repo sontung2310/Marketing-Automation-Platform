@@ -146,7 +146,9 @@ export const handlers = [
 
   http.get(`${BASE}/influencers`, () => HttpResponse.json({ items: influencers })),
 
-  http.get(`${BASE}/recommendations`, () => HttpResponse.json({ items: store.recommendations })),
+  http.get(`${BASE}/recommendations`, () =>
+    HttpResponse.json({ items: store.recommendations.filter((rec) => rec.status === "OPEN") }),
+  ),
 
   http.post(`${BASE}/runs`, async ({ request }) => {
     const body = (await request.json()) as {
@@ -172,6 +174,9 @@ export const handlers = [
           ? body.agent_hint
           : "EXECUTION";
     const ticket = store.startRun(agent, body.trigger?.action ?? "FREEFORM", body.message ?? null);
+    // As the API does: a successful Do this run marks its recommendation DONE.
+    if (body.trigger?.action === "DO_THIS")
+      store.doneOnFinish.set(ticket.run.id, body.trigger.ref_id);
 
     return HttpResponse.json<RunResponse>(
       {
@@ -198,6 +203,7 @@ export const handlers = [
         await sleep(scripted.delay_ms - elapsed);
         elapsed = scripted.delay_ms;
         if (scripted.event.seq <= lastEventId) continue;
+        if (scripted.event.type === "run.completed") store.finishRun(runId);
         send(scripted.event.seq, scripted.event.type, scripted.event);
         if (scripted.event.seq === cut) return; // a scheduled close; the browser resumes
       }

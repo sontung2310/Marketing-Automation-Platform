@@ -9,7 +9,8 @@ import { Panel, PanelCount } from "../../components/ds/Panel";
 import { Icon } from "../../components/ds/Icon";
 import { SkeletonList } from "../../components/ds/Skeleton";
 import { Spinner } from "../../components/ds/Spinner";
-import { useRecommendations } from "../../hooks/queries";
+import type { StrategyOutput } from "../../api";
+import { useCompany, useRecommendations } from "../../hooks/queries";
 import { cn } from "../../lib/cn";
 import { useWorkspace } from "../workspace/workspaceContext";
 
@@ -22,9 +23,36 @@ const MAX_SIGNALS = 3;
 /** Two digits, as the canvas numbers its picks: 1 → "01". */
 const padOrdinal = (ordinal: number) => String(ordinal).padStart(2, "0");
 
+/** The latest Strategy run's answer, implications and gaps, so an analysis
+ * without picks (Why it matters) is still visible (ui-spec §3). */
+function LatestAnalysis({ output }: { output: StrategyOutput }) {
+  return (
+    <section
+      aria-label="Latest analysis"
+      className="flex flex-col gap-1 border-b border-border bg-surface-muted px-2 py-1.5"
+    >
+      <span className="text-small font-medium tracking-label text-text-muted uppercase">
+        Latest analysis
+      </span>
+      <p className="text-body text-text">{output.answer}</p>
+      {output.implications.length > 0 ? (
+        <ul className="flex list-disc flex-col gap-0.5 pl-2 text-small text-text">
+          {output.implications.map((implication) => (
+            <li key={implication}>{implication}</li>
+          ))}
+        </ul>
+      ) : null}
+      {output.data_gaps.length > 0 ? (
+        <p className="text-small text-text-muted">Gaps: {output.data_gaps.join(" · ")}</p>
+      ) : null}
+    </section>
+  );
+}
+
 export function StrategyPanel() {
   const recommendations = useRecommendations();
-  const { runs, activeStrategyRunId, startRun } = useWorkspace();
+  const company = useCompany();
+  const { runs, activeStrategyRunId, strategyRunning, startRun } = useWorkspace();
   const [openId, setOpenId] = useState<string | null>(null);
 
   const items = useMemo(() => recommendations.data?.items ?? [], [recommendations.data]);
@@ -35,6 +63,11 @@ export function StrategyPanel() {
   const activeRun = latestRun?.status === "RUNNING" ? latestRun : undefined;
   const failedRun = latestRun?.error ? latestRun : undefined;
   const latestStep = activeRun?.steps.at(-1)?.label ?? "Planning";
+  const analysis =
+    latestRun?.status === "SUCCEEDED" && latestRun.agent === "STRATEGY"
+      ? (latestRun.output as StrategyOutput | null)
+      : null;
+  const companyId = company.data?.id;
 
   return (
     <Panel
@@ -42,13 +75,29 @@ export function StrategyPanel() {
       title="Strategy recommendations"
       icon="target"
       meta={
-        activeRun ? (
-          <Spinner label={latestStep} />
-        ) : (
-          <PanelCount>
-            {items.length} {items.length === 1 ? "pick" : "picks"}
-          </PanelCount>
-        )
+        <>
+          {activeRun ? (
+            <Spinner label={latestStep} />
+          ) : (
+            <PanelCount>
+              {items.length} {items.length === 1 ? "pick" : "picks"}
+            </PanelCount>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={strategyRunning || !companyId}
+            onClick={() =>
+              companyId &&
+              startRun(
+                { trigger: { kind: "COMPANY", ref_id: companyId, action: "GENERATE_STRATEGY" } },
+                "Generate strategy",
+              )
+            }
+          >
+            Generate strategy
+          </Button>
+        </>
       }
     >
       {failedRun?.error ? (
@@ -58,6 +107,8 @@ export function StrategyPanel() {
           onRetry={() => startRun(failedRun.request, failedRun.trigger_label, { retry: true })}
         />
       ) : null}
+
+      {analysis ? <LatestAnalysis output={analysis} /> : null}
 
       {recommendations.isPending ? <SkeletonList rows={3} label="Loading recommendations" /> : null}
 
@@ -73,7 +124,7 @@ export function StrategyPanel() {
       ) : null}
 
       {recommendations.isSuccess && items.length === 0 && !latestRun?.error && !activeRun ? (
-        <EmptyState message="No open recommendations — ask Strategy for a plan." />
+        <EmptyState message="No strategy yet. Generate strategy to get the team's plays." />
       ) : null}
 
       {items.map((recommendation) => (
@@ -105,6 +156,12 @@ export function StrategyPanel() {
           </div>
 
           <h3 className="text-body font-medium text-text">{recommendation.title}</h3>
+          {recommendation.insight ? (
+            <p className="line-clamp-2 text-small text-text">{recommendation.insight}</p>
+          ) : null}
+          {recommendation.audience ? (
+            <p className="text-small text-text-muted">For {recommendation.audience}</p>
+          ) : null}
 
           <ul className="flex flex-col gap-0.5">
             {recommendation.evidence.slice(0, MAX_SIGNALS).map((evidence) => {

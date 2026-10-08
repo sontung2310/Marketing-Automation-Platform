@@ -136,15 +136,17 @@ every run for text the distilled method already covers. Rejected.
 
 ### D5. One company-wide set; `DONE` after a successful recommendation run
 
-`supersede_open` changes from session scope to company scope:
-`{company_id, status: OPEN, run_id ≠ keep_run_id}` → `SUPERSEDED`. It is
-called only when the run persisted at least one recommendation (already the
-case). Its index changes from the session key to `{company_id, status}`.
+`supersede_open` changes from session scope to company scope. A
+recommendation reaches its company through its session, so it marks
+`{session_id ∈ the company's sessions, status: OPEN, run_id ≠ keep_run_id}`
+`SUPERSEDED`, served by the existing `{session_id, status}` index. It is
+called only when the run persisted at least one recommendation; a run
+without any now keeps the set.
 
 `persist_execution` sets the trigger recommendation `DONE` when the run
 persisted a deliverable and the run's trigger context is a recommendation
 (the button or a resolved `#N`). One repository method,
-`mark_done(rec_id, company_id)`, guarded on `status: OPEN` so a
+`mark_done(rec_id)` (the trigger was already resolved for the company), guarded on `status: OPEN` so a
 superseded recommendation stays superseded.
 
 ### D6. Influencers: top 10, followers tiebreak, avatar, prune

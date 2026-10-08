@@ -46,10 +46,15 @@ async def persist_strategy(
         )
         for rec in output.recommendations
     ]
+    if not recommendations:
+        return {"recommendation_ids": []}  # an answer without recommendations keeps the set
     await repositories.recommendations.insert_many(recommendations)
     try:
-        # "#N" means the latest Strategy run, so only its set stays OPEN (even an empty one).
-        await repositories.recommendations.supersede_open(run.session_id, keep_run_id=run.id)
+        # One company-wide set: the newest run's recommendations replace every other OPEN one.
+        session = await repositories.sessions.get(run.session_id)
+        if session is None:
+            raise RuntimeError(f"run {run.id} has no session")
+        await repositories.recommendations.supersede_open(session.company_id, keep_run_id=run.id)
     except BaseException:
         await repositories.recommendations.delete_for_run(run.id)  # no partial set
         raise
@@ -80,6 +85,10 @@ async def persist_execution(
         await repositories.proposed_actions.delete_for_deliverable(deliverable.id)
         await repositories.deliverables.delete(deliverable.id)  # all or nothing
         raise
+    # A recommendation acted on (Do this, or "#N") leaves the Strategy panel.
+    trigger_id = trigger.get("id") if trigger else None
+    if isinstance(trigger_id, str) and trigger_id.startswith(Recommendation.id_prefix):
+        await repositories.recommendations.mark_done(trigger_id)
     return {
         "deliverable_id": deliverable.id,
         "proposed_action_ids": [action.id for action in actions],

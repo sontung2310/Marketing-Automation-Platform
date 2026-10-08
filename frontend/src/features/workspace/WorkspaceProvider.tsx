@@ -325,6 +325,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     else startRun({ message });
   }, [composer, startRun]);
 
+  // ponytail: the ~0.5 s between the click and the 202 is not covered; track the
+  // pending request too if double starts show up in practice.
+  const strategyRunning =
+    activeStrategyRunId !== null && runs[activeStrategyRunId]?.status === "RUNNING";
+
   const value = useMemo<WorkspaceValue>(
     () => ({
       draft: composer.text,
@@ -333,6 +338,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       transcript,
       runs,
       activeStrategyRunId,
+      strategyRunning,
       startRun,
       highlightedId,
       highlightedKind,
@@ -345,6 +351,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       transcript,
       runs,
       activeStrategyRunId,
+      strategyRunning,
       startRun,
       highlightedId,
       highlightedKind,

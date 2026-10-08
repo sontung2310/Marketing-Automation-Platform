@@ -217,6 +217,16 @@ class FixtureStore {
   activities: Activity[] = [...activities];
   trackedKeywords: string[] = [...company.tracked_keywords];
   recommendations: Recommendation[] = [...recommendations];
+  /** Run ID → the recommendation its Do this trigger completes. */
+  doneOnFinish = new Map<string, string>();
+
+  finishRun(runId: string): void {
+    const recId = this.doneOnFinish.get(runId);
+    if (!recId) return;
+    this.recommendations = this.recommendations.map((rec) =>
+      rec.id === recId ? { ...rec, status: "DONE" } : rec,
+    );
+  }
   session: Session = { ...session, runs: [...session.runs] };
   readonly actions = new Map<string, ProposedAction>();
   readonly tickets = new Map<string, RunTicket>();

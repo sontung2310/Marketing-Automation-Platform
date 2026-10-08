@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
 
@@ -31,6 +32,8 @@ describe("Strategy recommendation card", () => {
     expect(within(card).getByText("01")).toBeInTheDocument();
     expect(within(card).getByText(base.priority)).toBeInTheDocument();
     expect(within(card).getByRole("heading", { name: base.title })).toBeInTheDocument();
+    expect(within(card).getByText(base.insight)).toBeInTheDocument();
+    expect(within(card).getByText(`For ${base.audience}`)).toBeInTheDocument();
 
     const lines = within(card).getAllByRole("listitem");
     expect(lines.map((line) => line.textContent)).toEqual([
@@ -44,4 +47,31 @@ describe("Strategy recommendation card", () => {
     const panel = screen.getByRole("region", { name: "Strategy recommendations" });
     expect(within(panel).getByText("1 pick")).toBeInTheDocument();
   });
+});
+
+// The run stream (and so Latest analysis) is covered in Playwright: jsdom has no EventSource.
+describe("one Strategy run at a time", () => {
+  it("disables every Strategy action while a Strategy run is in flight", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const panel = await screen.findByRole("region", { name: "Strategy recommendations" });
+    const feed = screen.getByRole("region", { name: "Competitor activity" });
+    const [whyItMatters] = await within(feed).findAllByRole("button", { name: "Why it matters" });
+    if (!whyItMatters) throw new Error("fixture needs a Why it matters action");
+
+    await user.click(whyItMatters);
+
+    const generate = within(panel).getByRole("button", { name: "Generate strategy" });
+    await waitFor(() => expect(generate).toBeDisabled());
+    for (const name of ["Why it matters", "Plan a response"]) {
+      for (const button of within(feed).queryAllByRole("button", { name })) {
+        expect(button).toBeDisabled();
+      }
+    }
+    const execution = within(feed)
+      .getAllByRole("button")
+      .filter((button) => /similar|Create/i.test(button.textContent ?? ""));
+    expect(execution.length).toBeGreaterThan(0);
+    for (const button of execution) expect(button).toBeEnabled();
+  }, 10_000);
 });
