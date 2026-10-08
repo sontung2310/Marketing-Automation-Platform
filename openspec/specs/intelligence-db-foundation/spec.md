@@ -40,7 +40,7 @@ The system SHALL expose typed access to every owned collection through repositor
 
 ### Requirement: Seed data meets the documented demo minimums
 
-The seed dataset SHALL contain realistic dated records and satisfy every minimum in `docs/data-contract.md` §5: company context, real and fictional competitors, activity-type and channel coverage, trends, influencers, and simulation templates. Every seeded record SHALL be marked `is_mock: true`; fictional competitor URLs SHALL use `.example`; adversarial content SHALL not be present.
+The seed dataset SHALL contain realistic dated records and satisfy every minimum in `docs/data-contract.md` §5: company context, real and fictional competitors, activity-type and channel coverage, trends, and simulation templates. The seed SHALL contain no influencers: influencers come only from DCT (owner decision, 2026-10-07), and running the seed SHALL delete any owned influencer with `source.system = MOCK_SEED`. Every seeded record SHALL be marked `is_mock: true`; fictional competitor URLs SHALL use `.example`; adversarial content SHALL not be present.
 
 #### Scenario: Seed validation reports complete coverage
 
@@ -53,6 +53,12 @@ The seed dataset SHALL contain realistic dated records and satisfy every minimum
 - **GIVEN** a seeded fictional competitor or simulated template
 - **WHEN** its records are inspected
 - **THEN** fictional URLs use `.example`, records are marked mock, and no source database is modified
+
+#### Scenario: Seeding removes mock influencers
+
+- **GIVEN** a database holding `MOCK_SEED` and `DCT` influencers
+- **WHEN** the seed script runs
+- **THEN** no `MOCK_SEED` influencer remains and every `DCT` influencer is unchanged
 
 ### Requirement: Seed execution is safe to rerun and observable
 
