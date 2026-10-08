@@ -89,7 +89,7 @@
 
 ## 5. Evaluation, docs and evidence (Roadmap 7.14)
 
-- [ ] 5.1 Rewrite the affected `strategy.jsonl` cases and add `ST-SYNTH`
+- [x] 5.1 Rewrite the affected `strategy.jsonl` cases and add `ST-SYNTH`
   (D8). Add the `niche_signals` check and the rubric's niche standard. Get
   the owner's approval of the rewritten cases before running. Verify that
   `test_golden_strategy.py` passes the coverage and schema checks.

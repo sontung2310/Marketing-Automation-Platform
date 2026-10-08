@@ -26,7 +26,9 @@ def case(case_id: str, category: str = "ST-TOPIC") -> GoldenCase:
 
 def good_record(case_id: str, repeat: int = 1) -> RunRecord:
     run = sample_run()
-    return RunRecord(case_id=case_id, repeat=repeat, run=run, retrieved_ids=["act_seed_001"])
+    return RunRecord(
+        case_id=case_id, repeat=repeat, run=run, retrieved_ids=["act_seed_001", "act_seed_002"]
+    )
 
 
 def score(bundle_id: str, value: int = 5) -> JudgeScore:

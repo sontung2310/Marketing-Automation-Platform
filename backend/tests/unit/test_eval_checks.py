@@ -16,6 +16,7 @@ FIXTURE = load_fixture("intelligence_v2")
 # Checks that read an ExecutionOutput; tests/unit/test_eval_checks_execution.py covers them.
 EXECUTION_CHECKS = {"deliverable_shape", "originality", "competitor_naming", "proposed_actions_any"}
 TRIGGER = "act_seed_026"  # Brightlane price change: before 5200, after 5600
+SECOND = "act_seed_027"  # Kestrel's price change: the second competitor the niche rule needs
 
 
 def base_case(**expect: Any) -> GoldenCase:
@@ -46,7 +47,9 @@ def base_case(**expect: Any) -> GoldenCase:
 
 
 def base_run() -> dict[str, Any]:
-    output = strategy_output(recommendation(1, TRIGGER)).model_dump(mode="json")
+    output = strategy_output(recommendation(1, TRIGGER, second_signal=SECOND)).model_dump(
+        mode="json"
+    )
     output["answer"] = "Compete on value; the package moved from 5200 to 5600."
     output["data_gaps"] = ["No pricing history before this change"]
     output["recommendations"][0]["channel"] = "LINKEDIN"
@@ -63,7 +66,7 @@ def base_run() -> dict[str, Any]:
 def record(
     run: dict[str, Any] | None, retrieved: list[str] | None = None, results: list[Any] | None = None
 ) -> RunRecord:
-    ids = ["cmp_marketing_eye", TRIGGER] if retrieved is None else retrieved
+    ids = ["cmp_marketing_eye", TRIGGER, SECOND] if retrieved is None else retrieved
     typed = sample_run(**run) if run is not None else None
     return RunRecord(
         case_id="ST-T", repeat=1, run=typed, retrieved_ids=ids, tool_results=results or []
@@ -138,14 +141,19 @@ FAILURES: list[tuple[str, dict[str, Any] | None, list[str] | None]] = [
     ),
     ("phrases", with_output(lambda o: o.update(answer="Match their 50% discount.")), None),
     ("budget", with_run(lambda r: r.update(skills_loaded=["a", "b", "c", "d"])), None),
+    (
+        "niche_signals",
+        with_output(lambda o: o["recommendations"][0]["evidence"].pop()),  # one competitor
+        None,
+    ),
     ("data_gaps", with_output(lambda o: o.update(data_gaps=["No influencer data"])), None),
     ("implications", with_output(lambda o: o.update(implications=["a", "b"])), None),
     ("channels", with_output(lambda o: o["recommendations"][0].update(channel="X")), None),
     (
         "each_cites",
         with_output(
-            lambda o: o["recommendations"][0]["evidence"][0].update(
-                id="cmp_marketing_eye", kind="company"
+            lambda o: o["recommendations"][0].update(
+                evidence=[{"id": "cmp_marketing_eye", "kind": "company", "note": "Us"}]
             )
         ),
         ["cmp_marketing_eye", TRIGGER],
@@ -190,6 +198,7 @@ def test_checks_without_expectations_are_not_applicable() -> None:
         "evidence_grounded",
         "skills",
         "no_invented_numbers",
+        "niche_signals",
         "budget",
     }
 

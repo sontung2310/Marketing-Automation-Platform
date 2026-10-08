@@ -28,7 +28,13 @@ def recommendation(
             "channel": None,
             "evidence": [Evidence(id=evidence_id, kind="activity", note="Why it matters")]
             + (
-                [Evidence(id=second_signal, kind="trend", note="The rising theme it rides")]
+                [
+                    Evidence(
+                        id=second_signal,
+                        kind="activity" if second_signal.startswith("act_") else "trend",
+                        note="The second signal it rides",
+                    )
+                ]
                 if second_signal
                 else []
             ),
@@ -88,7 +94,10 @@ def sample_run(**overrides: object) -> Run:
         "agent": "STRATEGY",
         "intent": "CHAT",
         "status": "SUCCEEDED",
-        "output": strategy_output(recommendation(1, "act_seed_001")).model_dump(mode="json"),
+        # Two competitors' moves, so the set passes the niche rule (Brightlane, Kestrel).
+        "output": strategy_output(
+            recommendation(1, "act_seed_001", second_signal="act_seed_002")
+        ).model_dump(mode="json"),
         "tool_calls": [{"tool": "get_company_context"}],
         "skills_loaded": ["pricing"],
         "usage": {"total_tokens": 1000},
