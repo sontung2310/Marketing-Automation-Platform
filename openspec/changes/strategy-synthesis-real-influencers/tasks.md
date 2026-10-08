@@ -99,9 +99,9 @@
   except the judge mean (3.87 against 4.0). The owner accepted this as a
   known gap on 2026-10-08 (design D9), so no new baseline is committed
   (7b-F).
-- [ ] 5.3 Run the Router suite to confirm the remapped triggers left chat
+- [x] 5.3 Run the Router suite to confirm the remapped triggers left chat
   routing unchanged. Verify that the router thresholds hold.
-- [ ] 5.4 Update the docs:
+- [x] 5.4 Update the docs:
   - agents-spec §4.1, §5.1 and §6;
   - data-contract §3 (recommendations, influencers), §4.2 and §5;
   - api-contract (trigger kinds, recommendations, influencers);
@@ -111,6 +111,6 @@
     change) with their evidence.
 
   Verify with `npm run openspec:check`.
-- [ ] 5.5 Run `npm run check` green and capture live evidence for
+- [x] 5.5 Run `npm run check` green and capture live evidence for
   7b-A through 7b-E against the running environment (screenshots of the
   panel and table, plus run JSON). Attach it to the Step PR.
