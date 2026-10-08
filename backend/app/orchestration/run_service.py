@@ -13,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 
 from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.common.errors import CancelledRunError, run_error
-from app.agents.common.mcp import collect_ids
+from app.agents.common.mcp import collect_activity_competitors, collect_ids
 from app.core.config import get_settings
 from app.core.errors import DomainError, NotFoundError, RateLimitedError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus, Session
@@ -108,6 +108,7 @@ class RunService:
             # The trigger record was resolved for this company, so the agent may cite it, and
             # the evidence it carries (a recommendation's), which was grounded when produced.
             context.retrieved_ids |= collect_ids(trigger_context)
+            context.activity_competitors |= collect_activity_competitors(trigger_context)
         if context.previous_output is not None:
             # Follow-ups ("drop #3") may re-cite what the last answer already grounded.
             context.retrieved_ids |= collect_ids(context.previous_output)

@@ -50,7 +50,7 @@
   record and `GET /recommendations`, with `normalise()` caps and an
   empty-string default on read (D2). Re-export the API types. Verify with
   `test_strategy_validation.py` and `npm run api:check`.
-- [ ] 3.4 Extend `contract_problems()` with the count cap and the niche rule.
+- [x] 3.4 Extend `contract_problems()` with the count cap and the niche rule.
   Record `activity_competitors` in `agents/common/mcp.py` (D3). Verify with
   unit tests: a single-signal recommendation, two activities from one
   competitor, a missing insight or audience, and 6 recommendations each

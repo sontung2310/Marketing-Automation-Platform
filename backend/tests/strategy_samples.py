@@ -6,9 +6,15 @@ from app.agents.strategy.output import Evidence, StrategyOutput, StrategyRecomme
 from app.intelligence.models import DeliverableType, NextAction, Priority, Run
 from evals.cases import GoldenCase
 
+SECOND_SIGNAL = "trd_sample"  # the niche rule needs two signals; tests count it as retrieved
+
 
 def recommendation(
-    ordinal: int, evidence_id: str, kind: str = "COMPETITIVE_RESPONSE", next_action: bool = True
+    ordinal: int,
+    evidence_id: str,
+    kind: str = "COMPETITIVE_RESPONSE",
+    next_action: bool = True,
+    second_signal: str | None = None,
 ) -> StrategyRecommendation:
     return StrategyRecommendation.model_validate(
         {
@@ -20,7 +26,12 @@ def recommendation(
             "rationale": "Evidence, then context, then method.",
             "priority": Priority.HIGH,
             "channel": None,
-            "evidence": [Evidence(id=evidence_id, kind="activity", note="Why it matters")],
+            "evidence": [Evidence(id=evidence_id, kind="activity", note="Why it matters")]
+            + (
+                [Evidence(id=second_signal, kind="trend", note="The rising theme it rides")]
+                if second_signal
+                else []
+            ),
             "skills_used": ["pricing"],
             "next_action": NextAction(
                 deliverable_type=DeliverableType.RESPONSE_BRIEF, brief="Draft a response brief"
@@ -29,6 +40,13 @@ def recommendation(
             else None,
         }
     )
+
+
+def niche_recommendation(
+    ordinal: int, evidence_id: str, kind: str = "COMPETITIVE_RESPONSE", next_action: bool = True
+) -> StrategyRecommendation:
+    """A recommendation that passes the niche rule: an activity plus a second signal."""
+    return recommendation(ordinal, evidence_id, kind, next_action, second_signal=SECOND_SIGNAL)
 
 
 def strategy_output(*recommendations: StrategyRecommendation) -> StrategyOutput:

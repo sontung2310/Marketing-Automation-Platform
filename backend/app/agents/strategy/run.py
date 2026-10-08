@@ -30,13 +30,18 @@ RUN_STATUS = {
 def output_check(context: RunContext) -> OutputCheck[StrategyOutput]:
     def message(output: StrategyOutput) -> str | None:
         unknown = unknown_ids(output, context.retrieved_ids)
-        problems = contract_problems(output, context.skill_budget.skills)
+        problems = contract_problems(
+            output, context.skill_budget.skills, context.activity_competitors
+        )
         return repair_message(unknown, problems) if unknown or problems else None
 
     return OutputCheck(
         repair_message=message,
         ensure_valid=lambda output: ensure_valid(
-            output, context.retrieved_ids, context.skill_budget.skills
+            output,
+            context.retrieved_ids,
+            context.skill_budget.skills,
+            context.activity_competitors,
         ),
         check_label="Checking evidence",
         repair_label="Repairing citations",

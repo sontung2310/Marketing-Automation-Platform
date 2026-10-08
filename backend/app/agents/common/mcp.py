@@ -23,6 +23,22 @@ def collect_ids(payload: object) -> set[str]:
     return set()
 
 
+def collect_activity_competitors(payload: object) -> dict[str, str]:
+    """Activity ID → competitor ID for every activity record anywhere in a JSON result."""
+    found: dict[str, str] = {}
+    if isinstance(payload, dict):
+        activity_id, competitor_id = payload.get("id"), payload.get("competitor_id")
+        is_activity = isinstance(activity_id, str) and activity_id.startswith("act_")
+        if is_activity and isinstance(competitor_id, str):
+            found[str(activity_id)] = competitor_id
+        for value in payload.values():
+            found |= collect_activity_competitors(value)
+    elif isinstance(payload, list):
+        for item in payload:
+            found |= collect_activity_competitors(item)
+    return found
+
+
 def result_payload(result: CallToolResult) -> object:
     text = "".join(block.text for block in result.content if isinstance(block, TextContent))
     try:
@@ -81,6 +97,7 @@ class RunMCPServer(MCPServerStreamableHttp):
         if not (isinstance(payload, dict) and "error" in payload):
             self._results[key] = result  # a failed call (e.g. a DB blip) stays retryable
         self.context.retrieved_ids |= collect_ids(payload)
+        self.context.activity_competitors |= collect_activity_competitors(payload)
         self.context.tool_results.append(payload)
         self._trace(tool_name, arguments, payload, round((time.monotonic() - started) * 1000))
         return result

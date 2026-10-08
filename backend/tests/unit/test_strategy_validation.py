@@ -3,18 +3,21 @@
 import pytest
 
 from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
+from app.agents.strategy.output import Evidence
 from app.agents.strategy.validation import (
     contract_problems,
     ensure_valid,
     normalise,
     unknown_ids,
 )
-from tests.strategy_samples import recommendation, strategy_output
+from tests.strategy_samples import SECOND_SIGNAL, strategy_output
+from tests.strategy_samples import niche_recommendation as recommendation
+from tests.strategy_samples import recommendation as sample
 
 
 def test_unknown_ids_are_the_cited_ids_not_retrieved() -> None:
     output = strategy_output(recommendation(1, "act_1"), recommendation(2, "act_invented"))
-    assert unknown_ids(output, {"act_1", "cmp_marketing_eye"}) == ["act_invented"]
+    assert unknown_ids(output, {"act_1", SECOND_SIGNAL}) == ["act_invented"]
 
 
 def test_contract_needs_evidence_and_next_action_except_monitor() -> None:
@@ -55,7 +58,7 @@ def test_ensure_valid_raises_the_matching_error() -> None:
         ensure_valid(strategy_output(recommendation(1, "act_x")), set(), {"pricing"})
     with pytest.raises(InvalidOutputError):
         output = strategy_output(recommendation(1, "act_1", next_action=False))
-        ensure_valid(output, {"act_1"}, {"pricing"})
+        ensure_valid(output, {"act_1", SECOND_SIGNAL}, {"pricing"})
 
 
 def test_normalise_renumbers_and_caps_lengths() -> None:
@@ -67,3 +70,45 @@ def test_normalise_renumbers_and_caps_lengths() -> None:
     capped = output.recommendations[1]
     assert (len(capped.title), len(capped.insight), len(capped.audience)) == (90, 240, 80)
     assert capped.insight.startswith("i")
+
+
+def niche(rec_problems: list[str]) -> list[str]:
+    return [p for p in rec_problems if "signal" in p or "competitor" in p or "needs an" in p]
+
+
+def test_a_recommendation_needs_two_external_signals() -> None:
+    single = sample(1, "act_1")
+    with_company = single.model_copy(
+        update={"evidence": [*single.evidence, Evidence(id="cmp_1", kind="company", note="Us")]}
+    )
+    for rec in (single, with_company):
+        (problem,) = niche(contract_problems(strategy_output(rec), {"pricing"}))
+        assert "at least 2 distinct signals" in problem
+    assert niche(contract_problems(strategy_output(recommendation(1, "act_1")), {"pricing"})) == []
+
+
+def test_activities_must_come_from_two_competitors() -> None:
+    rec = sample(1, "act_1")
+    two_moves = rec.model_copy(
+        update={"evidence": [*rec.evidence, Evidence(id="act_2", kind="activity", note="Again")]}
+    )
+    output = strategy_output(two_moves)
+    same = {"act_1": "cpt_brightlane", "act_2": "cpt_brightlane"}
+    (problem,) = niche(contract_problems(output, {"pricing"}, same))
+    assert "only one competitor" in problem
+    rivals = {"act_1": "cpt_brightlane", "act_2": "cpt_kestrel"}
+    assert niche(contract_problems(output, {"pricing"}, rivals)) == []
+
+
+def test_insight_and_audience_are_required_except_for_monitor() -> None:
+    blank = recommendation(1, "act_1").model_copy(update={"insight": " ", "audience": ""})
+    monitor = sample(2, "act_1", kind="MONITOR", next_action=False)
+    monitor = monitor.model_copy(update={"insight": "", "audience": ""})
+    problems = niche(contract_problems(strategy_output(blank, monitor), {"pricing"}))
+    assert [p.split(" needs")[0] for p in problems] == ["recommendation 1", "recommendation 1"]
+
+
+def test_more_than_five_recommendations_is_a_problem() -> None:
+    output = strategy_output(*(recommendation(i, "act_1") for i in range(1, 7)))
+    assert contract_problems(output, {"pricing"})[0].startswith("return at most 5")
+    assert contract_problems(strategy_output(*output.recommendations[:5]), {"pricing"}) == []

@@ -9,7 +9,7 @@ from mcp.types import CallToolResult, TextContent
 
 from app.agents.common.context import MAX_MCP_CALLS_PER_RUN, RunContext
 from app.agents.common.intents import Intent
-from app.agents.common.mcp import RunMCPServer, collect_ids
+from app.agents.common.mcp import RunMCPServer, collect_activity_competitors, collect_ids
 
 SEARCH_RESULT = {"results": [{"id": "act_1", "competitor": {"id": "cpt_9"}}, {"id": "act_2"}]}
 
@@ -34,6 +34,16 @@ def server(monkeypatch: pytest.MonkeyPatch) -> RunMCPServer:
 def test_collect_ids_walks_nested_results() -> None:
     assert collect_ids(SEARCH_RESULT) == {"act_1", "act_2", "cpt_9"}
     assert collect_ids({"error": {"code": "NOT_FOUND"}}) == set()
+
+
+def test_activity_competitors_come_from_any_nested_activity() -> None:
+    summary = {
+        "recent_items": [
+            {"competitor_id": "cpt_b", "items": [{"id": "act_1", "competitor_id": "cpt_b"}]},
+        ],
+        "results": [{"id": "act_2", "competitor_id": "cpt_k"}, {"id": "trd_1"}, {"id": "act_3"}],
+    }
+    assert collect_activity_competitors(summary) == {"act_1": "cpt_b", "act_2": "cpt_k"}
 
 
 async def test_call_is_traced_and_ids_are_retrieved(server: RunMCPServer) -> None:
