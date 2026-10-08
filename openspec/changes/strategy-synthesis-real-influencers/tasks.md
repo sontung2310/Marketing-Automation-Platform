@@ -55,7 +55,7 @@
   unit tests: a single-signal recommendation, two activities from one
   competitor, a missing insight or audience, and 6 recommendations each
   produce a problem; `MONITOR` is exempt.
-- [ ] 3.5 Rewrite `instructions.md`:
+- [x] 3.5 Rewrite `instructions.md`:
   - the `STRATEGY_SYNTHESIS` row;
   - the expert method and insight template (D4);
   - `WHY_IT_MATTERS` with no recommendations;

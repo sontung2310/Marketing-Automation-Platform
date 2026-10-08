@@ -1,4 +1,4 @@
-"""Scenarios 4-A and 4-B: seeded database, real MCP, real OpenAI. Run with -m live.
+"""Scenarios 4-B, 7b-C and 7b-D: seeded database, real MCP, real OpenAI. Run with -m live.
 
 Each run's stored document is written to evaluation/reports/ (gitignored) as evidence.
 """
@@ -6,6 +6,7 @@ Each run's stored document is written to evaluation/reports/ (gitignored) as evi
 import json
 from functools import partial
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pymongo.asynchronous.database import AsyncDatabase
@@ -57,7 +58,45 @@ async def run_live(
         )
 
 
-async def test_4a_response_plan_for_a_price_change(
+async def assert_niche(database: AsyncDatabase[Document], run: Run) -> list[dict[str, Any]]:
+    """1-5 recommendations; each non-MONITOR one combines signals and names insight/audience."""
+    assert run.status is RunStatus.SUCCEEDED, run.error
+    assert run.output is not None
+    recommendations = run.output["recommendations"]
+    assert isinstance(recommendations, list)
+    assert 1 <= len(recommendations) <= 5
+    for rec in recommendations:
+        if rec["kind"] == "MONITOR":
+            continue
+        assert rec["insight"].strip() and rec["audience"].strip()
+        assert rec["next_action"]
+        signals = {e["id"] for e in rec["evidence"] if e["kind"] != "company"}
+        assert len(signals) >= 2, rec
+        if all(i.startswith("act_") for i in signals):
+            docs = await database["competitor_activities"].find({"_id": {"$in": list(signals)}})
+            competitors = {doc["competitor_id"] async for doc in docs}
+            assert len(competitors) >= 2, rec
+    return recommendations
+
+
+async def test_7b_c_generate_strategy_returns_a_niche_set(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    trigger = Trigger(
+        kind=TriggerKind.COMPANY, ref_id=COMPANY, action=TriggerAction.GENERATE_STRATEGY
+    )
+    run = await run_live(seeded_database, trigger=trigger)
+    save_evidence("7b_c_generate_strategy", run)
+
+    assert run.intent == "STRATEGY_SYNTHESIS"
+    tools = tool_names(run)
+    assert tools[0] == "get_company_context"
+    assert {"search_trends", "search_influencers"} <= set(tools)
+    assert {"summarize_competitor_activity", "search_competitor_activity"} & set(tools)
+    await assert_niche(seeded_database, run)
+
+
+async def test_7b_d_plan_a_response_focuses_on_the_price_change(
     seeded_database: AsyncDatabase[Document],
 ) -> None:
     trigger = Trigger(
@@ -66,20 +105,14 @@ async def test_4a_response_plan_for_a_price_change(
         action=TriggerAction.RESPONSE_PLAN,
     )
     run = await run_live(seeded_database, trigger=trigger)
-    save_evidence("4a_response_plan", run)
+    save_evidence("7b_d_price_focus", run)
 
-    assert run.status is RunStatus.SUCCEEDED, run.error
-    tools = tool_names(run)
-    assert tools[0] == "get_company_context"
+    assert run.intent == "STRATEGY_SYNTHESIS"
+    assert tool_names(run)[0] == "get_company_context"
     fetched = [c for c in run.tool_calls if c["tool"] == "get_competitor_activity"]
     assert any(BRIGHTLANE_PRICE_CHANGE in str(c["args_summary"]) for c in fetched)
-    assert run.output is not None
-    recommendations = run.output["recommendations"]
-    assert isinstance(recommendations, list)
-    assert 2 <= len(recommendations) <= 4
-    responses = [r for r in recommendations if r["kind"] == "COMPETITIVE_RESPONSE"]
-    assert any(BRIGHTLANE_PRICE_CHANGE in {e["id"] for e in r["evidence"]} for r in responses)
-    assert all(r["next_action"] for r in recommendations if r["kind"] != "MONITOR")
+    assert run.output is not None and run.output["implications"]
+    await assert_niche(seeded_database, run)
 
 
 async def test_4b_topics_for_next_week_are_persisted(
@@ -94,6 +127,7 @@ async def test_4b_topics_for_next_week_are_persisted(
     assert isinstance(recommendations, list)
     assert 1 <= len(recommendations) <= 5
     assert {r["kind"] for r in recommendations} == {"CONTENT_TOPIC"}
+    await assert_niche(seeded_database, run)
     for rec in recommendations:
         assert any(e["id"].startswith(("trd_", "act_")) for e in rec["evidence"])
     for evidence_id in cited_ids(run):
