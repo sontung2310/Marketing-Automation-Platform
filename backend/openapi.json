@@ -872,6 +872,10 @@
             "title": "Actions",
             "type": "array"
           },
+          "audience": {
+            "title": "Audience",
+            "type": "string"
+          },
           "channel": {
             "anyOf": [
               {
@@ -896,6 +900,10 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "insight": {
+            "title": "Insight",
             "type": "string"
           },
           "kind": {
@@ -958,6 +966,8 @@
           "ordinal",
           "kind",
           "title",
+          "insight",
+          "audience",
           "rationale",
           "priority",
           "channel",

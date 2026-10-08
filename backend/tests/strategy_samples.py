@@ -15,6 +15,8 @@ def recommendation(
             "ordinal": ordinal,
             "kind": kind,
             "title": f"Recommendation {ordinal}",
+            "insight": "Because two rivals cut prices, a value-proof angle is open to us.",
+            "audience": "Founder-led B2B services firms",
             "rationale": "Evidence, then context, then method.",
             "priority": Priority.HIGH,
             "channel": None,

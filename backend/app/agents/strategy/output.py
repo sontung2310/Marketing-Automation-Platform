@@ -30,6 +30,8 @@ class StrategyRecommendation(BaseModel):
     ordinal: int
     kind: RecommendationKind
     title: str
+    insight: str  # one sentence: converging signals → white space → why we can own it
+    audience: str  # the specific segment; MONITOR may leave both empty
     rationale: str
     priority: Priority
     channel: Channel | None

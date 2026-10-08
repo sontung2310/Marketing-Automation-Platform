@@ -34,6 +34,9 @@ export const recommendations: Recommendation[] = [
     ordinal: 1,
     kind: "COMPETITIVE_RESPONSE",
     title: "Hold price, publish the reasoning",
+    insight:
+      "Because Brightlane raised prices while Kestrel argues against hourly billing, nobody is explaining value in plain numbers; a flat retainer lets us own that.",
+    audience: "Founders of 20–200 person B2B services firms",
     rationale:
       "Brightlane raised its executive visibility package, so matching them on price gives nothing away. Explaining why the Marketing Eye retainer stayed put turns their increase into a talking point. The move fits the brand-clarity pillar and needs no new offer.",
     priority: "HIGH",
@@ -64,6 +67,9 @@ export const recommendations: Recommendation[] = [
     ordinal: 2,
     kind: "CONTENT_TOPIC",
     title: "Publish the AI search checklist",
+    insight:
+      "Because AI search interest is rising and no competitor has published a how-to, a practical checklist puts us first in a question buyers already ask.",
+    audience: "In-house B2B marketing managers",
     rationale:
       "AI search visibility is the fastest-rising topic across the tracked keywords. A practical checklist answers the question buyers are already asking, before a competitor does. It reuses the content-strategy service as its proof.",
     priority: "MEDIUM",
@@ -87,6 +93,8 @@ export const recommendations: Recommendation[] = [
     ordinal: 1,
     kind: "MONITOR",
     title: "Watch retainer pricing",
+    insight: "",
+    audience: "",
     rationale:
       "Kestrel's CEO is arguing against hourly billing while Brightlane is repricing. If a second competitor moves its pricing model, this becomes a response rather than a watch.",
     priority: "LOW",

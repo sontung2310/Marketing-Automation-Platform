@@ -212,6 +212,9 @@ export interface Recommendation {
   ordinal: number;
   kind: RecommendationKind;
   title: string;
+  /** One sentence: converging signals, the white space, why we can own it. */
+  insight: string;
+  audience: string;
   rationale: string;
   priority: Priority;
   channel: Channel | null;

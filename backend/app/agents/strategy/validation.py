@@ -4,6 +4,8 @@ from app.agents.common.errors import InvalidOutputError, UngroundedOutputError
 from app.agents.strategy.output import StrategyOutput
 
 MAX_TITLE_CHARS = 90
+MAX_INSIGHT_CHARS = 240
+MAX_AUDIENCE_CHARS = 80
 MAX_NOTE_CHARS = 140
 
 
@@ -66,6 +68,8 @@ def normalise(output: StrategyOutput) -> StrategyOutput:
             update={
                 "ordinal": index,
                 "title": rec.title[:MAX_TITLE_CHARS],
+                "insight": rec.insight.strip()[:MAX_INSIGHT_CHARS],
+                "audience": rec.audience.strip()[:MAX_AUDIENCE_CHARS],
                 "evidence": [
                     e.model_copy(update={"note": e.note[:MAX_NOTE_CHARS]}) for e in rec.evidence
                 ],

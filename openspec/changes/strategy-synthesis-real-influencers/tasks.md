@@ -46,7 +46,7 @@
   in `TRIGGER_ROUTES`, and add the `COMPANY` resolver to `references.py`
   (D1). Verify with `test_routing.py` and `test_run_references.py` (a
   foreign company ID is rejected).
-- [ ] 3.3 Add `insight` and `audience` to `Recommendation`, the persisted
+- [x] 3.3 Add `insight` and `audience` to `Recommendation`, the persisted
   record and `GET /recommendations`, with `normalise()` caps and an
   empty-string default on read (D2). Re-export the API types. Verify with
   `test_strategy_validation.py` and `npm run api:check`.

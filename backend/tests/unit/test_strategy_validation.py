@@ -59,7 +59,11 @@ def test_ensure_valid_raises_the_matching_error() -> None:
 
 
 def test_normalise_renumbers_and_caps_lengths() -> None:
-    long = recommendation(7, "act_1").model_copy(update={"title": "t" * 200})
+    long = recommendation(7, "act_1").model_copy(
+        update={"title": "t" * 200, "insight": " " + "i" * 300, "audience": "a" * 100 + " "}
+    )
     output = normalise(strategy_output(recommendation(4, "act_1"), long))
     assert [rec.ordinal for rec in output.recommendations] == [1, 2]
-    assert len(output.recommendations[1].title) == 90
+    capped = output.recommendations[1]
+    assert (len(capped.title), len(capped.insight), len(capped.audience)) == (90, 240, 80)
+    assert capped.insight.startswith("i")

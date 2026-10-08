@@ -218,6 +218,8 @@ class RecommendationItem(BaseModel):
     ordinal: int
     kind: str
     title: str
+    insight: str
+    audience: str
     rationale: str
     priority: str
     channel: Channel | None

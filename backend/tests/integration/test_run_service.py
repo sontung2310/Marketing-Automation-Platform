@@ -80,6 +80,7 @@ async def test_completed_run_is_persisted_with_ordered_events(
     assert stored.output is not None and stored.output["answer"] == "Respond on value, not price."
     recommendations = await seeded_database["recommendations"].find({"run_id": run.id}).to_list()
     assert {r["ordinal"] for r in recommendations} == {1, 2}
+    assert all(r["insight"] and r["audience"] for r in recommendations)
     final = next(e for e in stored.events if e["type"] == "output.final")
     data = final["data"]
     assert isinstance(data, dict)
