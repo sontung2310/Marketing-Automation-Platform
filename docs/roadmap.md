@@ -236,6 +236,16 @@ The owner wants a handful of niche, expert-level Strategy plays that combine sev
 | 7b-E | **Given** a recommendation in the panel, **when** its brief is sent unedited and Execution succeeds, **then** it is `DONE` and leaves the panel. | Integration test + Playwright |
 | 7b-F | The Strategy thresholds in evaluation-spec §6 are met at the baseline repeat count on the rewritten golden dataset. | Eval report |
 
+**Known gap (owner decision 2026-10-08):** 7b-F holds except the judge mean
+(3.87 against 4.0; marketing soundness 3.56), so no new Strategy baseline is
+committed. The Step 4 baseline stays as the pre-7b reference. The gaps and
+next fixes are in the `strategy-synthesis-real-influencers` change's design, D9:
+- price responses that argue only for holding;
+- padded second signals;
+- focused runs that drift from the focus;
+- follow-ups that don't complete their picks;
+- asserted rather than shown white space.
+
 ## Step 8 — End-to-end demo and hardening
 
 **Goal:** the client demo runs reliably.

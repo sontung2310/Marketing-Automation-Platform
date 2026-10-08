@@ -93,10 +93,12 @@
   (D8). Add the `niche_signals` check and the rubric's niche standard. Get
   the owner's approval of the rewritten cases before running. Verify that
   `test_golden_strategy.py` passes the coverage and schema checks.
-- [ ] 5.2 Run the Strategy eval suite (`python -m evals.cli run --suite
+- [x] 5.2 Run the Strategy eval suite (`python -m evals.cli run --suite
   strategy --repeats 1`), judge it with the `eval-judge` skill, and build
-  the report. Verify that every evaluation-spec §6 Strategy threshold holds,
-  then commit the report as `baseline_strategy.*` (7b-F).
+  the report. Done: run `strategy_20261008T113931Z` meets every §6 threshold
+  except the judge mean (3.87 against 4.0). The owner accepted this as a
+  known gap on 2026-10-08 (design D9), so no new baseline is committed
+  (7b-F).
 - [ ] 5.3 Run the Router suite to confirm the remapped triggers left chat
   routing unchanged. Verify that the router thresholds hold.
 - [ ] 5.4 Update the docs:

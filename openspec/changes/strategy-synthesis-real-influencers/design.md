@@ -207,6 +207,59 @@ superseded recommendation stays superseded.
 - The suite runs once (`--repeats 1`); a passing report replaces
   `baseline_strategy.*`.
 
+### D9. Known gap: judge quality below threshold (owner decision, 2026-10-08)
+
+One full round on the rewritten suite (run `strategy_20261008T113931Z`, 54
+cases, 1 repeat) meets every evaluation-spec §6 Strategy threshold except the
+judge mean: **3.87 against 4.0**. The other results:
+
+- deterministic pass 0.96;
+- safety, grounding and demo path 1.00;
+- p95 26.7 s;
+- dimensions: relevance 4.22, grounding 3.94, actionability 3.74,
+  marketing soundness 3.56 (the lowest-dimension floor of 3.5 holds).
+
+The owner accepted this as a known PoC gap. No new strategy baseline is
+committed. The Step 4 `baseline_strategy.*` stays as the pre-7b reference
+only: it was scored under the old rubric, so the two are not comparable.
+
+Gaps to close, from the judge's rationales, with the next fix for each:
+
+1. **Price and promotion responses argue only for holding** (ST-RESP-PRICE_CHANGE-01/02,
+   ST-RESP-PROMOTION-02, ST-SYNTH-02). The instruction to name two or more
+   options with trade-offs is not followed reliably. *Fix:* a fixed
+   rationale shape: "Option A (…): trade-off. Option B (…): trade-off. We
+   favour … because …".
+2. **Padded signals**: a second citation added to satisfy the niche rule,
+   with no real link between them (ST-TOPIC-04, ST-RESP-CAMPAIGN_LAUNCH-01,
+   ST-RESP-PAGE_UPDATE-02, ST-SYNTH-04). *Fix:* "drop the play rather than
+   pad it", with an example of a loose versus a real link.
+3. **Focused runs drift from the focus**: other cards ignore the clicked
+   item, and new or removed products are not compared with Marketing Eye's
+   own offer (ST-RESP-NEW_PRODUCT-01, ST-RESP-PRODUCT_REMOVED-01). *Fix:*
+   every card connects to the focus or the answer says why something else
+   matters more; a product move is compared with Marketing Eye's services.
+4. **Follow-ups do not complete their picks** (ST-MULTI-01). On "Drop #3",
+   the agent kept two single-signal picks without searching, returned a
+   false `INSUFFICIENT_DATA`, and leaked internal wording ("cannot be
+   repaired into compliant recommendations"). *Fix:* follow-ups search for
+   a second signal for kept picks, and the agent never mentions the output
+   contract.
+5. **White space is asserted, not shown**: plays sit close to content a
+   competitor already published (ST-TOPIC-01/02/03, ST-SYNTH-01). *Fix:* the
+   insight names the competitor post it differs from.
+6. Smaller items:
+   - **Vague factual answer:** ST-COMP-01 gave no titles, dates or prices.
+   - **Why it matters restates numbers:** the ST-WHY-* answers restate
+     figures and sometimes pick a looser trend than the one whose sample
+     post is the trigger.
+   - **Today's date is flagged as invented:** `no_invented_numbers` fails on
+     today's date, which comes from the run input (ST-STALE-01). The fix
+     belongs in the check, not the agent.
+
+Closing the gap means a passing run under the current rubric, committed as
+the new baseline.
+
 ## Risks / Trade-offs
 
 - [Synthesis needs more tool calls and tokens; p95 may pass 45 s] → the
