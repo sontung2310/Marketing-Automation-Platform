@@ -1,0 +1,133 @@
+[
+  {
+    "id": "rec_01M4DSBJT6HJ45Q0P6NZ4X5E13",
+    "run_id": "run_01M4DSAGCRT7HEA59Y8NFBYRWV",
+    "session_id": "ses_01M4DSAG83VP3CR1E2FMEJ2AA8",
+    "ordinal": 1,
+    "kind": "CONTENT_TOPIC",
+    "title": "Build a proof-led demand generation point of view",
+    "insight": "Because proof-led demand generation is rising and Kestrel is publishing measurement content, a practical proof-to-pipeline angle is open; Marketing Eye can own it through useful stories and focused growth programs.",
+    "audience": "B2B SaaS leaders with inconsistent pipeline",
+    "rationale": "Use authority and social proof by connecting customer language, case evidence and pipeline decisions in a LinkedIn-led content series. This fits Marketing Eye’s positioning and rising proof-led demand signal. The trade-off is slower production than generic demand content, but stronger relevance for sales-led buyers.",
+    "priority": "HIGH",
+    "channel": "LINKEDIN",
+    "evidence": [
+      {
+        "id": "trd_seed_013",
+        "kind": "trend",
+        "note": "Proof-led demand generation is rising with 260 mentions and 67% momentum."
+      },
+      {
+        "id": "act_seed_002",
+        "kind": "activity",
+        "note": "Kestrel published a measurement framework for content teams."
+      }
+    ],
+    "skills_used": [],
+    "next_action": {
+      "agent": "EXECUTION",
+      "deliverable_type": "BLOG_OUTLINE",
+      "brief": "Create an outline for a practical Marketing Eye article connecting customer proof to demand-generation decisions and qualified pipeline; do not copy competitor titles or frameworks."
+    },
+    "status": "OPEN",
+    "created_at": "2026-10-08T12:55:28.920000Z",
+    "run_label": "Plan a response · PRICE_CHANGE",
+    "actions": [
+      {
+        "action": "DO_THIS",
+        "label": "Do this",
+        "agent": "EXECUTION",
+        "deliverable_type": null,
+        "primary": false
+      }
+    ]
+  },
+  {
+    "id": "rec_01M4DSBJT6HJ45Q0P6NZ4X5E14",
+    "run_id": "run_01M4DSAGCRT7HEA59Y8NFBYRWV",
+    "session_id": "ses_01M4DSAG83VP3CR1E2FMEJ2AA8",
+    "ordinal": 2,
+    "kind": "COMPETITIVE_RESPONSE",
+    "title": "Package demand generation around visible value",
+    "insight": "Because Brightlane raised demand-generation pricing and positioning clarity is rising, a value-evidence package is open; Marketing Eye can own it by connecting narrative, content and pipeline.",
+    "audience": "Professional services firms with limited marketing capacity",
+    "rationale": "Use clear scope, decision milestones and evidence of value before discussing price. Marketing Eye’s demand generation starts at AUD 5,200, compared with Brightlane’s recorded AUD 5,600 after the change; hold price while testing clearer packaging. The trade-off is less immediate price signalling, but stronger differentiation and room to learn.",
+    "priority": "HIGH",
+    "channel": "WEBSITE",
+    "evidence": [
+      {
+        "id": "act_seed_026",
+        "kind": "activity",
+        "note": "Brightlane published AUD 5,600 as its new starting price on 2026-10-06."
+      },
+      {
+        "id": "trd_seed_003",
+        "kind": "trend",
+        "note": "B2B positioning clarity is rising with 221 mentions and 72% momentum."
+      }
+    ],
+    "skills_used": [
+      "pricing"
+    ],
+    "next_action": {
+      "agent": "EXECUTION",
+      "deliverable_type": "BLOG_DRAFT",
+      "brief": "Develop a website content brief explaining Marketing Eye’s demand-generation scope, milestones, outcomes and proof; do not name or imitate Brightlane."
+    },
+    "status": "OPEN",
+    "created_at": "2026-10-08T12:55:28.920000Z",
+    "run_label": "Plan a response · PRICE_CHANGE",
+    "actions": [
+      {
+        "action": "DO_THIS",
+        "label": "Do this",
+        "agent": "EXECUTION",
+        "deliverable_type": null,
+        "primary": false
+      }
+    ]
+  },
+  {
+    "id": "rec_01M4DSBJT6HJ45Q0P6NZ4X5E15",
+    "run_id": "run_01M4DSAGCRT7HEA59Y8NFBYRWV",
+    "session_id": "ses_01M4DSAG83VP3CR1E2FMEJ2AA8",
+    "ordinal": 3,
+    "kind": "CONTENT_TOPIC",
+    "title": "Turn customer language into sharper category clarity",
+    "insight": "Because customer-led content and positioning clarity are both rising while Brightlane discusses positioning, a customer-language diagnostic is open; Marketing Eye can own it through brand clarity expertise.",
+    "audience": "B2B SaaS leaders with unclear positioning",
+    "rationale": "Give leaders a practical diagnostic based on customer language, then connect it to category clarity and qualified demand. LinkedIn suits the executive audience and Marketing Eye’s brand-clarity pillar. The trade-off is a narrower audience than broad content topics, but a better fit with Marketing Eye’s right to win.",
+    "priority": "MEDIUM",
+    "channel": "LINKEDIN",
+    "evidence": [
+      {
+        "id": "trd_seed_002",
+        "kind": "trend",
+        "note": "Customer-led content is rising with 275 mentions and 88% momentum."
+      },
+      {
+        "id": "act_seed_011",
+        "kind": "activity",
+        "note": "Brightlane’s CEO posted about making positioning useful to sales teams."
+      }
+    ],
+    "skills_used": [],
+    "next_action": {
+      "agent": "EXECUTION",
+      "deliverable_type": "LINKEDIN_POST",
+      "brief": "Plan a LinkedIn post recommending a customer-language diagnostic for B2B positioning, with a practical takeaway and no imitation of Brightlane’s executive post."
+    },
+    "status": "OPEN",
+    "created_at": "2026-10-08T12:55:28.920000Z",
+    "run_label": "Plan a response · PRICE_CHANGE",
+    "actions": [
+      {
+        "action": "DO_THIS",
+        "label": "Do this",
+        "agent": "EXECUTION",
+        "deliverable_type": null,
+        "primary": false
+      }
+    ]
+  }
+]

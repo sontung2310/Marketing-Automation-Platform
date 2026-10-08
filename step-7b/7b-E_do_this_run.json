@@ -1,0 +1,132 @@
+{
+  "id": "run_01M4DSBNZG5KRQ7YYJN91VZSQ5",
+  "session_id": "ses_01M4DSBNRX7YX1SN4HTRW37FEV",
+  "agent": "EXECUTION",
+  "intent": "FROM_RECOMMENDATION",
+  "message": null,
+  "trigger": {
+    "kind": "RECOMMENDATION",
+    "ref_id": "rec_01M4DSBJT6HJ45Q0P6NZ4X5E13",
+    "action": "DO_THIS"
+  },
+  "route": {
+    "method": "DETERMINISTIC",
+    "reason": "RECOMMENDATION DO_THIS button",
+    "confidence": 1.0
+  },
+  "status": "SUCCEEDED",
+  "steps": [
+    {
+      "label": "Planning and researching"
+    },
+    {
+      "label": "Checking quality"
+    }
+  ],
+  "tool_calls": [
+    {
+      "tool": "get_company_context",
+      "args_summary": "{}",
+      "duration_ms": 150,
+      "result_count": 1
+    }
+  ],
+  "skills_loaded": [
+    "copywriting",
+    "social"
+  ],
+  "output": {
+    "status": "OK",
+    "message": "Here is a practical outline for a Marketing Eye article aimed at B2B SaaS leaders managing inconsistent pipeline.",
+    "deliverable": {
+      "type": "BLOG_OUTLINE",
+      "channel": "WEBSITE",
+      "title": "From Customer Proof to Qualified Pipeline: A Practical Demand Generation Approach",
+      "body_markdown": "# From Customer Proof to Qualified Pipeline\n\n## Introduction: Demand generation needs evidence\n- Explain why activity alone is a weak basis for demand-generation decisions.\n- Introduce the central idea: customer proof should shape what marketers say, prioritise and measure.\n- Set up the article for B2B SaaS leaders dealing with inconsistent pipeline.\n\n**Practical takeaway:** Before planning another campaign, identify the evidence that shows what customers value and believe.\n\n## 1. Start with the language customers already use\n- Review sales calls, customer interviews, support conversations and win/loss notes.\n- Look for repeated descriptions of the problem, desired outcome and buying barrier.\n- Separate customer language from internal product terminology.\n\n**Practical takeaway:** Build messaging around the customer’s problem as they describe it, not the organisation’s preferred category language.\n\n## 2. Turn proof into a usable evidence library\n- Organise customer evidence by challenge, outcome, buyer role and stage of the decision.\n- Include qualitative proof such as objections resolved, before-and-after descriptions and reasons customers chose to act.\n- Note where evidence is strong, thin or missing.\n\n**Practical takeaway:** A useful evidence library makes it easier to choose credible claims for each campaign.\n\n## 3. Match proof to the demand-generation decision\n- Show how evidence can guide positioning, content topics, offers and channel choices.\n- Use different proof for different decisions: customer language for messaging, case evidence for confidence and behavioural signals for prioritisation.\n- Avoid treating every proof point as suitable for every audience.\n\n**Practical takeaway:** Ask, “What decision should this evidence help us make?” before turning it into content.\n\n## 4. Build content around buying questions\n- Identify the questions that slow evaluation, such as implementation risk, internal approval and commercial value.\n- Create useful content that answers those questions directly.\n- Use customer evidence to make the content specific without overstating results.\n\n**Practical takeaway:** The strongest demand content reduces uncertainty for a real buying group.\n\n## 5. Connect content activity to qualified pipeline\n- Define what “qualified” means before measuring campaign performance.\n- Track the progression from useful engagement to meaningful sales conversations and opportunities.\n- Combine leading signals with commercial judgement rather than relying on a single metric.\n- Use the findings to refine positioning and the next content decision.\n\n**Practical takeaway:** Measure whether proof is helping the right buyers move forward, not just whether content attracts attention.\n\n## 6. Create a repeatable proof-to-pipeline rhythm\n- Establish a regular process for collecting customer evidence, reviewing performance and updating messaging.\n- Bring marketing and sales into the same conversation about buyer language and pipeline quality.\n- Start with one audience, one commercial question and one evidence-backed content theme.\n\n**Practical takeaway:** A small, consistent operating rhythm is more useful than an occasional archive of disconnected case studies.\n\n## Closing summary: Make the next demand decision easier\n- Reiterate that proof is most valuable when it changes a marketing decision.\n- Summarise the path: listen to customers, organise evidence, apply it to decisions and measure qualified progression.\n- Close with a soft invitation to review the evidence behind the next campaign.\n\n**Suggested closing CTA:** Review one current demand-generation campaign and ask which customer proof is shaping its message, audience and success measure.",
+      "variants": [
+        "Customer proof should do more than support a case study.",
+        "The evidence behind your next pipeline decision",
+        "A practical proof-to-pipeline model for B2B SaaS teams"
+      ],
+      "word_count": 532,
+      "author_persona": null,
+      "image_suggestions": [
+        {
+          "placement": "Introduction: Demand generation needs evidence",
+          "content": "A simple editorial illustration showing customer conversations and notes flowing into a pipeline decision board, with no invented metrics.",
+          "style": "Warm, clean B2B editorial illustration in Marketing Eye’s clear and practical visual style."
+        },
+        {
+          "placement": "Section 5: Connect content activity to qualified pipeline",
+          "content": "A visual pathway linking customer language, content choices, buyer conversations and qualified pipeline, using labelled stages rather than numerical claims.",
+          "style": "Minimal diagram with restrained brand colours, generous white space and readable labels."
+        }
+      ],
+      "requested_length": null
+    },
+    "quality_check": {
+      "brand_voice": "PASS",
+      "originality": "PASS",
+      "factual_grounding": "PASS",
+      "channel_fit": "PASS",
+      "notes": []
+    },
+    "evidence_ids": [
+      "trd_seed_013",
+      "act_seed_002"
+    ],
+    "skills_used": [
+      "copywriting",
+      "social"
+    ],
+    "assumptions": [
+      "The outline uses the recommendation’s audience and brief; no additional customer case evidence was supplied, so examples remain qualitative."
+    ],
+    "proposed_actions": [
+      {
+        "id": "pac_01M4DSC6CDE0SNN97P7VGQYCGV",
+        "deliverable_id": "del_01M4DSC6CDE0SNN97P7VGQYCGT",
+        "action_type": "create_cms_draft",
+        "summary": "Create a CMS draft from this article outline.",
+        "payload": {
+          "title": "From Customer Proof to Qualified Pipeline: A Practical Demand Generation Approach",
+          "body_markdown": "# From Customer Proof to Qualified Pipeline\n\n## Introduction: Demand generation needs evidence\n- Explain why activity alone is a weak basis for demand-generation decisions.\n- Introduce the central idea: customer proof should shape what marketers say, prioritise and measure.\n- Set up the article for B2B SaaS leaders dealing with inconsistent pipeline.\n\n**Practical takeaway:** Before planning another campaign, identify the evidence that shows what customers value and believe.\n\n## 1. Start with the language customers already use\n- Review sales calls, customer interviews, support conversations and win/loss notes.\n- Look for repeated descriptions of the problem, desired outcome and buying barrier.\n- Separate customer language from internal product terminology.\n\n**Practical takeaway:** Build messaging around the customer’s problem as they describe it, not the organisation’s preferred category language.\n\n## 2. Turn proof into a usable evidence library\n- Organise customer evidence by challenge, outcome, buyer role and stage of the decision.\n- Include qualitative proof such as objections resolved, before-and-after descriptions and reasons customers chose to act.\n- Note where evidence is strong, thin or missing.\n\n**Practical takeaway:** A useful evidence library makes it easier to choose credible claims for each campaign.\n\n## 3. Match proof to the demand-generation decision\n- Show how evidence can guide positioning, content topics, offers and channel choices.\n- Use different proof for different decisions: customer language for messaging, case evidence for confidence and behavioural signals for prioritisation.\n- Avoid treating every proof point as suitable for every audience.\n\n**Practical takeaway:** Ask, “What decision should this evidence help us make?” before turning it into content.\n\n## 4. Build content around buying questions\n- Identify the questions that slow evaluation, such as implementation risk, internal approval and commercial value.\n- Create useful content that answers those questions directly.\n- Use customer evidence to make the content specific without overstating results.\n\n**Practical takeaway:** The strongest demand content reduces uncertainty for a real buying group.\n\n## 5. Connect content activity to qualified pipeline\n- Define what “qualified” means before measuring campaign performance.\n- Track the progression from useful engagement to meaningful sales conversations and opportunities.\n- Combine leading signals with commercial judgement rather than relying on a single metric.\n- Use the findings to refine positioning and the next content decision.\n\n**Practical takeaway:** Measure whether proof is helping the right buyers move forward, not just whether content attracts attention.\n\n## 6. Create a repeatable proof-to-pipeline rhythm\n- Establish a regular process for collecting customer evidence, reviewing performance and updating messaging.\n- Bring marketing and sales into the same conversation about buyer language and pipeline quality.\n- Start with one audience, one commercial question and one evidence-backed content theme.\n\n**Practical takeaway:** A small, consistent operating rhythm is more useful than an occasional archive of disconnected case studies.\n\n## Closing summary: Make the next demand decision easier\n- Reiterate that proof is most valuable when it changes a marketing decision.\n- Summarise the path: listen to customers, organise evidence, apply it to decisions and measure qualified progression.\n- Close with a soft invitation to review the evidence behind the next campaign.\n\n**Suggested closing CTA:** Review one current demand-generation campaign and ask which customer proof is shaping its message, audience and success measure.",
+          "slug": "from-customer-proof-to-qualified-pipeline-a-practical-demand-generation-approach",
+          "tags": []
+        },
+        "status": "PROPOSED",
+        "receipt": null,
+        "error": null,
+        "created_at": "2026-10-08T12:56:24.205062Z",
+        "updated_at": "2026-10-08T12:56:24.205062Z"
+      },
+      {
+        "id": "pac_01M4DSC6CDE0SNN97P7VGQYCGW",
+        "deliverable_id": "del_01M4DSC6CDE0SNN97P7VGQYCGT",
+        "action_type": "add_to_content_calendar",
+        "summary": "Add the proof-to-pipeline article to the content calendar.",
+        "payload": {
+          "title": "From Customer Proof to Qualified Pipeline: A Practical Demand Generation Approach",
+          "channel": "WEBSITE",
+          "date": "2026-10-09",
+          "owner": null,
+          "recommendation_id": "rec_01M4DSBJT6HJ45Q0P6NZ4X5E13"
+        },
+        "status": "PROPOSED",
+        "receipt": null,
+        "error": null,
+        "created_at": "2026-10-08T12:56:24.205062Z",
+        "updated_at": "2026-10-08T12:56:24.205062Z"
+      }
+    ],
+    "clarification_options": [],
+    "deliverable_id": "del_01M4DSC6CDE0SNN97P7VGQYCGT",
+    "proposed_action_ids": [
+      "pac_01M4DSC6CDE0SNN97P7VGQYCGV",
+      "pac_01M4DSC6CDE0SNN97P7VGQYCGW"
+    ]
+  },
+  "error": null,
+  "started_at": "2026-10-08T12:56:07.408000Z",
+  "finished_at": "2026-10-08T12:56:24.710000Z"
+}

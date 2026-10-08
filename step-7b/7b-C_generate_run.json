@@ -1,0 +1,194 @@
+{
+  "id": "run_01M4DS9VKQ6ZH4JPXS8YNSA9Q0",
+  "session_id": "ses_01M4DS9TKCSM65E88XM4XSBVW9",
+  "agent": "STRATEGY",
+  "intent": "STRATEGY_SYNTHESIS",
+  "message": null,
+  "trigger": {
+    "kind": "COMPANY",
+    "ref_id": "cmp_marketing_eye",
+    "action": "GENERATE_STRATEGY"
+  },
+  "route": {
+    "method": "DETERMINISTIC",
+    "reason": "COMPANY GENERATE_STRATEGY button",
+    "confidence": 1.0
+  },
+  "status": "SUCCEEDED",
+  "steps": [
+    {
+      "label": "Planning and researching"
+    },
+    {
+      "label": "Checking evidence"
+    }
+  ],
+  "tool_calls": [
+    {
+      "tool": "get_company_context",
+      "args_summary": "{}",
+      "duration_ms": 1606,
+      "result_count": 1
+    },
+    {
+      "tool": "summarize_competitor_activity",
+      "args_summary": "{\"since_days\": 30}",
+      "duration_ms": 158,
+      "result_count": 1
+    },
+    {
+      "tool": "search_trends",
+      "args_summary": "{\"limit\": 10}",
+      "duration_ms": 313,
+      "result_count": 10
+    },
+    {
+      "tool": "search_influencers",
+      "args_summary": "{\"limit\": 10}",
+      "duration_ms": 522,
+      "result_count": 10
+    }
+  ],
+  "skills_loaded": [
+    "marketing-ideas",
+    "content-strategy"
+  ],
+  "output": {
+    "status": "OK",
+    "answer": "Prioritise a proof-led B2B positioning program: make complex expertise easier to find, trust and act on. Competitors are active across positioning, content planning, attribution and executive visibility, while rising demand is strongest around AI search visibility, customer-led content and proof-led demand generation.",
+    "implications": [
+      "Brightlane Marketing recorded 26 activities and Kestrel Growth Co. 19 in the last 30 days, indicating a crowded and active market.",
+      "AI search visibility is rising, with 412 mentions and 142.0% momentum; customer-led content has 275 mentions and 88.0% momentum.",
+      "The strongest defensible position is connecting brand clarity and useful content to measurable demand, rather than competing on volume or generic thought leadership."
+    ],
+    "recommendations": [
+      {
+        "ordinal": 1,
+        "kind": "CONTENT_TOPIC",
+        "title": "Own the proof-led B2B positioning system",
+        "insight": "Because positioning activity from Brightlane and rising proof-led demand signal a gap, Marketing Eye can own practical positioning-to-pipeline systems through its brand and demand expertise.",
+        "audience": "B2B SaaS leaders with unclear positioning and inconsistent pipeline",
+        "rationale": "Use authority and social proof by showing how positioning decisions become sales language, content and measurable demand. LinkedIn-led executive insight supported by a website framework fits the rising B2B positioning and proof themes. The trade-off is slower production than generic posts, but the asset can support brand strategy, content strategy and demand-generation conversations.",
+        "priority": "HIGH",
+        "channel": "LINKEDIN",
+        "evidence": [
+          {
+            "id": "act_seed_011",
+            "kind": "activity",
+            "note": "Brightlane CEO post connects positioning with sales teams."
+          },
+          {
+            "id": "trd_seed_003",
+            "kind": "trend",
+            "note": "B2B positioning clarity is rising, with 221 mentions and 72.0% momentum."
+          },
+          {
+            "id": "trd_seed_013",
+            "kind": "trend",
+            "note": "Proof-led demand generation is rising, with 260 mentions and 67.0% momentum."
+          }
+        ],
+        "skills_used": [
+          "marketing-ideas",
+          "content-strategy"
+        ],
+        "next_action": {
+          "agent": "EXECUTION",
+          "deliverable_type": "BLOG_OUTLINE",
+          "brief": "Create a practical website hub outline for a proof-led B2B positioning system, with LinkedIn distribution sections and clear paths to brand strategy and demand generation."
+        }
+      },
+      {
+        "ordinal": 2,
+        "kind": "CONTENT_TOPIC",
+        "title": "Build an AI-search visibility offer grounded in useful content",
+        "insight": "Because AI search visibility is rising and Brightlane is already discussing AI search questions, Marketing Eye can differentiate with an end-to-end visibility system tied to clear positioning and content.",
+        "audience": "Professional services marketing leads with limited internal capacity",
+        "rationale": "Use loss aversion carefully: show the cost of being absent from answer-engine journeys without promising rankings. A searchable website guide plus executive LinkedIn commentary fits the trend and Marketing Eye’s website, SEO and content capabilities. The trade-off is a fast-moving topic that needs regular updating, but it creates a strong entry point for measurable digital work.",
+        "priority": "HIGH",
+        "channel": "WEBSITE",
+        "evidence": [
+          {
+            "id": "act_seed_006",
+            "kind": "activity",
+            "note": "Brightlane shared a LinkedIn carousel on practical AI search questions."
+          },
+          {
+            "id": "trd_seed_001",
+            "kind": "trend",
+            "note": "AI search visibility is rising, with 412 mentions and 142.0% momentum."
+          },
+          {
+            "id": "trd_seed_014",
+            "kind": "trend",
+            "note": "AI-assisted editorial workflows are rising, with 233 mentions and 54.0% momentum."
+          }
+        ],
+        "skills_used": [
+          "marketing-ideas",
+          "content-strategy"
+        ],
+        "next_action": {
+          "agent": "EXECUTION",
+          "deliverable_type": "BLOG_OUTLINE",
+          "brief": "Outline a practical AI-search visibility guide for professional services firms, covering positioning, evidence, editorial workflow, measurement and a conversion path to website and SEO services."
+        }
+      },
+      {
+        "ordinal": 3,
+        "kind": "CHANNEL_PLAY",
+        "title": "Turn executive visibility into a customer-language advantage",
+        "insight": "Because Brightlane and Kestrel are publishing executive perspectives while customer-led content is rising, Marketing Eye can own a more useful CEO voice built from customer language and proof.",
+        "audience": "Professional services partners and B2B founders seeking better-fit accounts",
+        "rationale": "Use authority and reciprocity by sharing genuinely useful observations drawn from recurring buyer questions, then inviting practitioners to contribute examples. LinkedIn is the natural channel because executive visibility is rising and both competitors use executive posts. The trade-off is dependence on consistent founder participation, but it strengthens Marketing Eye’s executive-visibility service and brand voice.",
+        "priority": "MEDIUM",
+        "channel": "LINKEDIN",
+        "evidence": [
+          {
+            "id": "act_seed_011",
+            "kind": "activity",
+            "note": "Brightlane CEO posted about positioning for sales teams."
+          },
+          {
+            "id": "act_seed_012",
+            "kind": "activity",
+            "note": "Kestrel CEO posted about making strategy visible."
+          },
+          {
+            "id": "trd_seed_002",
+            "kind": "trend",
+            "note": "Customer-led content is rising, with 275 mentions and 88.0% momentum."
+          }
+        ],
+        "skills_used": [
+          "marketing-ideas",
+          "content-strategy"
+        ],
+        "next_action": {
+          "agent": "EXECUTION",
+          "deliverable_type": "CEO_POST",
+          "brief": "Develop a LinkedIn CEO-post brief for Morgan Hale: one recurring buyer question, one clear point of view, one practical takeaway and one invitation for B2B leaders to share experience."
+        }
+      }
+    ],
+    "assumptions": [
+      "Based on demo data.",
+      "The 30-day activity window is valid for the strategy synthesis.",
+      "Marketing Eye can access anonymised customer language and proof for execution."
+    ],
+    "data_gaps": [
+      "Competitor records and trends are marked as mock data.",
+      "No trigger record was supplied.",
+      "Influencer search returned broad X profiles, but no influencer partnership is recommended because fit with Marketing Eye’s ICP and Australian market is not sufficiently verified."
+    ],
+    "clarification_options": [],
+    "recommendation_ids": [
+      "rec_01M4DSADNH4H2K80G8F33NT9TZ",
+      "rec_01M4DSADNH4H2K80G8F33NT9V0",
+      "rec_01M4DSADNH4H2K80G8F33NT9V1"
+    ]
+  },
+  "error": null,
+  "started_at": "2026-10-08T12:55:07.639000Z",
+  "finished_at": "2026-10-08T12:55:26.834000Z"
+}
