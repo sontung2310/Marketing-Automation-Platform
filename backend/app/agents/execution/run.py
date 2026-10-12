@@ -30,7 +30,9 @@ from app.intelligence.models import DeliverableType, RunStatus
 QUALITY_FIX = (
     "Fix the quality problems: rewrite copied passages in your own words with a different "
     "angle, keep within the channel's length, and do not name competitors the user did not "
-    "ask about. Report what you fixed in quality_check."
+    "ask about. Return the complete output again, not just the changed part - keep every "
+    "field that was already correct unchanged, including word count within its requested "
+    "range and every proposed_action. Report what you fixed in quality_check."
 )
 
 RUN_STATUS = {
