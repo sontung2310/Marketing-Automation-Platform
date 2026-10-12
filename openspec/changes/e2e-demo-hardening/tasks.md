@@ -84,7 +84,7 @@ what Steps 4/5/6/7b already cost. Confirm before the first round and again
 before the 3-repeat release baseline (8.4.4), which triples that suite's
 per-round cost.
 
-- [ ] 8.4.1 Strategy (design D9 gap list, worst dimension first): edit
+- [x] 8.4.1 Strategy (design D9 gap list, worst dimension first): edit
       `app/agents/strategy/instructions.md` for (a) price responses that
       weigh ≥ 2 options, (b) no padded second signals, (c) focused runs
       that stay on focus, (d) follow-ups that search to complete picks

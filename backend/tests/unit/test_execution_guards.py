@@ -10,6 +10,7 @@ from app.agents.execution.guards import (
     length_problems,
     longest_shared_run,
     named_competitors,
+    voice_problems,
 )
 from app.intelligence.models import Channel, DeliverableType, RequestedLength
 from tests.execution_samples import deliverable
@@ -150,3 +151,43 @@ def test_a_ceo_post_on_x_keeps_to_the_x_limit() -> None:
     on_x = deliverable(DeliverableType.CEO_POST, body="My view. " * 40)  # 360 characters
     on_x = on_x.model_copy(update={"channel": Channel.X})
     assert "at most 280 characters" in length_problems(on_x)[0]
+
+
+def test_a_reversal_phrase_is_a_soft_voice_problem() -> None:
+    body = "It's not about more content, it's about the right content."
+    problems = voice_problems(body, sample_copy=())
+    assert [(p.check, p.hard) for p in problems] == [("brand_voice", False)]
+    assert "reversals" in problems[0].message
+    assert voice_problems("A plain sentence with no tricks.", sample_copy=()) == []
+
+
+def test_reusing_the_brands_sample_line_verbatim_is_a_soft_voice_problem() -> None:
+    sample = ("We make the next decision easier.",)
+    body = "Here is our take. We make the next decision easier. That's the whole idea."
+    problems = voice_problems(body, sample_copy=sample)
+    assert [(p.check, p.hard) for p in problems] == [("brand_voice", False)]
+    assert "sample line" in problems[0].message
+    # A short fragment ("we", "the team") is too common to flag on its own.
+    assert voice_problems("We are proud of the team.", sample_copy=("We",)) == []
+
+
+def test_guard_inputs_reads_sample_copy_from_the_company_context() -> None:
+    ctx = RunContext(
+        company_id="cmp_marketing_eye",
+        session_id="ses_1",
+        run_id="run_1",
+        intent=Intent.CHAT,
+    )
+    ctx.tool_results = [
+        {
+            "id": "cmp_marketing_eye",
+            "brand_voice": {
+                "tone": ["direct"],
+                "do": ["be specific"],
+                "dont": ["hype"],
+                "sample_copy": ["We make the next decision easier."],
+            },
+        }
+    ]
+    built = guard_inputs(ctx, None)
+    assert built.sample_copy == ("We make the next decision easier.",)
