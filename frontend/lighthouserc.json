@@ -1,0 +1,19 @@
+{
+  "ci": {
+    "collect": {
+      "url": ["http://localhost:5176/"],
+      "startServerCommand": "VITE_USE_FIXTURES=1 npx vite --port 5176 --strictPort",
+      "startServerReadyPattern": "ready in",
+      "startServerReadyTimeout": 60000
+    },
+    "assert": {
+      "assertions": {
+        "categories:accessibility": ["error", { "minScore": 0.9 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./.lighthouseci"
+    }
+  }
+}

@@ -60,19 +60,19 @@
 
 ## 8.5 Lighthouse CI (accessibility gate)
 
-- [ ] 8.5.1 Add `@lhci/cli` as a frontend dev dependency; add
+- [x] 8.5.1 Add `@lhci/cli` as a frontend dev dependency; add
       `frontend/lighthouserc.json` pointing at the existing fixture-backed
       `vite` dev server (same `webServer` command as
       `playwright.config.ts`, `VITE_USE_FIXTURES=1`), asserting
       `categories:accessibility` ≥ 0.9 and recording (not asserting)
       `categories:performance`. Verify: `npx lhci autorun` passes locally
       and prints both scores.
-- [ ] 8.5.2 Add an `npm run lighthouse` script and wire it into
+- [x] 8.5.2 Add an `npm run lighthouse` script and wire it into
       `npm run check` (and therefore `.github/workflows/ci.yml`'s `Check`
       job) after `test:e2e`. Verify: `npm run check` stays green and a
       deliberate accessibility regression (e.g. remove an `aria-label` in
       a throwaway branch) fails `npm run lighthouse` locally.
-- [ ] 8.5.3 Confirm the Step 7 `@axe-core/playwright` suite
+- [x] 8.5.3 Confirm the Step 7 `@axe-core/playwright` suite
       (`frontend/e2e/workspace.spec.ts`) still reports zero violations
       (8-F's second half) and record both scores in the release PR.
 
