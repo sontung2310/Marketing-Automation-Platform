@@ -46,10 +46,9 @@ async def run_with_repair(
     config: RunConfig,
     output_type: type[OutputT],
     check: OutputCheck[OutputT],
-    usage: Usage,
 ) -> OutputT:
     result = await Runner.run(agent, items, context=context, max_turns=MAX_TURNS, run_config=config)
-    usage.add(result.context_wrapper.usage)
+    context.usage.add(result.context_wrapper.usage)
     raise_upstream(context)
     output = result.final_output_as(output_type)
     context.emit("agent.step", {"label": check.check_label})
@@ -67,7 +66,7 @@ async def run_with_repair(
     result = await Runner.run(
         agent, repair_items, context=context, max_turns=turns_left, run_config=config
     )
-    usage.add(result.context_wrapper.usage)
+    context.usage.add(result.context_wrapper.usage)
     raise_upstream(context)
     output = result.final_output_as(output_type)
     check.ensure_valid(output)

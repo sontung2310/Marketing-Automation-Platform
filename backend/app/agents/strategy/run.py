@@ -1,6 +1,6 @@
 """Run the Strategy agent once, with one grounding repair (agents-spec §6)."""
 
-from agents import RunConfig, Usage
+from agents import RunConfig
 
 from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.common.mcp import RunMCPServer
@@ -53,7 +53,6 @@ async def run_strategy(
     context: RunContext, message: str | None, *, mcp_url: str | None = None
 ) -> AgentOutcome:
     """mcp_url overrides MCP_URL, e.g. for an in-process eval server."""
-    usage = Usage()
     async with (
         model_provider() as provider,
         RunMCPServer(context, mcp_url or get_settings().mcp_url) as mcp_server,
@@ -66,10 +65,9 @@ async def run_strategy(
             config=RunConfig(model_provider=provider, tracing_disabled=True),
             output_type=StrategyOutput,
             check=output_check(context),
-            usage=usage,
         )
     return AgentOutcome(
         status=RUN_STATUS[output.status],
         output=normalise(output),
-        usage=usage_summary(usage),
+        usage=usage_summary(context.usage),
     )

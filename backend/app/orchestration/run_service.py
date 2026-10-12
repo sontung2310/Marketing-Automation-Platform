@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta
 from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.common.errors import CancelledRunError, run_error
 from app.agents.common.mcp import collect_activity_competitors, collect_ids
+from app.agents.common.repair import usage_summary
 from app.core.config import get_settings
 from app.core.errors import DomainError, NotFoundError, RateLimitedError, ValidationError
 from app.intelligence.models import AgentName, Run, RunStatus, Session
@@ -245,7 +246,13 @@ class RunService:
     def _failed(self, run: Run, context: RunContext, error: DomainError) -> Run:
         detail: dict[str, object] = {"code": error.code, "message": error.message}
         context.emit("run.failed", detail)
-        return run.model_copy(update={"status": RunStatus.FAILED, "error": detail})
+        return run.model_copy(
+            update={
+                "status": RunStatus.FAILED,
+                "error": detail,
+                "usage": usage_summary(context.usage),
+            }
+        )
 
     async def _finish(
         self, run: Run, context: RunContext, session: Session, writer: asyncio.Task[None]

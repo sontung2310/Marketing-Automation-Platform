@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from agents import Usage
 from pydantic import BaseModel
 
 from app.agents.common.intents import Intent
@@ -34,6 +35,9 @@ class RunContext:
     # Set when an MCP call raises; the SDK would hand it to the model as text (run.py fails).
     upstream_error: DomainError | None = None
     events: list[dict[str, object]] = field(default_factory=list)
+    # Updated as each model call completes, so a failed or timed-out run still
+    # logs what it spent (roadmap 8.3).
+    usage: Usage = field(default_factory=Usage)
 
     def emit(self, event_type: str, data: dict[str, object]) -> None:
         """Append an SSE-log event (api-contract run events) with the next `seq`."""

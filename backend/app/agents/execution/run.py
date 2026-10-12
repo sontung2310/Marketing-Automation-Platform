@@ -1,6 +1,6 @@
 """Run the Execution agent once, with one contract repair (agents-spec §7)."""
 
-from agents import RunConfig, Usage
+from agents import RunConfig
 
 from app.agents.common.context import AgentOutcome, RunContext
 from app.agents.common.mcp import RunMCPServer
@@ -91,7 +91,6 @@ async def run_execution(
 ) -> AgentOutcome:
     """mcp_url overrides MCP_URL, e.g. for an in-process eval server."""
     expected = expected_type(context.intent, context.trigger_context)
-    usage = Usage()
     async with (
         model_provider() as provider,
         RunMCPServer(context, mcp_url or get_settings().mcp_url) as mcp_server,
@@ -104,12 +103,11 @@ async def run_execution(
             config=RunConfig(model_provider=provider, tracing_disabled=True),
             output_type=ExecutionOutput,
             check=output_check(context, expected, message),
-            usage=usage,
         )
     output = normalise(output)
     output = flag(output, problems_of(output, context, message))
     return AgentOutcome(
         status=RUN_STATUS[output.status],
         output=output,
-        usage=usage_summary(usage),
+        usage=usage_summary(context.usage),
     )

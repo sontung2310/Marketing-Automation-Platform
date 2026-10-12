@@ -2,24 +2,24 @@
 
 ## 8.3 Usage logging on every run (do first - smallest, unblocks nothing else but is pure backend)
 
-- [ ] 8.3.1 Add `usage: Usage = field(default_factory=Usage)` to `RunContext`
+- [x] 8.3.1 Add `usage: Usage = field(default_factory=Usage)` to `RunContext`
       (`app/agents/common/context.py`); verify `mypy`/`ruff` pass and a new
       unit test constructs a `RunContext` and asserts `usage.requests == 0`.
-- [ ] 8.3.2 Change `run_with_repair` (`app/agents/common/repair.py`) to drop
+- [x] 8.3.2 Change `run_with_repair` (`app/agents/common/repair.py`) to drop
       its `usage: Usage` parameter and call `context.usage.add(...)` at its
       two existing call sites; update `app/agents/strategy/run.py` and
       `app/agents/execution/run.py` to drop their local `usage = Usage()`
       and read `usage_summary(context.usage)` for `AgentOutcome.usage`.
       Verify: existing strategy/execution unit tests pass unchanged (usage
       summary format unchanged).
-- [ ] 8.3.3 In `RunService._failed` (`app/orchestration/run_service.py`),
+- [x] 8.3.3 In `RunService._failed` (`app/orchestration/run_service.py`),
       set `run.usage = usage_summary(context.usage)`; thread `context`
       into every `_failed(...)` call site in `execute()`. Verify: a new
       integration test fails a run after one successful model call (stub a
       timeout on the repair) and asserts the persisted run's `usage` is
       non-empty; another asserts a run that fails before any model call
       persists an empty-but-present `usage`.
-- [ ] 8.3.4 Update `run-orchestration`'s persisted main spec is left alone
+- [x] 8.3.4 Update `run-orchestration`'s persisted main spec is left alone
       until archive; confirm no other reader assumes `run.usage is None` on
       failure (grep `\.usage` in `app/orchestration/` and `frontend/src/api/`).
       Verify: `npm run check` green.
