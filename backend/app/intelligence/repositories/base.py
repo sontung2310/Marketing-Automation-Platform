@@ -61,6 +61,11 @@ class Repository(Generic[ModelT]):
             return None
         return self.model_type.model_validate(document)
 
+    async def ids_matching(self, filter: Document) -> list[str]:
+        """IDs of documents matching an arbitrary filter, for cascading a delete."""
+        documents = self.collection.find(filter, {"_id": 1})
+        return [str(document["_id"]) async for document in documents]
+
     async def list(self, *, limit: int = 100) -> list[ModelT]:
         if limit < 1:
             return []
@@ -104,6 +109,10 @@ class Repository(Generic[ModelT]):
             inserted=result.upserted_id is not None,
             updated=result.upserted_id is None and result.modified_count > 0,
         )
+
+    async def delete_many(self, filter: Document) -> int:
+        result = await self.collection.delete_many(filter)
+        return result.deleted_count
 
 
 def company_feed_indexes() -> list[IndexModel]:

@@ -26,7 +26,7 @@
 
 ## 8.2 Reset script and runbook
 
-- [ ] 8.2.1 Write `backend/scripts/reset_demo.py`: re-seed (reuse
+- [x] 8.2.1 Write `backend/scripts/reset_demo.py`: re-seed (reuse
       `scripts/seed_db.py`'s loader), then delete all `sessions`, `runs`,
       `proposed_actions`/connector actions and simulated competitor
       activity for the default company, against the database the CLI is
@@ -35,7 +35,7 @@
       target). Verify: a unit/integration test seeds, starts a run, then
       runs reset and asserts zero sessions/runs/actions remain and the
       seed counts match a fresh seed.
-- [ ] 8.2.2 Add a "Running the demo" section to `README.md`: prerequisites,
+- [x] 8.2.2 Add a "Running the demo" section to `README.md`: prerequisites,
       `reset_demo.py` usage, starting backend/MCP/frontend, the 8-step
       demo story reference (`docs/specs.md` §7), and how to re-run
       `demo.spec.ts` locally. Verify: a teammate unfamiliar with the repo
