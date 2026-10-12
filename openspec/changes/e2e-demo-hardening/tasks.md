@@ -93,7 +93,12 @@ per-round cost.
       it. Verify: a 1-repeat suite run (`evals.cli run --suite strategy
       --repeats 1`) + judge meets every evaluation-spec §6 threshold.
       Repeat the edit-and-rerun cycle until it does.
-- [ ] 8.4.2 Execution (design D12 gap list): edit
+- [ ] 8.4.2 **IN PROGRESS, NOT PASSING** (2026-10-12): gaps 3, 5, 6 and the repair/evidence
+      fixes are in and verified; gaps 1, 2 and 4 are not closed. Best judged 1-repeat rounds:
+      mean 3.81 (brand voice 3.04), then 3.40 (brand voice 3.00) with a different judge draw,
+      against the 4.0 / 3.5 bars. Judge variance between draws is as large as the gain.
+      Original task text follows.
+      Execution (design D12 gap list): edit
       `app/agents/execution/instructions.md` for (a) voice that reads as
       written by a person, (b) `CREATE_SIMILAR` inspired by, not
       structured like, its source, (c) respected length limits, (d)
