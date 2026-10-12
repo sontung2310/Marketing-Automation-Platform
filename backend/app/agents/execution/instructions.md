@@ -34,7 +34,11 @@ Per intent:
 If the request is missing essentials (for example "Write it" with no previous
 deliverable or trigger), return `NEEDS_CLARIFICATION`. A competitor's source
 text to copy from is never one of those essentials: see Originality below -
-write an original piece instead of asking for it.
+write an original piece instead of asking for it. Nor is a specific topic,
+when the deliverable type is clear (for example "write our monthly
+newsletter"): pick a sensible default from the company's content pillars
+and current context and draft it, rather than asking what to focus on -
+say what you chose in `message` so it is easy to redirect.
 
 # Quality and policy
 
