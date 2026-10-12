@@ -161,6 +161,33 @@ def test_a_reversal_phrase_is_a_soft_voice_problem() -> None:
     assert voice_problems("A plain sentence with no tricks.", sample_copy=()) == []
 
 
+def test_a_reworded_reversal_across_two_sentences_is_still_caught() -> None:
+    # The model dodges the literal "it's...it's" example by rewording the same move.
+    body = "Clarity is not about saying more. It is about leaving less work for the reader."
+    problems = voice_problems(body, sample_copy=())
+    assert [(p.check, p.hard) for p in problems] == [("brand_voice", False)]
+    ordinary = "This is not optional. Please complete the form before Friday without delay."
+    assert voice_problems(ordinary, sample_copy=()) == []
+
+
+def test_three_parallel_questions_are_a_rhetorical_triplet() -> None:
+    body = "Can a marketer see this? Can a salesperson use this? Can a product team ship this?"
+    problems = voice_problems(body, sample_copy=())
+    assert [(p.check, p.hard) for p in problems] == [("brand_voice", False)]
+    assert "triplet" in problems[0].message
+    two_only = "Can a marketer see this? Can a salesperson use this? What do you think?"
+    assert voice_problems(two_only, sample_copy=()) == []
+
+
+def test_the_same_bolded_label_repeated_across_sections_is_a_template_tell() -> None:
+    body = "## A\n**Practical takeaway:** do X\n## B\n**Practical takeaway:** do Y"
+    problems = voice_problems(body, sample_copy=())
+    assert [(p.check, p.hard) for p in problems] == [("brand_voice", False)]
+    assert "template" in problems[0].message
+    varied = "## A\n**Practical takeaway:** do X\n## B\n**Key risk:** watch Y"
+    assert voice_problems(varied, sample_copy=()) == []
+
+
 def test_reusing_the_brands_sample_line_verbatim_is_a_soft_voice_problem() -> None:
     sample = ("We make the next decision easier.",)
     body = "Here is our take. We make the next decision easier. That's the whole idea."

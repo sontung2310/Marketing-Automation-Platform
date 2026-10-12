@@ -26,8 +26,18 @@ WORD = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
 # Presence only: counting "I" would penalise good first person (design D8). An accepted
 # exception to conventions §4: a soft hint that only FLAGs, never a pass/fail gate.
 FIRST_PERSON = re.compile(r"\b(?:I|I'm|I've|I'd|[Mm]y|[Mm]e)\b")
-# "It's not X, it's Y" and its close cousins (design D12 gap 1: machine-sounding voice).
-REVERSAL = re.compile(r"\bit'?s\s+not\b[^.!?\n]{0,80}\bit'?s\b", re.IGNORECASE)
+# "It's not X, it's Y" and its close cousins, including "X is not Y. It is Z" and
+# "isn't to X, it's to Y" (the model dodges the literal "it's...it's" example by
+# rewording the same reversal) (design D12 gap 1: machine-sounding voice).
+REVERSAL = re.compile(
+    r"\b(?:it'?s\s+not|is\s+not|isn'?t)\b[^\n]{0,70}\b(?:it'?s|it\s+is)\b", re.IGNORECASE
+)
+# Three consecutive sentences opening with the same question word ("Can X? Can Y?
+# Can Z?") is the rhetorical-triplet tell, independent of the actual content.
+REFLEXIVE_QUESTION = re.compile(r"\b([A-Z][a-z]+)\b[^?!.]{0,100}\?")
+# The same bolded "Label:" reused as every section's closer is a template tell, not a
+# one-off styling choice (e.g. "**Practical takeaway:**" after every blog H2).
+BOLD_LABEL = re.compile(r"\*\*([^*\n]{2,40}):\*\*")
 MIN_SAMPLE_LINE_WORDS = 3  # a one- or two-word sample fragment would over-match
 
 QualityField = Literal["originality", "channel_fit", "brand_voice"]
@@ -199,7 +209,27 @@ def voice_problems(body: str, sample_copy: Iterable[str]) -> list[GuardProblem]:
     if REVERSAL.search(body):
         problems.append(
             GuardProblem(
-                "brand_voice", "avoid \"it's not X, it's Y\" reversals; say the thing plainly"
+                "brand_voice",
+                'avoid "X is not A, it is B" reversals in any wording - say the thing '
+                "plainly instead of setting up a straw man to knock down",
+            )
+        )
+    starts = REFLEXIVE_QUESTION.findall(body)
+    if any(starts[i] == starts[i + 1] == starts[i + 2] for i in range(len(starts) - 2)):
+        problems.append(
+            GuardProblem(
+                "brand_voice",
+                "three consecutive questions open with the same word - a rhetorical "
+                "triplet; cut to one strong question or make each genuinely different",
+            )
+        )
+    labels = [label.strip().lower() for label in BOLD_LABEL.findall(body)]
+    if len(labels) != len(set(labels)):
+        problems.append(
+            GuardProblem(
+                "brand_voice",
+                "the same bolded label closes more than one section - a template tell; "
+                "vary each section's close instead of repeating a formula",
             )
         )
     for line in sample_copy:
