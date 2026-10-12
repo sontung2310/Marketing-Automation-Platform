@@ -1,0 +1,71 @@
+name: Demo E2E
+
+# The demo story against a real backend, MCP and OpenAI (roadmap 8.1, 8-A).
+# Manual only: it spends real OpenAI budget and runs against a scratch
+# database (DEMO_MONGODB_URI), never the shared production one.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demo:
+    name: Demo story (3 repeats)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MONGODB_URI: ${{ secrets.DEMO_MONGODB_URI }}
+      MONGODB_DATABASE: marketing_automation_demo_e2e
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      MCP_URL: http://localhost:8001/mcp
+      MAX_RUNS_PER_DAY: "200" # repeat-each=3 runs the whole story 3 times over
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: npm ci && uv sync --frozen --directory backend
+
+      - name: Install Playwright browser
+        run: npx --workspace frontend playwright install --with-deps chromium
+
+      - name: Reset the scratch database
+        run: uv run --directory backend python scripts/reset_demo.py --yes
+
+      - name: Start the backend and MCP server
+        run: |
+          uv run --directory backend uvicorn app.api.main:app --port 8000 &
+          uv run --directory backend uvicorn app.mcp_server.main:app --port 8001 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/api/health >/dev/null && exit 0
+            sleep 1
+          done
+          echo "::error::Backend did not become healthy in time"
+          exit 1
+
+      - name: Run the demo story 3 times
+        run: >
+          npx --workspace frontend playwright test
+          --config=playwright.demo.config.ts --repeat-each=3
+
+      - name: Upload the Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-e2e-report
+          path: frontend/playwright-report/
+          retention-days: 7

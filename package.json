@@ -27,6 +27,7 @@
     "check": "npm run typecheck && npm run test && npm run lint && npm run format:check && npm run skills:check && npm run api:check && npm run openspec:check && npm run test:e2e",
     "prepare": "husky",
     "test:e2e": "npm run test:e2e -w frontend",
+    "demo:e2e": "npm run demo:e2e -w frontend",
     "api:export": "uv run --directory backend python scripts/export_openapi.py",
     "api:check": "uv run --directory backend python scripts/export_openapi.py --check && node tools/api-types.mjs"
   },

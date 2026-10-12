@@ -23,21 +23,21 @@ uv sync --directory backend   # Python env for the backend service
 
 ## Scripts
 
-| Command | What it does |
-|---|---|
-| `npm run dev:api` / `npm run dev:web` | FastAPI on :8000 / Vite on :5173 |
-| `npm run dev:web:fixtures` | Vite on :5173 with the Platform API served from the typed MSW fixtures |
-| `npm run check` | Everything CI checks: `typecheck`, `test`, `lint`, `format:check`, `skills:check`, `api:check`, `openspec:check`, `test:e2e` |
-| `npm run typecheck` | mypy (strict) + `tsc` |
-| `npm run test` | pytest unit tests + Vitest |
-| `npm run test:integration` | pytest `-m integration` against `MONGODB_URI` |
-| `npm run lint` / `lint:fix` | ruff + import-linter layering contracts + ESLint |
-| `npm run format` / `format:check` | ruff format + Prettier |
-| `npm run api:export` / `api:check` | Write `backend/openapi.json` / fail when it is stale or `frontend/src/api/types.ts` drifts from it |
-| `npm run openspec:check` | `openspec validate --all --strict` + the cross-change conflict check |
-| `npm run test:e2e` | Playwright specs for the workspace, against the fixtures |
-| `npm run demo:e2e` | The demo story (`frontend/e2e/demo.spec.ts`) against a real, running backend and real OpenAI - see "Running the demo" below |
-| `npm run build` | Frontend production build |
+| Command                               | What it does                                                                                                                 |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev:api` / `npm run dev:web` | FastAPI on :8000 / Vite on :5173                                                                                             |
+| `npm run dev:web:fixtures`            | Vite on :5173 with the Platform API served from the typed MSW fixtures                                                       |
+| `npm run check`                       | Everything CI checks: `typecheck`, `test`, `lint`, `format:check`, `skills:check`, `api:check`, `openspec:check`, `test:e2e` |
+| `npm run typecheck`                   | mypy (strict) + `tsc`                                                                                                        |
+| `npm run test`                        | pytest unit tests + Vitest                                                                                                   |
+| `npm run test:integration`            | pytest `-m integration` against `MONGODB_URI`                                                                                |
+| `npm run lint` / `lint:fix`           | ruff + import-linter layering contracts + ESLint                                                                             |
+| `npm run format` / `format:check`     | ruff format + Prettier                                                                                                       |
+| `npm run api:export` / `api:check`    | Write `backend/openapi.json` / fail when it is stale or `frontend/src/api/types.ts` drifts from it                           |
+| `npm run openspec:check`              | `openspec validate --all --strict` + the cross-change conflict check                                                         |
+| `npm run test:e2e`                    | Playwright specs for the workspace, against the fixtures                                                                     |
+| `npm run demo:e2e`                    | The demo story (`frontend/e2e/demo.spec.ts`) against a real, running backend and real OpenAI - see "Running the demo" below  |
+| `npm run build`                       | Frontend production build                                                                                                    |
 
 On commit, husky runs lint-staged, which fixes and formats **staged files
 only** (ruff for Python; ESLint and Prettier for the frontend).
@@ -69,6 +69,7 @@ it is also the Playwright test `frontend/e2e/demo.spec.ts`.
    simulated activity for the default company, then re-seeds it from
    `backend/app/pipelines/seed/`. Without `--yes` it does nothing and reports
    which database it would have wiped.
+
 2. **Start the services.** Either `docker compose up api mcp web` (see
    `docker-compose.yml`), or three terminals: `npm run dev:api`,
    `uv run --directory backend uvicorn app.mcp_server.main:app --port 8001`

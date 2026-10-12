@@ -43,18 +43,18 @@
 
 ## 8.1 Demo E2E test and on-demand workflow
 
-- [ ] 8.1.1 Write `frontend/e2e/demo.spec.ts` scripting the 8-step story in
+- [x] 8.1.1 Write `frontend/e2e/demo.spec.ts` scripting the 8-step story in
       `docs/specs.md` §7 against a live backend (no MSW), asserting each
       step's visible outcome. Verify: passes locally against a running
       backend + real OpenAI key once.
-- [ ] 8.1.2 Add `.github/workflows/demo-e2e.yml`, `workflow_dispatch`-only:
+- [x] 8.1.2 Add `.github/workflows/demo-e2e.yml`, `workflow_dispatch`-only:
       checkout, install, run `reset_demo.py` against `DEMO_MONGODB_URI`
       (a repo secret, a scratch database - never the shared
       `marketing_automation` DB), start the backend + MCP server, run
       `npx playwright test e2e/demo.spec.ts --repeat-each=3` with
       `OPENAI_API_KEY`. Verify: a manual workflow run on GitHub Actions
       passes all 3 repeats (8-A's evidence for the release PR).
-- [ ] 8.1.3 Add an `npm run demo:e2e` script wrapping the same Playwright
+- [x] 8.1.3 Add an `npm run demo:e2e` script wrapping the same Playwright
       invocation for local use. Verify: documented in the README runbook
       (8.2.2) and runs locally.
 

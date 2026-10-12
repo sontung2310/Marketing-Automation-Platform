@@ -9,6 +9,9 @@ const PORT = 5174;
  */
 export default defineConfig({
   testDir: "./e2e",
+  // The demo story needs a real backend and real OpenAI (roadmap 8.1); it has
+  // its own config and `npm run demo:e2e`, run on demand, not in this suite.
+  testIgnore: /demo\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
