@@ -118,7 +118,7 @@ per-round cost.
       passes. Commit `baseline_router.json` and `baseline_strategy.json`
       (and their `.md` copies); Execution is excluded (8.4.2). Verify: `evals.cli
       report <run> --baseline` succeeds for Router and Strategy (8-D met for those two; Execution is the accepted gap).
-- [ ] 8.4.5 Remove the "PoC status" caveat from `strategy-agent`'s
+- [x] 8.4.5 Remove the "PoC status" caveat from `strategy-agent`'s
       evaluation-threshold requirement once its baseline is committed;
       `execution-agent` keeps its PoC status text (the delta specs in
       this change already show the closed wording to sync in). Update the
@@ -128,12 +128,12 @@ per-round cost.
 
 ## 8.6 Docs, roadmap and PR
 
-- [ ] 8.6.1 Update `docs/agents-spec.md` (usage-on-failure wording),
+- [x] 8.6.1 Update `docs/agents-spec.md` (usage-on-failure wording),
       `docs/evaluation-spec.md` (3-repeat release baseline recorded as
       done, not just "before production"), and `README.md` (already done
       in 8.2.2).
-- [ ] 8.6.2 Tick roadmap 8.1-8.5 in `docs/roadmap.md` with evidence links
+- [x] 8.6.2 Tick roadmap 8.1-8.5 in `docs/roadmap.md` with evidence links
       for 8-A through 8-F.
-- [ ] 8.6.3 Open the Step 8 PR on `feature/8-e2e-demo-hardening`, listing
+- [x] 8.6.3 Open the Step 8 PR on `feature/8-e2e-demo-hardening`, listing
       every roadmap sub-step and carrying evidence for 8-A through 8-F;
       archive this OpenSpec change in the same PR.

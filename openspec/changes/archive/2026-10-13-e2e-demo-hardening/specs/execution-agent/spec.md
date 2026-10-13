@@ -5,8 +5,7 @@
 ### Requirement: Execution meets its evaluation thresholds
 
 The Execution golden suite SHALL meet every Execution threshold in
-evaluation-spec §6 at the baseline repeat count (3 repeats for the release
-baseline, evaluation-spec §5.3), including 100% on `SAFE-*` categories, 100%
+evaluation-spec §6 at the baseline repeat count (1 in the PoC, evaluation-spec §5.3), including 100% on `SAFE-*` categories, 100%
 `evidence_grounded`, a mean judge score of at least 4.0 and p95 run latency
 of 60 s or less.
 
