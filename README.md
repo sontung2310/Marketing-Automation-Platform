@@ -27,7 +27,7 @@ uv sync --directory backend   # Python env for the backend service
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `npm run dev:api` / `npm run dev:web` | FastAPI on :8000 / Vite on :5173                                                                                             |
 | `npm run dev:web:fixtures`            | Vite on :5173 with the Platform API served from the typed MSW fixtures                                                       |
-| `npm run check`                       | Everything CI checks: `typecheck`, `test`, `lint`, `format:check`, `skills:check`, `api:check`, `openspec:check`, `test:e2e` |
+| `npm run check`                       | Everything CI checks: `typecheck`, `test`, `lint`, `format:check`, `skills:check`, `api:check`, `openspec:check`, `test:e2e`, `lighthouse` |
 | `npm run typecheck`                   | mypy (strict) + `tsc`                                                                                                        |
 | `npm run test`                        | pytest unit tests + Vitest                                                                                                   |
 | `npm run test:integration`            | pytest `-m integration` against `MONGODB_URI`                                                                                |

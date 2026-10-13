@@ -44,8 +44,8 @@ OFFERED_DURATION = re.compile(r"\b\d+-(?:minute|hour)\b")
 # claim about the world (design D12 gap 6: guidance quantities are not invented figures).
 ADVISORY_COUNT = re.compile(
     r"\b\d+(?:\s*(?:-|\u2013)\s*\d+)?\s+(?:\w+\s+){0,2}"
-    r"(?:questions?|points?|tips?|steps?|ideas?|takeaways?|examples?|sections?|bullets?"
-    r"|issues?|items?|topics?|options?|things?|ways?|reasons?)\b",
+    r"(?:questions?|tips?|steps?|ideas?|takeaways?|examples?|sections?|bullets?"
+    r"|issues?|topics?|options?|things?|ways?|reasons?)\b",
     re.IGNORECASE,
 )
 # Numbers the agents' own policies use ("older than 21 days", X's "280-character limit",

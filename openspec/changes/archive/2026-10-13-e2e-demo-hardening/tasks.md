@@ -43,11 +43,11 @@
 
 ## 8.1 Demo E2E test and on-demand workflow
 
-- [x] 8.1.1 Write `frontend/e2e/demo.spec.ts` scripting the 8-step story in
+- [ ] 8.1.1 (written, not yet run against real OpenAI) Write `frontend/e2e/demo.spec.ts` scripting the 8-step story in
       `docs/specs.md` §7 against a live backend (no MSW), asserting each
       step's visible outcome. Verify: passes locally against a running
       backend + real OpenAI key once.
-- [x] 8.1.2 Add `.github/workflows/demo-e2e.yml`, `workflow_dispatch`-only:
+- [ ] 8.1.2 (written, 3-repeat CI run pending) Add `.github/workflows/demo-e2e.yml`, `workflow_dispatch`-only:
       checkout, install, run `reset_demo.py` against `DEMO_MONGODB_URI`
       (a repo secret, a scratch database - never the shared
       `marketing_automation` DB), start the backend + MCP server, run
