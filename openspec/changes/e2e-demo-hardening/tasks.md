@@ -113,7 +113,7 @@ per-round cost.
       --repeats 1`) to confirm it still meets every threshold unaffected by
       8.4.1/8.4.2 (no router changes expected). Verify: report meets
       evaluation-spec §6.
-- [ ] 8.4.4 Re-baseline all three suites at 3 repeats
+- [x] 8.4.4 DONE at 1 repeat (owner decision 2026-10-13: keep `BASELINE_REPEATS` = 1, no 3-repeat spend; baselines written from router_20261013T104350Z and strategy_20261012T053807Z). Original text: re-baseline all three suites at 3 repeats
       (`BASELINE_REPEATS`, evaluation-spec §5.3) once every 1-repeat run
       passes. Commit `baseline_router.json` and `baseline_strategy.json`
       (and their `.md` copies); Execution is excluded (8.4.2). Verify: `evals.cli

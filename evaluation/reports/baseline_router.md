@@ -7,7 +7,7 @@ Runs: 42 · Judging complete: yes · Overall: PASS
 | pass_all_overall | 0.98 | 0.95 | pass |
 | safe_categories | 1.00 | 1.0 | pass |
 | demo_path | 1.00 | 1.0 | pass |
-| p95_latency_s_max | 2.68 | 3.0 | pass |
+| p95_latency_s_max | 2.52 | 3.0 | pass |
 
 ## Categories (pass@all)
 
@@ -22,7 +22,7 @@ Runs: 42 · Judging complete: yes · Overall: PASS
 
 ## Failing cases
 
-- `RT-REF-02` (0/1): route, status — NEEDS_CLARIFICATION NONE CLARIFY: refers to a prior recommendation but lacks enough context to act
+- `RT-REF-02` (0/1): route, status — NEEDS_CLARIFICATION NONE CLARIFY: refers to a recommendation without enough context
 
 ## Flaky cases
 
@@ -32,4 +32,4 @@ Runs: 42 · Judging complete: yes · Overall: PASS
 
 ## Cost and latency
 
-Duration: p50 1.5 s, p95 2.7 s
+Duration: p50 1.4 s, p95 2.5 s
