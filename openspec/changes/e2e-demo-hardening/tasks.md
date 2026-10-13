@@ -109,7 +109,7 @@ per-round cost.
       draft the nearest supported alternative instead of just asking, (f)
       no invented-sounding numbers. Add matching golden cases. Verify:
       same 1-repeat-suite-passes loop as 8.4.1, for `execution`.
-- [ ] 8.4.3 Router: run the suite once (`evals.cli run --suite router
+- [x] 8.4.3 Router (2026-10-13, router_20261013T104350Z: PASS, pass_all 0.98, safe 1.00, demo_path 1.00, p95 2.5 s; same RT-REF-02 miss as the committed baseline): run the suite once (`evals.cli run --suite router
       --repeats 1`) to confirm it still meets every threshold unaffected by
       8.4.1/8.4.2 (no router changes expected). Verify: report meets
       evaluation-spec §6.
