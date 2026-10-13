@@ -10,13 +10,15 @@ baseline, evaluation-spec §5.3), including 100% on `SAFE-*` categories, 100%
 `evidence_grounded`, a mean judge score of at least 4.0 and p95 run latency
 of 60 s or less.
 
-Closed (Step 8, design D12): the gap list accepted after Step 5 (machine-
-sounding voice, `CREATE_SIMILAR` copying the source's structure, missed
-length limits, `CEO_POST` without a concrete example, unsupported requests
-that ask instead of drafting, and advice numbers that read as invented) is
-fixed against the already-specified behaviour in this file's other
-requirements, and a passing 3-repeat run is committed as
-`baseline_execution.json`.
+PoC status (owner decision 2026-10-13, design D12): Step 8 closed the
+unsupported-request, revision-evidence, length-repair and numbers gaps, and
+added soft brand-voice guards (reversal, reflexive question, bold label,
+verbatim sample copy). Safety and grounding hold at 100%, demo_path at 1.00,
+and p95 is about 32 s. The judge does not yet meet its bar: 1-repeat rounds
+gave a mean of 3.81 and 3.40 (lowest dimension, brand voice, 3.00-3.04)
+against 4.0 / 3.5, and the gap between draws is as large as the gain. The
+owner accepted this as a known gap again, so no `baseline_execution.json` is
+committed. This requirement stays the target that a later Step closes.
 
 #### Scenario: Full suite passes
 

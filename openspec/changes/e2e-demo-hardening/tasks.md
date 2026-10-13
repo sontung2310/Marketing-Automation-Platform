@@ -93,10 +93,13 @@ per-round cost.
       it. Verify: a 1-repeat suite run (`evals.cli run --suite strategy
       --repeats 1`) + judge meets every evaluation-spec §6 threshold.
       Repeat the edit-and-rerun cycle until it does.
-- [ ] 8.4.2 **IN PROGRESS, NOT PASSING** (2026-10-12): gaps 3, 5, 6 and the repair/evidence
+- [x] 8.4.2 **ACCEPTED AS A KNOWN GAP** (owner, 2026-10-13; not passing): gaps 3, 5, 6 and the repair/evidence
       fixes are in and verified; gaps 1, 2 and 4 are not closed. Best judged 1-repeat rounds:
       mean 3.81 (brand voice 3.04), then 3.40 (brand voice 3.00) with a different judge draw,
       against the 4.0 / 3.5 bars. Judge variance between draws is as large as the gain.
+      Open for a later Step: brand voice (reflexive triplets, bullet lists, closing questions,
+      "decision" formula), originality of CREATE_SIMILAR, and a 3-repeat judge to separate
+      real gain from draw noise. Memory `execution-quality-gap-accepted` tracks it.
       Original task text follows.
       Execution (design D12 gap list): edit
       `app/agents/execution/instructions.md` for (a) voice that reads as
@@ -112,12 +115,12 @@ per-round cost.
       evaluation-spec §6.
 - [ ] 8.4.4 Re-baseline all three suites at 3 repeats
       (`BASELINE_REPEATS`, evaluation-spec §5.3) once every 1-repeat run
-      passes. Commit `baseline_router.json`, `baseline_strategy.json`,
-      `baseline_execution.json` (and their `.md` copies). Verify: `evals.cli
-      report <run> --baseline` succeeds for all three (8-D).
-- [ ] 8.4.5 Remove the "PoC status" / "Closed" caveat text from
-      `strategy-agent` and `execution-agent`'s evaluation-threshold
-      requirements once their baselines are committed (the delta specs in
+      passes. Commit `baseline_router.json` and `baseline_strategy.json`
+      (and their `.md` copies); Execution is excluded (8.4.2). Verify: `evals.cli
+      report <run> --baseline` succeeds for Router and Strategy (8-D met for those two; Execution is the accepted gap).
+- [ ] 8.4.5 Remove the "PoC status" caveat from `strategy-agent`'s
+      evaluation-threshold requirement once its baseline is committed;
+      `execution-agent` keeps its PoC status text (the delta specs in
       this change already show the closed wording to sync in). Update the
       two accepted-gap memory files
       (`strategy-quality-gap-accepted.md`, `execution-quality-gap-accepted.md`)
