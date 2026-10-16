@@ -16,6 +16,7 @@ export default tseslint.config(
       "coverage",
       "test-results",
       "playwright-report",
+      ".lighthouseci",
       "public/mockServiceWorker.js",
     ],
   },

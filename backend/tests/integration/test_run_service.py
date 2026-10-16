@@ -4,6 +4,7 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from agents import Usage
 from pymongo.asynchronous.database import AsyncDatabase
 
 from app.agents.common.context import AgentOutcome, RunContext
@@ -32,6 +33,12 @@ async def answering_agent(context: RunContext, message: str | None) -> AgentOutc
 
 async def failing_agent(context: RunContext, message: str | None) -> AgentOutcome:
     raise UpstreamUnavailableError("MCP is down")
+
+
+async def failing_after_spend_agent(context: RunContext, message: str | None) -> AgentOutcome:
+    """A first model call spent tokens; a second (e.g. a repair) then fails the run."""
+    context.usage.add(Usage(requests=1, input_tokens=100, output_tokens=20, total_tokens=120))
+    raise UpstreamUnavailableError("the repair failed")
 
 
 async def drafting_agent(context: RunContext, message: str | None) -> AgentOutcome:
@@ -100,6 +107,23 @@ async def test_failed_run_records_the_failure(seeded_database: AsyncDatabase[Doc
     assert await seeded_database["recommendations"].count_documents({"run_id": run.id}) == 0
     session = await RunRepositories.for_database(seeded_database).sessions.get(run.session_id)
     assert session is not None and session.last_run_id is None  # a failure keeps the last answer
+    # A failure before any model call still logs usage: present, with zero counts (roadmap 8.3).
+    assert run.usage == {"requests": 0, "input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+
+
+async def test_a_failed_run_still_logs_usage_spent_before_it_failed(
+    seeded_database: AsyncDatabase[Document],
+) -> None:
+    trigger = await price_change_trigger(seeded_database)
+    run = await service(seeded_database, failing_after_spend_agent).start(COMPANY, trigger=trigger)
+
+    assert run.status is RunStatus.FAILED
+    assert run.usage == {
+        "requests": 1,
+        "input_tokens": 100,
+        "output_tokens": 20,
+        "total_tokens": 120,
+    }
 
 
 async def test_cancelled_run_is_finalised(seeded_database: AsyncDatabase[Document]) -> None:

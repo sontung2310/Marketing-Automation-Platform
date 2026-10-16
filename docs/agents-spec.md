@@ -320,6 +320,9 @@ class StrategyOutput(BaseModel):
   answer, any recommendation on a `WHY_IT_MATTERS` answer, more than 5
   recommendations, or a breach of the niche rule below)
   share that one repair; if they remain, the run fails with `INVALID_OUTPUT`.
+- **Usage is logged on every run**, including failed and repaired ones: both
+  agents add each model call's usage to `RunContext.usage`, and a failed run
+  persists it in `run.usage` like a successful one.
 - **Niche rule** (every recommendation except `MONITOR`): it cites at least 2
   distinct external signals (activities, trends or influencers; the company
   record does not count); if all of them are activities, they belong to at

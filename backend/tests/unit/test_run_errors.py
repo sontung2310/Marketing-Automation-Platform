@@ -22,6 +22,18 @@ def test_outages_are_upstream_unavailable() -> None:
         assert run_error(exc).code == "UPSTREAM_UNAVAILABLE"
 
 
+def test_an_openai_rejection_is_shown_verbatim() -> None:
+    """Roadmap 8-B: an invalid key reads "OpenAI request failed: ..." and not a generic failure."""
+    response = httpx2.Response(401, request=httpx2.Request("POST", "https://api.openai.com/v1"))
+    error = run_error(
+        openai.AuthenticationError(
+            "Incorrect API key provided: sk-...abcd", response=response, body=None
+        )
+    )
+    assert error.code == "UPSTREAM_UNAVAILABLE"
+    assert error.message == "OpenAI request failed: Incorrect API key provided: sk-...abcd"
+
+
 def test_unexpected_errors_hide_their_message() -> None:
     error = run_error(ValueError("secret-ish internal detail https://internal"))
     assert error.code == "INTERNAL"

@@ -2,5 +2,6 @@ dist
 coverage
 test-results
 playwright-report
+.lighthouseci
 # Vendored: regenerate with `npx msw init public/`.
 public/mockServiceWorker.js

@@ -40,6 +40,14 @@ NUMBER = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*([kKmM](?![A-Za-z])|%)?")
 MIN_CHECKED_NUMBER = 10
 # A proposed meeting length ("a 20-minute call") is an offer, not a factual claim.
 OFFERED_DURATION = re.compile(r"\b\d+-(?:minute|hour)\b")
+# A suggested count ("10-15 questions", "3-5 takeaways") is advice on structure, not a
+# claim about the world (design D12 gap 6: guidance quantities are not invented figures).
+ADVISORY_COUNT = re.compile(
+    r"\b\d+(?:\s*(?:-|\u2013)\s*\d+)?\s+"
+    r"(?:questions?|tips?|steps?|ideas?|takeaways?|examples?|sections?|bullets?"
+    r"|topics?|options?|ways?)\b",
+    re.IGNORECASE,
+)
 # Numbers the agents' own policies use ("older than 21 days", X's "280-character limit",
 # the 800-1,500 word blog range); not claims about data.
 POLICY_NUMBERS = "21 280 2200 3000 800 1500"
@@ -105,7 +113,8 @@ def claim_text(e: Evaluated) -> str:
 def claimed_values(text: str) -> list[set[float]]:
     """Each checked number as the values it may stand for: 48.2K -> 48200, 95% -> 95 or 0.95."""
     claims = []
-    for digits, suffix in NUMBER.findall(OFFERED_DURATION.sub("", text)):
+    stripped = ADVISORY_COUNT.sub("", OFFERED_DURATION.sub("", text))
+    for digits, suffix in NUMBER.findall(stripped):
         value = float(digits.replace(",", ""))
         if value < MIN_CHECKED_NUMBER:
             continue
@@ -121,7 +130,10 @@ def source_values(text: str) -> list[float]:
 def no_invented_numbers(e: Evaluated) -> bool:
     assert e.output is not None
     assumptions: list[str] = getattr(e.output, "assumptions", [])
-    sources = [e.case.input.message or "", *assumptions, POLICY_NUMBERS]
+    # The prompt hands the agent today's date (ISO, common/prompt.py); citing it
+    # for staleness ("as of 2026-10-12") is not an invented number (design D9).
+    today = e.fixture.snapshot_at.date().isoformat()
+    sources = [e.case.input.message or "", *assumptions, POLICY_NUMBERS, today]
     for record_id in {*e.record.retrieved_ids, *e.cited}:
         if (record := e.fixture.record(record_id)) is not None:
             sources += [json.dumps(record), *record_ages(record, e.fixture.snapshot_at)]

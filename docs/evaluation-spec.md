@@ -241,7 +241,9 @@ refused without a passing calibration.
 In the PoC, a baseline runs each case **once** (`--repeats 1`) to keep OpenAI
 cost down (owner decision 2026-10-02), so `pass@3-all` below reads as
 pass@1. Before production, every suite is re-baselined at **3 repeats**
-(`--repeats 3`, `BASELINE_REPEATS` in `evals/cli.py`). The report shows:
+(`--repeats 3`, `BASELINE_REPEATS` in `evals/cli.py`). At Step 8 the owner
+kept the release baselines at 1 repeat too (decision 2026-10-13), so
+`BASELINE_REPEATS` stays 1 and the 3-repeat re-baseline remains open. The report shows:
 
 - `pass@3-all`: the share of cases that pass in every run (the headline metric).
 - The mean judge score per dimension.

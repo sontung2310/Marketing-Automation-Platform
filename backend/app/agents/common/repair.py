@@ -2,9 +2,9 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
-from agents import Agent, RunConfig, Runner, TResponseInputItem, Usage
+from agents import Agent, AgentsException, RunConfig, Runner, RunResult, TResponseInputItem, Usage
 from pydantic import BaseModel
 
 from app.agents.common.context import MAX_TURNS, RunContext
@@ -38,6 +38,24 @@ def raise_upstream(context: RunContext) -> None:
         raise context.upstream_error
 
 
+async def run_counting_usage(
+    agent: Agent[RunContext],
+    items: str | list[TResponseInputItem],
+    *,
+    context: RunContext,
+    **kwargs: Any,
+) -> RunResult:
+    """`Runner.run`, adding the spend to the run even when the SDK raises mid-run."""
+    try:
+        result = await Runner.run(agent, items, context=context, **kwargs)
+    except AgentsException as exc:
+        if exc.run_data is not None:
+            context.usage.add(exc.run_data.context_wrapper.usage)
+        raise
+    context.usage.add(result.context_wrapper.usage)
+    return result
+
+
 async def run_with_repair(
     agent: Agent[RunContext],
     items: str | list[TResponseInputItem],
@@ -46,10 +64,10 @@ async def run_with_repair(
     config: RunConfig,
     output_type: type[OutputT],
     check: OutputCheck[OutputT],
-    usage: Usage,
 ) -> OutputT:
-    result = await Runner.run(agent, items, context=context, max_turns=MAX_TURNS, run_config=config)
-    usage.add(result.context_wrapper.usage)
+    result = await run_counting_usage(
+        agent, items, context=context, max_turns=MAX_TURNS, run_config=config
+    )
     raise_upstream(context)
     output = result.final_output_as(output_type)
     context.emit("agent.step", {"label": check.check_label})
@@ -64,10 +82,9 @@ async def run_with_repair(
         return output
     repair_items = result.to_input_list()
     repair_items.append({"role": "user", "content": message})
-    result = await Runner.run(
+    result = await run_counting_usage(
         agent, repair_items, context=context, max_turns=turns_left, run_config=config
     )
-    usage.add(result.context_wrapper.usage)
     raise_upstream(context)
     output = result.final_output_as(output_type)
     check.ensure_valid(output)

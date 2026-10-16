@@ -165,20 +165,20 @@ recommendation's rationale SHALL say why its channel or format was chosen.
 ### Requirement: Strategy meets its evaluation thresholds
 
 The Strategy suite SHALL meet every Strategy threshold in evaluation-spec §6
-at the baseline repeat count (1 in the PoC, owner decision 2026-10-02; 3
-before production), including p95 run duration of 45 seconds or less, and the
-passing report SHALL be committed as the baseline.
+at the baseline repeat count (1 in the PoC, evaluation-spec §5.3), including p95 run duration of 45 seconds or less, and
+the passing report SHALL be committed as the baseline.
 
-PoC status (owner decision 2026-10-08, design D9): after Step 7b, one round on
-the rewritten suite meets every threshold except the judge mean (3.87 against
-4.0), so no new baseline is committed. The owner accepted this as a known gap;
-this requirement stays the target that a later Step closes.
+Closed (Step 8, design D9): the gap list accepted after Step 7b (price
+responses that don't weigh ≥2 options against each other, padded second
+signals, focus drift, incomplete follow-ups, and white space asserted
+rather than shown) is fixed against the already-specified behaviour in this
+file's other requirements, and a passing 1-repeat run is committed as
+`baseline_strategy.json`.
 
 #### Scenario: Full suite passes
 
 - **GIVEN** the approved `strategy.jsonl` and fixture `intelligence_v2`
-- **WHEN** the suite runs at the baseline repeat count and the Claude judge
-  scores it
+- **WHEN** the suite runs at 1 repeat and the Claude judge scores it
 - **THEN** every Strategy threshold holds and `baseline_strategy.json` is
   committed
 

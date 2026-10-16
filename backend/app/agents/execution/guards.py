@@ -26,15 +26,28 @@ WORD = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
 # Presence only: counting "I" would penalise good first person (design D8). An accepted
 # exception to conventions §4: a soft hint that only FLAGs, never a pass/fail gate.
 FIRST_PERSON = re.compile(r"\b(?:I|I'm|I've|I'd|[Mm]y|[Mm]e)\b")
+# "It's not X, it's Y" and its close cousins, including "X is not Y. It is Z" and
+# "isn't to X, it's to Y" (the model dodges the literal "it's...it's" example by
+# rewording the same reversal) (design D12 gap 1: machine-sounding voice).
+REVERSAL = re.compile(
+    r"\b(?:it'?s\s+not|is\s+not|isn'?t)\b[^\n]{0,70}\b(?:it'?s|it\s+is)\b", re.IGNORECASE
+)
+# Three consecutive sentences opening with the same question word ("Can X? Can Y?
+# Can Z?") is the rhetorical-triplet tell, independent of the actual content.
+REFLEXIVE_QUESTION = re.compile(r"\b([A-Z][a-z]+)\b[^?!.]{0,100}\?")
+# The same bolded "Label:" reused as every section's closer is a template tell, not a
+# one-off styling choice (e.g. "**Practical takeaway:**" after every blog H2).
+BOLD_LABEL = re.compile(r"\*\*([^*\n]{2,40}):\*\*")
+MIN_SAMPLE_LINE_WORDS = 3  # a one- or two-word sample fragment would over-match
 
-QualityField = Literal["originality", "channel_fit"]
+QualityField = Literal["originality", "channel_fit", "brand_voice"]
 
 
 @dataclass(frozen=True)
 class GuardProblem:
     check: QualityField
     message: str
-    hard: bool
+    hard: bool = False  # most new checks are soft; a hard one passes it explicitly
 
 
 @dataclass(frozen=True)
@@ -45,6 +58,7 @@ class GuardInputs:
     message: str | None
     sources: tuple[str, ...]  # competitor texts the deliverable must not copy
     competitor_names: tuple[str, ...]
+    sample_copy: tuple[str, ...] = ()  # the brand's own voice samples; never reused verbatim
 
 
 def words(text: str) -> list[str]:
@@ -188,6 +202,46 @@ def named_competitors(text: str, names: Iterable[str], message: str | None) -> l
     return found
 
 
+def voice_problems(body: str, sample_copy: Iterable[str]) -> list[GuardProblem]:
+    """Soft machine-voice tells code can actually catch (design D12 gap 1); everything
+    subtler ("sound like a person") stays the model's own job, checked by the judge."""
+    problems: list[GuardProblem] = []
+    if REVERSAL.search(body):
+        problems.append(
+            GuardProblem(
+                "brand_voice",
+                'avoid "X is not A, it is B" reversals in any wording - say the thing '
+                "plainly instead of setting up a straw man to knock down",
+            )
+        )
+    starts = REFLEXIVE_QUESTION.findall(body)
+    if any(starts[i] == starts[i + 1] == starts[i + 2] for i in range(len(starts) - 2)):
+        problems.append(
+            GuardProblem(
+                "brand_voice",
+                "three consecutive questions open with the same word - a rhetorical "
+                "triplet; cut to one strong question or make each genuinely different",
+            )
+        )
+    labels = [label.strip().lower() for label in BOLD_LABEL.findall(body)]
+    if len(labels) != len(set(labels)):
+        problems.append(
+            GuardProblem(
+                "brand_voice",
+                "the same bolded label closes more than one section - a template tell; "
+                "vary each section's close instead of repeating a formula",
+            )
+        )
+    for line in sample_copy:
+        if len(words(line)) >= MIN_SAMPLE_LINE_WORDS and line.strip().lower() in body.lower():
+            problems.append(
+                GuardProblem(
+                    "brand_voice", f'reuses the brand\'s own sample line verbatim: "{line}"'
+                )
+            )
+    return problems
+
+
 def guard_problems(deliverable: ExecutionDeliverable, inputs: GuardInputs) -> list[GuardProblem]:
     problems = [  # a variant may be the one published, so it must be original too
         problem
@@ -218,6 +272,11 @@ def guard_problems(deliverable: ExecutionDeliverable, inputs: GuardInputs) -> li
             )
             for name in named_competitors(text, inputs.competitor_names, inputs.message)
         ]
+    problems += [
+        problem
+        for text in (deliverable.body_markdown, *deliverable.variants)
+        for problem in voice_problems(text, inputs.sample_copy)
+    ]
     return problems
 
 
@@ -264,9 +323,18 @@ def guard_inputs(context: RunContext, message: str | None) -> GuardInputs:
     names |= {
         str(r["name"]) for r in records if str(r.get("id", "")).startswith(Competitor.id_prefix)
     }
+    # get_company_context returns the full Company record; brand_voice (and its
+    # sample_copy) is a nested Mapping, so walk() already surfaces it directly.
+    sample_copy: tuple[str, ...] = ()
+    for r in records:
+        candidate = r.get("sample_copy")
+        if isinstance(candidate, list):
+            sample_copy = tuple(str(line) for line in candidate)
+            break
     return GuardInputs(
         intent=context.intent,
         message=message,
         sources=tuple(sources),
         competitor_names=tuple(sorted(names)),
+        sample_copy=sample_copy,
     )
