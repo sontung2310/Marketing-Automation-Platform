@@ -35,6 +35,8 @@ def run_error(exc: Exception) -> DomainError:
     """A domain error with a user-safe message; unexpected errors never leak their text."""
     if isinstance(exc, DomainError):
         return exc
+    if isinstance(exc, openai.APIStatusError):  # a bad key, no quota, a rejected request
+        return UpstreamUnavailableError(f"OpenAI request failed: {exc.message}")
     upstream = isinstance(exc, UPSTREAM_ERRORS) or (
         isinstance(exc, ExceptionGroup) and exc.subgroup(UPSTREAM_ERRORS) is not None
     )

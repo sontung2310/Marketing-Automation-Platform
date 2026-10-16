@@ -51,7 +51,7 @@ jobs:
           uv run --directory backend uvicorn app.api.main:app --port 8000 &
           uv run --directory backend uvicorn app.mcp_server.main:app --port 8001 &
           for i in $(seq 1 30); do
-            curl -sf http://localhost:8000/api/health >/dev/null && exit 0
+            curl -sf http://localhost:8000/api/health | grep -q '"mcp":"ok"' && exit 0
             sleep 1
           done
           echo "::error::Backend did not become healthy in time"

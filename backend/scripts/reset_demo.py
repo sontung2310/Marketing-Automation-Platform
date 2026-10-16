@@ -18,6 +18,8 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+from pymongo.errors import PyMongoError
+
 from app.core import db
 from app.core.config import get_settings
 from app.pipelines.seed.loader import SeedValidationError, load_seed_bundle, validate_seed_bundle
@@ -76,6 +78,11 @@ async def run() -> int:
     except (SeedValidationError, ValueError) as exc:
         sys.stderr.write(f"seed validation failed: {exc}\n")
         return 2
+    except PyMongoError as exc:
+        _write_json(
+            {"status": "error", "error": {"code": "DATABASE_UNAVAILABLE", "message": str(exc)}}
+        )
+        return 1
     finally:
         if db.get_client.cache_info().currsize:
             await db.get_client().close()

@@ -261,8 +261,8 @@ next fixes are in the `strategy-synthesis-real-influencers` change's design, D9:
 | # | Scenario | Verify |
 |---|---|---|
 | 8-A | **Given** `reset_demo.py` has run, **when** the E2E demo test runs 3 times in a row, **then** all 3 pass. | `npm run test:e2e -- --repeat-each=3` |
-| 8-B | **Given** the OpenAI key is invalid, **when** a run starts, **then** the RunBlock shows "OpenAI request failed: …" verbatim, within 10 s, and the feed still works. | Manual + integration |
-| 8-C | **Given** the MCP server is stopped, **then** `/health` reports `mcp: down`, and a run fails with the code `UPSTREAM_UNAVAILABLE` instead of hanging. | Integration |
+| 8-B | **Given** the OpenAI key is invalid, **when** a run starts, **then** the RunBlock shows "OpenAI request failed: …" verbatim, within 10 s, and the feed still works. | Manual + integration. *Offline evidence: `test_an_openai_rejection_is_shown_verbatim` (an OpenAI rejection becomes `UPSTREAM_UNAVAILABLE` "OpenAI request failed: …"). The live 10 s timing is in the human queue.* |
+| 8-C | **Given** the MCP server is stopped, **then** `/health` reports `mcp: down`, and a run fails with the code `UPSTREAM_UNAVAILABLE` instead of hanging. | Integration. *Evidence: `test_health.py` (`mcp: down`) and `test_run_service.py` (run fails `UPSTREAM_UNAVAILABLE`, "MCP is down").* |
 | 8-D | All three suites meet their evaluation-spec §6 thresholds on the release commit. | Attached reports. *Router and Strategy met; Execution is the accepted judge gap (8.4).* |
 | 8-E | A dry-run of the demo with someone outside the team completes the 8-step story in 5 minutes or less, with no presenter workaround. | Demo log in the PR |
 | 8-F | **Given** the demo environment is running, **when** Lighthouse CI runs against the workspace, **then** the accessibility category scores 90 or higher, and the axe suite from Step 7 still reports no violation. | Lighthouse CI report in the release PR |
