@@ -15,9 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      MONGODB_URI: ${{ secrets.DEMO_MONGODB_URI }}
       MONGODB_DATABASE: marketing_automation_demo_e2e
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       MCP_URL: http://localhost:8001/mcp
       MAX_RUNS_PER_DAY: "200" # repeat-each=3 runs the whole story 3 times over
     steps:
@@ -44,9 +42,15 @@ jobs:
         run: npx --workspace frontend playwright install --with-deps chromium
 
       - name: Reset the scratch database
+        env:
+          MONGODB_URI: ${{ secrets.DEMO_MONGODB_URI }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: uv run --directory backend python scripts/reset_demo.py --yes
 
       - name: Start the backend and MCP server
+        env:
+          MONGODB_URI: ${{ secrets.DEMO_MONGODB_URI }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           uv run --directory backend uvicorn app.api.main:app --port 8000 &
           uv run --directory backend uvicorn app.mcp_server.main:app --port 8001 &

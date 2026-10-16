@@ -253,8 +253,8 @@ next fixes are in the `strategy-synthesis-real-influencers` change's design, D9:
 - [ ] 8.1 A Playwright E2E test scripting the demo story in specs §7 (real backend, real OpenAI). *Written (`frontend/e2e/demo.spec.ts`, `npm run demo:e2e`, `demo-e2e.yml`); not yet run against real OpenAI, so 8-A is open.*
 - [x] 8.2 `backend/scripts/reset_demo.py`: re-seeds, clears sessions, runs, actions and simulated items. Also a demo runbook in the README.
 - [x] 8.3 Hardening: OpenAI and MCP timeouts or retries surfaced as clear run errors, a wall-clock limit per run, a token/cost log per run (including failed and repaired runs), and the cost guard.
-- [x] 8.4 Final eval run of all three suites. Router and Strategy pass at 1 repeat and are re-baselined (owner kept 1 repeat, 2026-10-13). Execution meets every threshold except the judge (mean 3.40-3.81 against 4.0; brand voice 3.0 against 3.5): accepted again as a known gap, no Execution baseline. The 3-repeat re-baseline (evaluation-spec §5.3) stays open.
-- [x] 8.5 Add Lighthouse CI against the running demo environment, wired into the Check job, and record the accessibility score in the release PR. Step 7 verified accessibility with `@axe-core/playwright` against fixtures; this is where the Lighthouse threshold that 7-A originally carried is met.
+- [ ] 8.4 Final eval run of all three suites. Router and Strategy pass at 1 repeat and are re-baselined (owner kept 1 repeat, 2026-10-13). Execution meets every threshold except the judge (mean 3.40-3.81 against 4.0; brand voice 3.0 against 3.5): accepted again as a known gap, no Execution baseline. The 3-repeat re-baseline (evaluation-spec §5.3) stays open.
+- [x] 8.5 Add Lighthouse CI (against the fixture-backed dev server, not a live environment), wired into the Check job, and record the accessibility score in the release PR. Step 7 verified accessibility with `@axe-core/playwright` against fixtures; this is where the Lighthouse threshold that 7-A originally carried is met.
 
 **Success criteria**
 

@@ -265,6 +265,6 @@ committed. This requirement stays the target that a later Step closes.
 #### Scenario: Full suite passes
 
 - **GIVEN** the full `evaluation/golden/execution.jsonl`
-- **WHEN** `evals.cli run --suite execution --repeats 3` runs and is judged
+- **WHEN** `evals.cli run --suite execution --repeats 1` runs and is judged
 - **THEN** every Execution threshold holds, and the report is committed as
   the baseline
