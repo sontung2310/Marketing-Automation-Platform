@@ -99,7 +99,7 @@ Edit `.env` (it is git-ignored; never commit it). The backend reads the single
 
 | Variable | Required | What to put |
 |---|---|---|
-| `MONGODB_URI` | yes | Your connection string, e.g. `mongodb+srv://user:pass@cluster/?retryWrites=true&w=majority`, or `mongodb://localhost:27017` for a local database |
+| `MONGODB_URI` | yes | Your Atlas connection string (copy the format from `.env.example`), or `mongodb://localhost:27017` for a local database |
 | `MONGODB_DATABASE` | yes | Database the platform owns and writes to (default `marketing_automation`) |
 | `OPENAI_API_KEY` | yes | Your OpenAI key |
 | `OPENAI_MODEL_AGENT` | yes | Model for Strategy and Execution (default `gpt-5.5`) |
