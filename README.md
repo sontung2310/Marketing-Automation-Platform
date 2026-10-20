@@ -63,40 +63,7 @@ authentication, and mock connectors (nothing is really posted or emailed).
 
 ### 2.1 Architecture
 
-```mermaid
-flowchart LR
-    user(["Marketer"])
-
-    subgraph app["Marketing Automation Platform"]
-        ui["Marketing UI<br/>React + Vite, one page"]
-        api["Platform API<br/>FastAPI · routing · runs · sessions"]
-        router{{"Request Router"}}
-        strategy["Marketing Strategy Agent<br/>what should we do?"]
-        execution["Marketing Execution Agent<br/>do this task for me"]
-        skills[("Marketing Skills<br/>shared methods")]
-        mcp["Marketing Intelligence MCP<br/>read-only research tools"]
-        db[("Intelligence DB<br/>competitors · trends · influencers · company")]
-        pipelines["Intelligence Pipelines<br/>collect · clean · normalise"]
-        connectors["Action Connectors<br/>mock in the PoC"]
-    end
-
-    sources[("External sources<br/>competitor websites · social · articles · influencers")]
-
-    user --> ui
-    ui -- "REST + live updates (SSE)" --> api
-    api --> router
-    router --> strategy
-    router --> execution
-    strategy -- "research" --> mcp
-    execution -- "research" --> mcp
-    strategy -. "load" .-> skills
-    execution -. "load" .-> skills
-    mcp -- "read" --> db
-    api -- "feed and insights" --> db
-    pipelines -- "write" --> db
-    sources -- "read-only" --> pipelines
-    api -- "approved actions" --> connectors
-```
+![System architecture: the Marketing UI calls the Platform API, which routes work to the Strategy and Execution agents; both load shared marketing skills and research through a read-only Intelligence MCP over the Intelligence DB, which pipelines fill from external sources](docs/diagrams/architecture.png)
 
 Design rules that keep the system simple and safe:
 
@@ -112,41 +79,15 @@ Design rules that keep the system simple and safe:
 - **Enforced layering.** `api → orchestration → agents → MCP → repositories →
   database`, checked in CI.
 
-More detail (C4 context, containers, agent components, deployment) is in
-[docs/architecture-design.html](docs/architecture-design.html).
+The Request Router sits inside the Platform API, and the action connectors run
+behind it once the marketer approves an action. More detail (C4 context,
+containers, agent components, deployment) is in
+[docs/architecture-design.html](docs/architecture-design.html). Diagram
+sources: [docs/diagrams/](docs/diagrams/).
 
 ### 2.2 Process: from a market signal to an approved action
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor M as Marketer
-    participant UI as Marketing UI
-    participant API as Platform API
-    participant S as Strategy Agent
-    participant E as Execution Agent
-    participant MCP as Intelligence MCP
-    participant C as Connector
-
-    Note over M,UI: A competitor move or a rising topic appears in the feed
-    M->>UI: "Plan a response" (or ask in chat)
-    UI->>API: start run
-    API->>S: route to Strategy
-    S->>MCP: company context, competitor activity, trends, influencers
-    MCP-->>S: evidence records
-    S-->>UI: recommendations with cited evidence (streamed progress)
-    M->>UI: "Do this" on a recommendation
-    UI->>API: start run
-    API->>E: route to Execution, with the recommendation
-    E->>MCP: company context and the cited evidence
-    MCP-->>E: evidence records
-    E->>E: quality and policy check (originality, brand voice, channel limits)
-    E-->>UI: draft + proposed action (e.g. schedule a LinkedIn post)
-    M->>UI: Approve
-    UI->>API: approve action
-    API->>C: execute
-    C-->>UI: receipt (mock in the PoC)
-```
+![Sequence: the marketer asks for a response plan, the Strategy Agent researches through the Intelligence MCP and returns recommendations, the Execution Agent turns one into a checked draft with a proposed action, and the marketer approves it](docs/diagrams/process.png)
 
 The same loop starts from other entry points: "Why it matters" on a feed item,
 "Get topic ideas" on a trend, "Draft outreach" on an influencer, or a free-text
